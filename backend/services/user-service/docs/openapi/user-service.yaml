@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  version: 1.0.0
+  description: REST API for user profiles, contacts, and metadata.
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        code: { type: string, example: VALIDATION_ERROR }
+        message: { type: string }
+        details: { type: object, nullable: true }
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, example: user@example.com }
+    PasswordResetResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: Password reset email sent (mock) }
+        token: { type: string, example: tok-u-123abc }
+        expiresAt: { type: string, format: date-time }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [worker, contractor] }
+        name: { type: string, nullable: true }
+        location: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    Contact:
+      type: object
+      properties:
+        id: { type: string }
+        owner_id: { type: string }
+        type: { type: string }
+        value: { type: string }
+        is_primary: { type: boolean }
+        is_verified: { type: boolean }
+    WorkerProfile:
+      type: object
+      properties:
+        user_id: { type: string }
+        skill_type: { type: string, nullable: true }
+        experience_years: { type: integer, nullable: true }
+        hourly_rate: { type: integer, nullable: true }
+        availability: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        is_available: { type: boolean, nullable: true }
+    ContractorProfile:
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      type: object
+      properties:
+        owner_id: { type: string }
+        company_name: { type: string, nullable: true }
+        company_description: { type: string, nullable: true }
+    CompletenessMeta:
+      type: object
+      properties:
+        completeness: { type: integer }
+        completenessBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              '200': { description: Updated user; completeness meta optionally returned }
+              '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '404': { description: User not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              present: { type: boolean }
+    CompleteProfile:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        contacts:
+          type: array
+          items: { $ref: '#/components/schemas/Contact' }
+        workerProfile: { $ref: '#/components/schemas/WorkerProfile' }
+        contractorProfile: { $ref: '#/components/schemas/ContractorProfile' }
+        meta: { $ref: '#/components/schemas/CompletenessMeta' }
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: {}
+              '200': { description: Updated worker profile }
+              '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '403': { description: Forbidden (role mismatch); content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '404': { description: Worker profile not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  - bearerAuth: []
+paths:
+  /api/users/profile:
+    get:
+      summary: Get current authenticated user profile
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+              '200': { description: Updated contractor profile }
+              '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '403': { description: Forbidden (role mismatch); content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '404': { description: Contractor profile not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CompleteProfile' }
+    put:
+      summary: Update base user fields
+              '200': { description: Contacts listed }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                location: { type: string }
+                phone: { type: string }
+      responses:
+        '200': { description: Updated user; completeness meta optionally returned }
+  /api/users/worker-profile:
+    put:
+      summary: Update worker profile
+              '201': { description: Contact created }
+              '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skillType: { type: string }
+                experienceYears: { type: integer }
+                hourlyRate: { type: integer }
+                availability: { type: string }
+                description: { type: string }
+                isAvailable: { type: boolean }
+      responses:
+        '200': { description: Updated worker profile }
+  /api/users/contractor-profile:
+    put:
+      summary: Update contractor profile
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+              '200': { description: Contact updated }
+              '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '404': { description: Contact not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyName: { type: string }
+                companyDescription: { type: string }
+      responses:
+        '200': { description: Updated contractor profile }
+  /api/users/contacts:
+              '200': { description: Contact deleted }
+              '401': { description: Unauthorized; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '404': { description: Contact not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      summary: List contacts
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Contacts listed }
+    post:
+              '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+      summary: Create contact
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, value]
+              properties:
+                type: { type: string }
+                value: { type: string }
+                isPrimary: { type: boolean }
+      responses:
+        '201': { description: Contact created }
+  /api/users/contacts/{contactId}:
+    put:
+      summary: Update contact
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: contactId
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string }
+                value: { type: string }
+                isPrimary: { type: boolean }
+      responses:
+        '200': { description: Contact updated }
+    delete:
+      summary: Delete contact
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: contactId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Contact deleted }
+  /api/users/skills:
+    get:
+      summary: Get list of skill types
+      responses:
+        '200': { description: List of skills }
+  /api/auth/forgot-password:
+    post:
+      summary: Generate password reset token (mock email send)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetRequest' }
+      responses:
+        '200':
+          description: Password reset token generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PasswordResetResponse' }
+        '400': { description: Validation error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: User not found; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '429': { description: Rate limited (future); content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '500': { description: Internal error; content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }

@@ -1,0 +1,16 @@
+{
+  "name": "matching-service",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "dev": "nodemon --exec ts-node --transpileOnly -P tsconfig.json src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js",
+    "test": "jest --config jest.config.ts",
+    "lint": "eslint 'src/**/*.{ts,tsx}' --max-warnings=0"
+  }
+}

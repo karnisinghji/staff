@@ -1,0 +1,78 @@
+# Prometheus Alerting Rules (Examples)
+# Copy into your ops repo /prometheus/rules and adjust thresholds & labels.
+
+groups:
+  - name: service-latency
+    rules:
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(0.95, sum by (le, service) (rate(http_request_duration_ms_bucket[5m]))) > 0.8
+        for: 10m
+        labels:
+          severity: page
+          team: platform
+        annotations:
+          summary: "High P95 latency ({{ $labels.service }})"
+          description: "P95 > 800ms for 10m. Investigate slow endpoints or dependencies."
+
+  - name: service-errors
+    rules:
+      - alert: ElevatedErrorRate
+        expr: |
+          sum by (service) (rate(http_requests_total{status_code=~"5.."}[5m])) /
+          sum by (service) (rate(http_requests_total[5m])) > 0.01
+        for: 10m
+        labels:
+            severity: page
+            team: platform
+        annotations:
+            summary: "Elevated 5xx error rate ({{ $labels.service }})"
+            description: "5xx ratio > 1% for 10m. Check recent deployments & dependency health."
+
+      - alert: PersistentErrorRate
+        expr: |
+          sum by (service) (rate(http_requests_total{status_code=~"5.."}[30m])) /
+          sum by (service) (rate(http_requests_total[30m])) > 0.005
+        for: 60m
+        labels:
+            severity: ticket
+            team: platform
+        annotations:
+            summary: "Sustained elevated errors ({{ $labels.service }})"
+            description: "5xx ratio >0.5% for 1h. Create ticket for investigation."
+
+  - name: readiness
+    rules:
+      - alert: ServiceNotReady
+        expr: |
+          sum by(service) (probe_success{probe="ready"} == 0)
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Service not ready ({{ $labels.service }})"
+          description: "Readiness endpoint failing for >5m."
+
+  - name: low-traffic
+    rules:
+      - alert: ZeroTraffic
+        expr: |
+          sum by (service) (rate(http_requests_total[15m])) == 0
+        for: 30m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "No traffic ({{ $labels.service }})"
+          description: "Service received zero requests in 30m window. Possible routing or outage."
+
+  - name: version-rollout
+    rules:
+      - alert: MixedVersions
+        expr: |
+          count(count by (version, service) (service_info{service!=""})) > 1
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Multiple versions running ({{ $labels.service }})"
+          description: "Deployment not converged; multiple active versions."

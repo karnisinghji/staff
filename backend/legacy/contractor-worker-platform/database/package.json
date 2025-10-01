@@ -1,0 +1,17 @@
+{
+  "name": "platform-database",
+  "version": "1.0.0",
+  "description": "Database migrations and seeds for contractor-worker platform",
+  "scripts": {
+    "migrate": "node migrate.js",
+    "seed": "node seed.js",
+    "reset": "node reset.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.10.0"
+  }
+}

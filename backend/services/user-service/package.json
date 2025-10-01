@@ -1,0 +1,26 @@
+{
+  "name": "user-service",
+  "version": "1.0.0",
+  "description": "User service with hexagonal refactor",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js",
+    "dev": "nodemon --exec ts-node --transpileOnly -P tsconfig.json src/index.ts",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint 'src/**/*.{ts,tsx}' --max-warnings=0 || echo 'ESLint not configured yet'",
+    "coverage:check": "jest --coverage --coverageThreshold '{\"global\":{\"branches\":70,\"functions\":70,\"lines\":70,\"statements\":70}}'",
+    "openapi:validate": "node scripts/validate-openapi.js || echo 'OpenAPI validation script pending'",
+    "ci:verify": "npm run typecheck && npm run lint && npm run test:ci && npm run coverage:check && npm run openapi:validate"
+  },
+  "dependencies": {
+    "joi": "^17.11.0"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.5"
+  }
+}

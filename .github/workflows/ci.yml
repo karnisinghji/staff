@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  vuln-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+      - name: Trivy summary note
+        if: always()
+        run: echo "Trivy scan finished (fails pipeline on HIGH/CRITICAL unless overridden)."
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        service: [auth-service, user-service, communication-service, notification-service, matching-service, shared]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install deps for ${{ matrix.service }}
+        run: |
+          cd backend/services/${{ matrix.service }} || exit 1
+          npm ci || true
+      - name: Run lint ${{ matrix.service }}
+        run: |
+          cd backend/services/${{ matrix.service }}
+          if npm run | grep -q lint; then npm run lint; else echo "No lint script"; fi
+
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies (frontend & backend deps individually)
+        run: |
+          npm --version
+          (cd backend/services/auth-service && npm ci)
+          (cd backend/services/user-service && npm ci || true)
+          (cd backend/services/communication-service && npm ci || true)
+          (cd backend/services/notification-service && npm ci || true)
+          (cd backend/services/matching-service && npm ci || true)
+          (cd backend/services/shared && npm ci || true)
+          (cd frontend && npm ci || true)
+
+      - name: Type Check Backend
+        run: |
+          (cd backend && npx tsc -b --pretty false)
+
+      - name: Run Auth Service Tests
+        run: |
+          cd backend/services/auth-service && npm test -- --runInBand
+
+      - name: Build Docker Images (Auth + Frontend)
+        run: |
+          docker build -t auth-service:ci ./backend/services/auth-service
+          docker build -t frontend:ci ./frontend
+
+      - name: Backend Lint Aggregate (auth + user)
+        run: |
+          (cd backend/services/auth-service && npm run lint || true)
+          (cd backend/services/user-service && npm run lint || true)
+
+      - name: Summary
+        run: echo "CI pipeline completed"

@@ -1,0 +1,2 @@
+{"ts":"2025-09-30T04:39:36.019Z","level":"info","service":"notification-service","msg":"🔔 Notification Service running on port 3005"}
+{"ts":"2025-09-30T04:39:36.023Z","level":"info","service":"notification-service","msg":"🏥 Health check available at http://localhost:3005/health"}

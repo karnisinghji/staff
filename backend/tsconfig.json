@@ -1,0 +1,23 @@
+{
+    "files": [],
+    "references": [
+        {
+            "path": "services/shared"
+        },
+        {
+            "path": "services/auth-service"
+        },
+        {
+            "path": "services/user-service"
+        },
+        {
+            "path": "services/matching-service"
+        },
+        {
+            "path": "services/communication-service"
+        },
+        {
+            "path": "services/notification-service"
+        }
+    ]
+}

@@ -1,0 +1,87 @@
+
+> backend-root@1.0.0 dev
+> node ./scripts/dev-all.mjs
+
+Starting dev for services: auth-service, communication-service, matching-service, notification-service, user-service
+[31m[auth-service][0m 
+> auth-service@0.1.0 dev
+> ts-node-dev --respawn src/index.ts
+
+[32m[communication-service][0m 
+> communication-service@1.0.0 dev
+> nodemon --exec ts-node -P tsconfig.json src/index.ts
+
+[33m[matching-service][0m 
+> matching-service@1.0.0 dev
+> nodemon --exec ts-node --transpileOnly -P tsconfig.json src/index.ts
+
+[34m[notification-service][0m 
+> notification-service@1.0.0 dev
+> nodemon --exec ts-node -P tsconfig.json src/index.ts
+
+[35m[user-service][0m 
+> user-service@1.0.0 dev
+> nodemon --exec ts-node --transpileOnly -P tsconfig.json src/index.ts
+
+[32m[communication-service][0m [33m[nodemon] 3.1.10[39m
+[32m[communication-service][0m [33m[nodemon] to restart at any time, enter `rs`[39m
+[32m[communication-service][0m [33m[nodemon] watching path(s): *.*[39m
+[32m[communication-service][0m [33m[nodemon] watching extensions: ts,json[39m
+[32m[communication-service][0m [32m[nodemon] starting `ts-node src/index.ts`[39m
+[34m[notification-service][0m [33m[nodemon] 3.1.10[39m
+[34m[notification-service][0m [33m[nodemon] to restart at any time, enter `rs`[39m
+[34m[notification-service][0m [33m[nodemon] watching path(s): *.*[39m
+[34m[notification-service][0m [33m[nodemon] watching extensions: ts,json[39m
+[34m[notification-service][0m [32m[nodemon] starting `ts-node src/index.ts`[39m
+[35m[user-service][0m [33m[nodemon] 3.1.10[39m
+[35m[user-service][0m [33m[nodemon] to restart at any time, enter `rs`[39m
+[35m[user-service][0m [33m[nodemon] watching path(s): *.*[39m
+[35m[user-service][0m [33m[nodemon] watching extensions: ts,json[39m
+[35m[user-service][0m [32m[nodemon] starting `ts-node --transpileOnly src/index.ts`[39m
+[33m[matching-service][0m [33m[nodemon] 3.1.10[39m
+[33m[matching-service][0m [33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[matching-service][0m [33m[nodemon] watching path(s): *.*[39m
+[33m[matching-service][0m [33m[nodemon] watching extensions: ts,json[39m
+[33m[matching-service][0m [32m[nodemon] starting `ts-node --transpileOnly src/index.ts`[39m
+[31m[auth-service][0m [INFO] 20:36:48 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.2)
+[33m[matching-service][0m [dotenv@17.2.2] injecting env (9) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[35m[user-service][0m [dotenv@17.2.2] injecting env (8) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[35m[user-service][0m [dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[33m[matching-service][0m 2025-10-01T15:06:51.563Z matching-service [[32minfo[39m] 🔍 Matching Service running on port 3003
+[33m[matching-service][0m 2025-10-01T15:06:51.567Z matching-service [[32minfo[39m] 🏥 Health check available at http://localhost:3003/health
+[33m[matching-service][0m 2025-10-01T15:06:51.567Z matching-service [[32minfo[39m] 🔧 Max matching distance: 50km
+[33m[matching-service][0m 2025-10-01T15:06:51.567Z matching-service [[32minfo[39m] 🎯 Default search radius: 25km
+[35m[user-service][0m [32minfo[39m: Loaded environment for user-service {"timestamp":"2025-10-01T15:06:51.565Z"}
+[35m[user-service][0m [32minfo[39m: Starting availability expiry background job (runs every 15 minutes) {"timestamp":"2025-10-01T15:06:51.636Z"}
+[35m[user-service][0m [32minfo[39m: 👥 User Service running on port 3002 {"timestamp":"2025-10-01T15:06:51.660Z"}
+[35m[user-service][0m [32minfo[39m: 🏥 Health check available at http://localhost:3002/health {"timestamp":"2025-10-01T15:06:51.660Z"}
+[35m[user-service][0m [34mdebug[39m: No expired availability statuses found {"timestamp":"2025-10-01T15:06:51.708Z"}
+[33m[matching-service][0m 2025-10-01T15:06:52.550Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:06:52 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[31m[auth-service][0m [dotenv@17.2.2] injecting env (25) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[31m[auth-service][0m 🔐 Configuring OAuth strategies...
+[31m[auth-service][0m Google Client ID: SET
+Google Client Secret: SET
+[31m[auth-service][0m ✅ Registering Google OAuth strategy
+[31m[auth-service][0m [EmailService] ✅ Email service configured successfully
+[31m[auth-service][0m [dotenv@17.2.2] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+[32m[communication-service][0m [dotenv@17.2.2] injecting env (3) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+[34m[notification-service][0m [dotenv@17.2.2] injecting env (3) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[31m[auth-service][0m 2025-10-01T15:06:55.424Z undefined [[32minfo[39m] [metrics] Using shared metrics for auth-service
+[31m[auth-service][0m 2025-10-01T15:06:55.436Z auth-service [[32minfo[39m] auth-service listening on 3001
+[34m[notification-service][0m [metrics] Using shared metrics module for notification-service at /metrics
+[32m[communication-service][0m 2025-10-01T15:06:55.448Z communication-service [[32minfo[39m] 📞 Communication Service running on port 3004
+[32m[communication-service][0m 2025-10-01T15:06:55.450Z communication-service [[32minfo[39m] 🏥 Health check available at http://localhost:3004/health
+[34m[notification-service][0m 2025-10-01T15:06:55.455Z notification-service [[32minfo[39m] 🔔 Notification Service running on port 3005
+[34m[notification-service][0m 2025-10-01T15:06:55.458Z notification-service [[32minfo[39m] 🏥 Health check available at http://localhost:3005/health
+[31m[auth-service][0m 2025-10-01T15:07:02.498Z undefined [[33mwarn[39m] (6e2281e5-2b3b-42d3-99b1-b844266568ca) 404 POST /auth/login
+[33m[matching-service][0m 2025-10-01T15:07:22.438Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:07:22 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[33m[matching-service][0m 2025-10-01T15:07:52.436Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:07:52 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[33m[matching-service][0m 2025-10-01T15:08:22.432Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:08:22 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[33m[matching-service][0m 2025-10-01T15:08:52.485Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:08:52 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[33m[matching-service][0m 2025-10-01T15:08:52.864Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:08:52 +0000] "GET /api/matching/my-team HTTP/1.1" 200 75 "-" "curl/8.7.1"
+[33m[matching-service][0m 2025-10-01T15:09:22.431Z matching-service [[32minfo[39m] ::1 - - [01/Oct/2025:15:09:22 +0000] "GET /api/matching/team-requests/received HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+[35m[user-service][0m [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[33m[matching-service][0m [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[communication-service][0m [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[34m[notification-service][0m [31m[nodemon] app crashed - waiting for file changes before starting...[39m
