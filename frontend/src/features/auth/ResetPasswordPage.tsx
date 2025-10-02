@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { API_CONFIG } from '../../config/api';
 
 const ResetPasswordPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -23,7 +24,7 @@ const ResetPasswordPage: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:3001/api/auth/validate-reset-token/${token}`);
+        const response = await fetch(`${API_CONFIG.AUTH_SERVICE}/validate-reset-token/${token}`);
         const data = await response.json();
         
         if (data.success && data.valid) {
@@ -59,7 +60,7 @@ const ResetPasswordPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/reset-password', {
+      const response = await fetch(`${API_CONFIG.AUTH_SERVICE}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

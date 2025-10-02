@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-
-const API_URL = 'http://localhost:3001/api/auth/login';
+import { API_CONFIG, demoFetch } from '../../config/api';
 
 export const LoginPage: React.FC = () => {
   const { login, token } = useAuth();
@@ -35,7 +34,7 @@ export const LoginPage: React.FC = () => {
   const payload = { email: username, password };
   // Submitting login request
     try {
-      const res = await fetch(API_URL, {
+      const res = await demoFetch(`${API_CONFIG.AUTH_SERVICE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

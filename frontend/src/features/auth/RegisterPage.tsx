@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-const API_URL = 'http://localhost:3001/api/auth/signup';
+import { API_CONFIG, demoFetch } from '../../config/api';
 
 export const RegisterPage: React.FC = () => {
   const { token } = useAuth();
@@ -41,13 +40,15 @@ export const RegisterPage: React.FC = () => {
       // Always send as 'username' to match backend
       let payload: any = { username: contact, password, role };
       console.log('Register payload:', payload);
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const response = await demoFetch(`${API_CONFIG.AUTH_SERVICE}/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      const data = await response.json();
+      if (response.ok) {
         setShowSuccessBar(true);
         toast.success('Registration successful! Redirecting to login...', {
           position: 'top-right',

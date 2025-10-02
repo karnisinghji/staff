@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_CONFIG } from '../../config/api';
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ const ForgotPasswordPage: React.FC = () => {
     setLoading(true);
     try {
       // Send request to backend server
-      const res = await fetch('http://localhost:3001/api/auth/forgot-password', {
+      const res = await fetch(`${API_CONFIG.AUTH_SERVICE}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
