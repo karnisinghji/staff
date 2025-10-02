@@ -18,18 +18,17 @@ export const RegisterPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('contractor');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+
   const [showSuccessBar, setShowSuccessBar] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   setError('');
-  setSuccess(false);
   setShowSuccessBar(false);
     // Validate contact as email or mobile
     const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
     const mobileRegex = /^[1-9][0-9]{9,14}$/;
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+
     if (!contact) {
       setError('Please provide your email or mobile number.');
       return;
@@ -49,7 +48,6 @@ export const RegisterPage: React.FC = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(true);
         setShowSuccessBar(true);
         toast.success('Registration successful! Redirecting to login...', {
           position: 'top-right',

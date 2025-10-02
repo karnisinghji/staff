@@ -33,12 +33,13 @@ router.get('/health', (_req, res) => {
     res.json(buildHealthPayload('user-service'));
 });
 
+// Public metadata (must come before :id routes)
+router.get('/api/users/skills', userController.getSkills);
+
 // User profile routes
 router.get('/api/users/profile', authenticateToken, userController.getCurrentUser);
 router.get('/api/users/:id', authenticateToken, userController.getUserById);
 router.put('/api/users/profile', authenticateToken, validateBody(updateUserSchema), userController.updateUser);
-// Public metadata
-router.get('/api/users/skills', userController.getSkills);
 
 // Worker profile routes
 router.put('/api/users/worker-profile',
@@ -62,7 +63,9 @@ router.get('/api/users/contacts', authenticateToken, userController.getContacts)
 const createContactSharedSchema = z.object({
     name: z.string().min(1),
     email: z.string().email().optional(),
-    phone: z.string().min(5).optional(),
+    phone: z.string()
+        .regex(/^\+91[6-9]\d{9}$/, 'Phone number must be in format +91xxxxxxxxxx (10 digits starting with 6-9)')
+        .optional(),
     tags: z.array(z.string()).max(20).optional()
 });
 router.post('/api/users/contacts', authenticateToken, sharedValidate({ schema: createContactSharedSchema }) as any, userController.createContact);

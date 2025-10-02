@@ -9,13 +9,15 @@ import { RegisterPage } from './features/auth/RegisterPage';
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import { OAuthCallback } from './features/auth/OAuthCallback';
-import { MatchSearchPage } from './features/matching/MatchSearchPage';
+import EnhancedMatchSearchPage from './features/matching/EnhancedMatchSearchPage';
 import { MyTeamPage } from './features/matching/SavedMatchesPage';
 import { MessagingPage } from './features/messaging/MessagingPage';
 import { HomePage } from './features/home/HomePage';
-import DashboardPage from './features/dashboard/DashboardPage';
-import ProfilePage from './features/profile/ProfilePage';
+import EnhancedDashboardPage from './features/dashboard/EnhancedDashboardPage';
+import EnhancedProfilePage from './features/profile/EnhancedProfilePage';
 import StatusPage from './features/status/StatusPage';
+import { ToastContainer } from './components/ToastContainer';
+import { GlobalAnimations } from './components/AnimationComponents';
 
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const { token } = useAuth();
@@ -28,8 +30,10 @@ const App: React.FC = () => (
   <AuthProvider>
     <NotificationProvider>
       <Router>
+        <GlobalAnimations />
         <NavBar />
         <NotificationList />
+        <ToastContainer />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -38,12 +42,12 @@ const App: React.FC = () => (
           <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <DashboardPage />
+              <EnhancedDashboardPage />
             </ProtectedRoute>
           } />
           <Route path="/search" element={
             <ProtectedRoute>
-              <MatchSearchPage />
+              <EnhancedMatchSearchPage />
             </ProtectedRoute>
           } />
           <Route path="/saved" element={
@@ -58,7 +62,7 @@ const App: React.FC = () => (
           } />
           <Route path="/profile" element={
             <ProtectedRoute>
-              <ProfilePage />
+              <EnhancedProfilePage />
             </ProtectedRoute>
           } />
           <Route path="/status" element={

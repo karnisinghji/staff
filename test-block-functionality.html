@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block/Unblock User Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f5f7fa;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #d32f2f;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button.danger {
+            background: #d32f2f;
+        }
+        button.danger:hover {
+            background: #c62828;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            font-size: 14px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        h1 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        h3 {
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚫 Block/Unblock User Test</h1>
+        
+        <div class="section">
+            <h3>Step 1: Login</h3>
+            <input type="email" id="email" placeholder="Email" value="contact@abcconstruction.com">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button onclick="login()">🔐 Login</button>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Block a User</h3>
+            <input type="text" id="blockUserId" placeholder="User ID to block">
+            <select id="blockReason">
+                <option value="">Select reason</option>
+                <option value="harassment">Harassment</option>
+                <option value="unprofessional">Unprofessional behavior</option>
+                <option value="spam">Spam</option>
+                <option value="other">Other</option>
+            </select>
+            <button onclick="blockUser()" class="danger">🚫 Block User</button>
+            <div id="blockResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: View Blocked Users</h3>
+            <button onclick="getBlockedUsers()">📋 Get Blocked Users</button>
+            <div id="blockedUsersResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 4: Unblock a User</h3>
+            <input type="text" id="unblockUserId" placeholder="User ID to unblock">
+            <button onclick="unblockUser()">✅ Unblock User</button>
+            <div id="unblockResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 5: Check Block Status</h3>
+            <input type="text" id="checkUserId" placeholder="User ID to check">
+            <button onclick="checkBlockStatus()">🔍 Check Status</button>
+            <div id="checkResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    document.getElementById('loginResult').innerHTML = `
+                        <div class="success">
+                            ✅ Login successful!<br>
+                            User: ${data.user.name} (${data.user.role})<br>
+                            Token: ${data.token.substring(0, 20)}...
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('loginResult').innerHTML = `
+                        <div class="error">❌ Login failed: ${data.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = `
+                    <div class="error">❌ Login error: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function blockUser() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const userId = document.getElementById('blockUserId').value;
+            const reason = document.getElementById('blockReason').value;
+            
+            if (!userId) {
+                alert('Please enter a user ID to block');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3003/api/matching/block-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        blockedUserId: userId,
+                        reason: reason || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('blockResult').innerHTML = `
+                        <div class="success">
+                            ✅ User blocked successfully!<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('blockResult').innerHTML = `
+                        <div class="error">❌ Block failed: ${data.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('blockResult').innerHTML = `
+                    <div class="error">❌ Block error: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function getBlockedUsers() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3003/api/matching/blocked-users', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('blockedUsersResult').innerHTML = `
+                        <div class="success">
+                            ✅ Found ${data.data.blockedUsers.length} blocked users<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('blockedUsersResult').innerHTML = `
+                        <div class="error">❌ Failed: ${data.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('blockedUsersResult').innerHTML = `
+                    <div class="error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function unblockUser() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const userId = document.getElementById('unblockUserId').value;
+            
+            if (!userId) {
+                alert('Please enter a user ID to unblock');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3003/api/matching/unblock-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        blockedUserId: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('unblockResult').innerHTML = `
+                        <div class="success">
+                            ✅ User unblocked successfully!<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('unblockResult').innerHTML = `
+                        <div class="error">❌ Unblock failed: ${data.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('unblockResult').innerHTML = `
+                    <div class="error">❌ Unblock error: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function checkBlockStatus() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const userId = document.getElementById('checkUserId').value;
+            
+            if (!userId) {
+                alert('Please enter a user ID to check');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3003/api/matching/block-status/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.data.isBlocked ? '🚫 BLOCKED' : '✅ NOT BLOCKED';
+                    document.getElementById('checkResult').innerHTML = `
+                        <div class="success">
+                            Status: ${status}<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('checkResult').innerHTML = `
+                        <div class="error">❌ Check failed: ${data.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('checkResult').innerHTML = `
+                    <div class="error">❌ Check error: ${error.message}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

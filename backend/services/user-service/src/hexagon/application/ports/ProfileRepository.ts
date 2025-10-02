@@ -15,6 +15,6 @@ export interface ContractorProfileRecord {
 export interface ProfileRepositoryPort {
     getWorkerProfile(userId: string): Promise<WorkerProfileRecord | null>;
     getContractorProfile(userId: string): Promise<ContractorProfileRecord | null>;
-    updateWorkerProfile(userId: string, fields: Partial<{ skillType: string; experienceYears: number; hourlyRate: number; availability: string; description: string; isAvailable: boolean; }>): Promise<WorkerProfileRecord>;
+    updateWorkerProfile(userId: string, fields: Partial<{ skillType: string; experienceYears: number; /* hourlyRate: number; */ availability: string; description: string; isAvailable: boolean; }>): Promise<WorkerProfileRecord>;
     updateContractorProfile(userId: string, fields: Partial<{ companyName: string; companyDescription: string; }>): Promise<ContractorProfileRecord>;
 }

@@ -20,12 +20,21 @@ export class PgUserRepository implements UserRepositoryPort {
             username: r.username,
             role: r.role,
             name: r.name,
+            email: r.email,
             location: r.location,
+            address: r.address,
             phone: r.phone,
+            profileCompletedAt: r.profile_completed_at?.toISOString() || null,
+            profileLockedAt: r.profile_locked_at?.toISOString() || null,
             createdAt: r.created_at
         });
     }
     async updateUser(id: string, fields: UpdateUserFields): Promise<UserEntity> {
+        // First get the current user to check for registration field edge cases
+        const currentUser = await this.findById(id);
+        if (!currentUser) throw new NotFoundError('User not found');
+        const current = currentUser.toPrimitives();
+
         const updates: string[] = [];
         const values: any[] = [];
         let idx = 1;
@@ -34,6 +43,8 @@ export class PgUserRepository implements UserRepositoryPort {
         if (fields.location !== undefined) { updates.push(`location = $${idx++}`); values.push(fields.location); }
         if (fields.email !== undefined) { updates.push(`email = $${idx++}`); values.push(fields.email); }
         if (fields.address !== undefined) { updates.push(`address = $${idx++}`); values.push(fields.address); }
+        if (fields.profileCompletedAt !== undefined) { updates.push(`profile_completed_at = $${idx++}`); values.push(fields.profileCompletedAt); }
+        if (fields.profileLockedAt !== undefined) { updates.push(`profile_locked_at = $${idx++}`); values.push(fields.profileLockedAt); }
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`;
@@ -44,14 +55,29 @@ export class PgUserRepository implements UserRepositoryPort {
             const r = res.rows[0];
             return new UserEntity({
                 id: r.id, username: r.username, role: r.role, name: r.name,
-                location: r.location, phone: r.phone, createdAt: r.created_at
+                email: r.email, location: r.location, address: r.address, phone: r.phone,
+                profileCompletedAt: r.profile_completed_at?.toISOString() || null,
+                profileLockedAt: r.profile_locked_at?.toISOString() || null,
+                createdAt: r.created_at
             });
         } catch (error: any) {
             // Handle duplicate email/phone constraint violations
             if (error.code === '23505') {
+                // Check if user is trying to set their phone/email to their registration username
+                const isSettingPhoneToUsername = fields.phone && fields.phone === current.username;
+                const isSettingEmailToUsername = fields.email && fields.email === current.username;
+
                 if (error.constraint === 'users_email_key' || error.constraint === 'users_email_unique' || error.detail?.includes('email')) {
+                    if (isSettingEmailToUsername) {
+                        // This is the user setting their email to their registration email - return current user
+                        return currentUser;
+                    }
                     throw new ConflictError('This email is already in use by another account');
                 } else if (error.constraint === 'users_phone_unique' || error.detail?.includes('phone')) {
+                    if (isSettingPhoneToUsername) {
+                        // This is the user setting their phone to their registration phone - return current user
+                        return currentUser;
+                    }
                     throw new ConflictError('This phone number is already in use by another account');
                 }
                 throw new ConflictError('This information is already in use by another account');
@@ -135,11 +161,11 @@ export class PgProfileRepository implements ProfileRepositoryPort {
         const res = await this.pool.query('SELECT * FROM contractor_profiles WHERE owner_id = $1', [userId]);
         return res.rows[0] || null;
     }
-    async updateWorkerProfile(userId: string, fields: Partial<{ skillType: string; experienceYears: number; hourlyRate: number; availability: string; description: string; isAvailable: boolean; }>): Promise<WorkerProfileRecord> {
+    async updateWorkerProfile(userId: string, fields: Partial<{ skillType: string; experienceYears: number; /* hourlyRate: number; */ availability: string; description: string; isAvailable: boolean; }>): Promise<WorkerProfileRecord> {
         const map: Record<string, any> = {
             skillType: 'skill_type',
             experienceYears: 'experience_years',
-            hourlyRate: 'hourly_rate',
+            // hourlyRate: 'hourly_rate', // DISABLED - not required at this time
             availability: 'availability',
             description: 'description',
             isAvailable: 'is_available'
@@ -247,13 +273,28 @@ export class PgProfileRepository implements ProfileRepositoryPort {
 export class PgSkillRepository implements SkillRepositoryPort {
     constructor(private pool: Pool) { }
     async listSkillTypes(): Promise<string[]> {
-        // Assuming a static reference table `skill_types` (fallback to distinct skill_type from worker_profiles if absent)
+        // Query the skill_type ENUM values from PostgreSQL system catalog
         try {
-            const res = await this.pool.query('SELECT name FROM skill_types ORDER BY name ASC');
-            if (res.rowCount) return res.rows.map(r => r.name);
-        } catch { /* fall back */ }
-        const distinct = await this.pool.query('SELECT DISTINCT skill_type FROM worker_profiles WHERE skill_type IS NOT NULL');
-        return distinct.rows.map(r => r.skill_type).sort();
+            const res = await this.pool.query(`
+                SELECT enumlabel as name 
+                FROM pg_enum 
+                WHERE enumtypid = (
+                    SELECT oid 
+                    FROM pg_type 
+                    WHERE typname = 'skill_type'
+                )
+                ORDER BY enumlabel ASC
+            `);
+            if (res.rowCount && res.rowCount > 0) {
+                return res.rows.map(r => r.name);
+            }
+        } catch (error) {
+            console.error('Error querying skill_type ENUM:', error);
+        }
+
+        // Fallback to distinct values from worker_profiles if ENUM query fails
+        const distinct = await this.pool.query('SELECT DISTINCT skill_type FROM worker_profiles WHERE skill_type IS NOT NULL ORDER BY skill_type');
+        return distinct.rows.map(r => r.skill_type);
     }
 }
 

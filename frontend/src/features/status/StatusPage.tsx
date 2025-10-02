@@ -86,13 +86,7 @@ const StatusPage: React.FC = () => {
     }
   }, [profileData]);
 
-  // Debug: Log profile data to console
-  useEffect(() => {
-    if (profileData?.workerProfile) {
-      console.log('Worker Profile Data:', profileData.workerProfile);
-      console.log('isAvailable state:', isAvailable);
-    }
-  }, [profileData, isAvailable]);
+  // Profile data loaded - state updated
 
   // Timer effect for countdown
   useEffect(() => {
@@ -157,10 +151,7 @@ const StatusPage: React.FC = () => {
   // Check user role from multiple sources (AuthContext or profile data)
   const userRole = profileData?.user?.role || user?.role || user?.roles?.[0];
   
-  // Debug logging
-  console.log('StatusPage - User from context:', user);
-  console.log('StatusPage - Profile data:', profileData);
-  console.log('StatusPage - Detected role:', userRole);
+  // Role determined from profile data or context
 
   const handleRequirementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

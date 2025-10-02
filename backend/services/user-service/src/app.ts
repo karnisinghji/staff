@@ -3,6 +3,7 @@ import cors from 'cors';
 import { applyStandardSecurity, createReadinessRegistry, runReadiness, startTracing } from '../../shared';
 import morgan from 'morgan';
 import userRoutes from './routes/userRoutes';
+import invitationRoutes from './routes/invitationRoutes';
 import { logger } from './utils/logger';
 import { DomainError } from './hexagon/domain/errors/DomainErrors';
 import { userMetricsBundle } from './observability/metrics';
@@ -105,6 +106,7 @@ export function buildApp(): express.Express {
 
     // Routes
     app.use('/', userRoutes);
+    app.use('/', invitationRoutes);
 
     // 404 handler
     app.use((req, res) => {

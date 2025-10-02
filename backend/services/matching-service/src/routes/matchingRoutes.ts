@@ -147,6 +147,38 @@ router.get('/api/matching/stats',
     matchingController.getMatchingStats
 );
 
+// User blocking functionality
+const blockUserBody = z.object({
+    blockedUserId: z.string().uuid(),
+    reason: z.enum(['harassment', 'unprofessional', 'spam', 'other']).optional()
+});
+
+const unblockUserBody = z.object({
+    blockedUserId: z.string().uuid()
+});
+
+router.post('/api/matching/block-user',
+    authenticateToken,
+    validate({ schema: blockUserBody }),
+    matchingController.blockUser
+);
+
+router.post('/api/matching/unblock-user',
+    authenticateToken,
+    validate({ schema: unblockUserBody }),
+    matchingController.unblockUser
+);
+
+router.get('/api/matching/blocked-users',
+    authenticateToken,
+    matchingController.getBlockedUsers
+);
+
+router.get('/api/matching/block-status/:userId',
+    authenticateToken,
+    matchingController.checkBlockStatus
+);
+
 // Contractor requirements
 const contractorRequirementBody = z.object({
     requiredWorkers: z.number().int().min(1),

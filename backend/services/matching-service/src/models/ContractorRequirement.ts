@@ -36,8 +36,14 @@ export async function insertContractorRequirement(pool: Pool, req: ContractorReq
 
 // Fetch all requirements (optionally filter by contractor)
 export async function getContractorRequirements(pool: Pool, contractorId?: string) {
+    const baseQuery = `
+        SELECT cr.*, u.name as contractor_name, u.email as contractor_email, u.phone as contractor_phone
+        FROM contractor_requirements cr
+        LEFT JOIN users u ON cr.contractor_id = u.id
+    `;
+
     const result = contractorId
-        ? await pool.query('SELECT * FROM contractor_requirements WHERE contractor_id = $1 ORDER BY created_at DESC', [contractorId])
-        : await pool.query('SELECT * FROM contractor_requirements ORDER BY created_at DESC');
+        ? await pool.query(baseQuery + 'WHERE cr.contractor_id = $1 ORDER BY cr.created_at DESC', [contractorId])
+        : await pool.query(baseQuery + 'ORDER BY cr.created_at DESC');
     return result.rows;
 }

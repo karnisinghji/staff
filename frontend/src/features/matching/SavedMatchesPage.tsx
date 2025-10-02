@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ContractorRequirementsList } from './ContractorRequirementsList';
+import { CardSkeleton, SkeletonStyles } from '../common/Skeleton';
 
-// Force cache bust - Updated API endpoint
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003/api/matching/my-team';
+// Use Vite proxy to avoid CORS issues
+const API_URL = '/api/matching/my-team';
 
 interface TeamMember {
   team_member_record_id: string;
@@ -28,62 +29,73 @@ export const MyTeamPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'busy'>('all');
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      setError('');
-      setLoading(true);
-      console.log('MyTeamPage: Starting fetch... [UPDATED CODE - Oct 1, 2025]');
-      console.log('MyTeamPage: API_URL =', API_URL);
-      console.log('MyTeamPage: Expected URL should be /my-team NOT /saved-matches');
-      console.log('MyTeamPage: Token exists =', !!token);
-      console.log('MyTeamPage: Token value =', token?.substring(0, 20) + '...');
-      
-      if (!token) {
-        console.log('MyTeamPage: No token available');
-        setError('Please log in to view your team members');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        console.log('MyTeamPage: Making fetch request...');
-        const res = await fetch(API_URL, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('MyTeamPage: Response status:', res.status);
-        console.log('MyTeamPage: Response ok:', res.ok);
-        
-        const data = await res.json();
-        console.log('MyTeamPage: API Response data:', data);
-        
-        if (res.ok && data.success && data.data) {
-          const teamMembers = data.data.teamMembers || [];
-          console.log('MyTeamPage: Team members received:', teamMembers.length);
-          // Map the API response to include isAvailable field
-          const mappedMembers = teamMembers.map((member: any) => ({
-            ...member,
-            isAvailable: member.is_available
-          }));
-          setMatches(mappedMembers);
-          console.log('MyTeamPage: Successfully set matches:', mappedMembers.length);
-        } else {
-          console.error('MyTeamPage: API Error - Status:', res.status, 'Data:', data);
-          setError(data.message || `Failed to fetch team members (${res.status})`);
-        }
-      } catch (err) {
-        console.error('MyTeamPage: Network/Fetch Error:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        setError(`Network error: ${errorMessage}. Please check if backend services are running.`);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMatches = async () => {
+    setError('');
+    setLoading(true);
+    // Fetching team data...
     
+    if (!token) {
+      // No authentication token
+      setError('Please log in to view your team members');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Making API request
+      const res = await fetch(API_URL, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      // Response received
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('MyTeamPage: Response data:', data);
+      
+      if (data.success && Array.isArray(data.data)) {
+        setMatches(data.data);
+      } else if (data.data && Array.isArray(data.data)) {
+        setMatches(data.data);
+      } else if (Array.isArray(data)) {
+        // Handle case where data is directly an array
+        setMatches(data);
+      } else {
+        // Check if this is a success message about team members found
+        if (data.message && (
+          data.message.includes('Found') && data.message.includes('team member') ||
+          data.message.includes('No team members') ||
+          data.message.includes('empty')
+        )) {
+          // This is a success message, set empty array for now (data should be in data.data)
+          setMatches([]);
+        } else if (data.message && (
+          data.message.includes('error') ||
+          data.message.includes('failed') ||
+          data.message.includes('unauthorized')
+        )) {
+          // This is an actual error message
+          throw new Error(data.message);
+        } else {
+          // Fallback for unknown format - try to handle it gracefully
+          console.warn('MyTeamPage: Unknown response format:', data);
+          setMatches([]);
+        }
+      }
+    } catch (err) {
+      console.error('MyTeamPage: Network/Fetch Error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Network error: ${errorMessage}. Please check if backend services are running.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     console.log('MyTeamPage: useEffect running, token exists:', !!token);
     fetchMatches();
   }, [token]);
@@ -153,6 +165,7 @@ export const MyTeamPage: React.FC = () => {
           background: #fff;
           box-shadow: 0 4px 32px rgba(0,0,0,0.10);
           display: flex;
+          animation: fadeInUp 0.6s ease-out;
           flex-direction: column;
           gap: 1.5rem;
         }
@@ -209,6 +222,40 @@ export const MyTeamPage: React.FC = () => {
           background: #1976d2;
           color: white;
         }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .myteam-container {
+            padding: 1rem;
+          }
+          .filter-buttons {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+          }
+          .filter-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+          }
+          .myteam-list li {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+          .myteam-title {
+            font-size: 1.5rem;
+          }
+        }
         @media (max-width: 600px) {
           .myteam-container {
             max-width: 100vw;
@@ -228,8 +275,34 @@ export const MyTeamPage: React.FC = () => {
       `}</style>
       <div className="myteam-bg">
         <div className="myteam-container">
-          <div className="myteam-header">My Team - Fixed API</div>
-          {error && <div className="myteam-error">{error}</div>}
+          <div className="myteam-header">My Team</div>
+          {error && (
+            <div style={{ 
+              background: '#ffebee', 
+              color: '#d32f2f', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              textAlign: 'center',
+              marginBottom: '1rem',
+              border: '1px solid #ffcdd2'
+            }}>
+              <div style={{ marginBottom: '1rem' }}>❌ {error}</div>
+              <button
+                onClick={fetchMatches}
+                style={{
+                  background: '#1976d2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                🔄 Try Again
+              </button>
+            </div>
+          )}
           
           {/* Filter buttons */}
           <div className="filter-buttons">
@@ -255,9 +328,14 @@ export const MyTeamPage: React.FC = () => {
 
           <ul className="myteam-list">
             {loading && (
-              <li style={{ textAlign: 'center', color: '#2196f3', justifyContent: 'center' }}>
-                Loading team members...
-              </li>
+              <>
+                <SkeletonStyles />
+                {[1, 2, 3, 4].map(i => (
+                  <li key={i} style={{ listStyle: 'none' }}>
+                    <CardSkeleton showActions={false} />
+                  </li>
+                ))}
+              </>
             )}
             {!loading && filteredMatches.length === 0 && !error && (
               <li style={{ textAlign: 'center', color: '#888', justifyContent: 'center' }}>

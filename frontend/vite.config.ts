@@ -11,6 +11,26 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/matching': {
+        target: 'http://localhost:3003',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/user': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/communication': {
+        target: 'http://localhost:3004',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/notification': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
         target: 'http://localhost:3002',
         changeOrigin: true,

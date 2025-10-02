@@ -33,7 +33,7 @@ export const LoginPage: React.FC = () => {
     setError('');
     setLoading(true);
   const payload = { email: username, password };
-  console.log('Login payload:', payload);
+  // Submitting login request
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -41,7 +41,7 @@ export const LoginPage: React.FC = () => {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      console.log('Login response:', data);
+      // Login response received
       if (res.ok && data.accessToken) {
         try {
           login(data.accessToken, data.user);

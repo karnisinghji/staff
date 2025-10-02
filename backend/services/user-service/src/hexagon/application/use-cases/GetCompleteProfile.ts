@@ -60,11 +60,15 @@ export class GetCompleteProfileUseCase {
         consider('username', !!user.username);
         consider('name', !!user.name);
         consider('location', !!user.location);
-        consider('phone', !!user.phone);
-        consider('contacts', contacts.length > 0);
+
+        // Check for contact information - either phone in user profile or contacts table
+        const hasContactInfo = !!user.phone || !!user.email || contacts.length > 0;
+        consider('contacts', hasContactInfo);
 
         if (worker) {
-            consider('worker_skillset', Array.isArray(worker.skills) && worker.skills.length > 0);
+            // Check for either skillType (primary skill) OR skills array for skillset completeness
+            const hasSkillset = !!worker.skillType || !!worker.skill_type || (Array.isArray(worker.skills) && worker.skills.length > 0);
+            consider('worker_skillset', hasSkillset);
             consider('worker_experience', !!worker.experience_years);
         }
         if (contractor) {

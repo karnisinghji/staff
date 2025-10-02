@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Completion Flow Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-list li:before {
+            content: "✅";
+            margin-right: 0.5rem;
+        }
+        
+        .demo-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        
+        .demo-button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0.5rem 0.5rem 0 0;
+            transition: all 0.3s ease;
+        }
+        
+        .demo-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+        
+        .status-running { background: #c6f6d5; color: #22543d; }
+        .status-ready { background: #bee3f8; color: #2a4365; }
+        .status-complete { background: #fbb6ce; color: #744210; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Profile Completion Flow - Complete Implementation</h1>
+            <p>Mandatory profile completion with field locking and auto-fill capabilities</p>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-title">✨ Implemented Features</div>
+            <ul class="feature-list">
+                <li><strong>Mandatory Profile Completion Modal</strong> - Forces first-time users to complete their profile</li>
+                <li><strong>Auto-fill Registration Data</strong> - Pre-fills email/phone based on registration method</li>
+                <li><strong>GPS Location Detection</strong> - "Use Current Location" with reverse geocoding</li>
+                <li><strong>Field Locking System</strong> - Critical fields (username, email, phone) locked after first save</li>
+                <li><strong>Profile Completion Tracking</strong> - Backend tracks completion timestamps</li>
+                <li><strong>Progressive Disclosure</strong> - 2-step wizard with role selection</li>
+                <li><strong>Mobile Contact Auto-fill</strong> - Detects mobile devices for contact import</li>
+                <li><strong>Real-time Validation</strong> - Email, phone, and field validation with visual feedback</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h3>🚀 System Status</h3>
+            <p>All services are running and ready for testing:</p>
+            <div>
+                <span class="status-indicator status-running">Auth Service (3001)</span>
+                <span class="status-indicator status-running">User Service (3002)</span>
+                <span class="status-indicator status-running">Frontend (5173)</span>
+                <span class="status-indicator status-ready">Database Ready</span>
+                <span class="status-indicator status-complete">Profile Completion Flow</span>
+            </div>
+            
+            <h4>🧪 Test the Flow:</h4>
+            <button class="demo-button" onclick="window.open('http://localhost:5173', '_blank')">
+                Open Frontend Application
+            </button>
+            <button class="demo-button" onclick="showTestScenarios()">
+                View Test Scenarios
+            </button>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-title">🔧 Technical Implementation</div>
+            <div class="code-block">
+// Profile Completion Detection Hook
+const completionStatus = useProfileCompletion(profile, user);
+
+// Auto-fill registration data
+const autoFillData = getAutoFillData(user);
+
+// Field locking based on completion status
+const isLocked = getFieldLockStatus(profile, 'email');
+
+// Backend completion tracking
+if (shouldMarkComplete) {
+    fields.profileCompletedAt = new Date().toISOString();
+    fields.profileLockedAt = new Date().toISOString();
+}
+            </div>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-title">📊 Database Schema Updates</div>
+            <div class="code-block">
+-- Added to users table:
+ALTER TABLE users 
+ADD COLUMN profile_completed_at TIMESTAMP NULL,
+ADD COLUMN profile_locked_at TIMESTAMP NULL;
+
+-- Indexes for performance
+CREATE INDEX idx_users_profile_completed_at ON users(profile_completed_at);
+CREATE INDEX idx_users_profile_locked_at ON users(profile_locked_at);
+            </div>
+        </div>
+
+        <div class="feature-section" id="test-scenarios" style="display: none;">
+            <div class="feature-title">🧪 Test Scenarios</div>
+            <ul class="feature-list">
+                <li><strong>New User Registration</strong> - Register with email/phone to trigger completion modal</li>
+                <li><strong>GPS Location Test</strong> - Click "Use Current Location" in the completion modal</li>
+                <li><strong>Field Locking Test</strong> - Complete profile, then try to edit critical fields</li>
+                <li><strong>Auto-fill Test</strong> - Register with email to see email pre-filled in completion modal</li>
+                <li><strong>Mobile Experience</strong> - Test on mobile device for contact auto-fill features</li>
+                <li><strong>Validation Test</strong> - Enter invalid data to see real-time validation feedback</li>
+                <li><strong>Profile Progress</strong> - Watch completion percentage update as fields are filled</li>
+            </ul>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-title">🎯 User Experience Flow</div>
+            <ol style="padding-left: 1.5rem;">
+                <li><strong>User Registration</strong> - User registers with email or phone number</li>
+                <li><strong>First Login Detection</strong> - System detects incomplete profile (no profileCompletedAt)</li>
+                <li><strong>Mandatory Modal</strong> - ProfileCompletionModal appears, cannot be dismissed</li>
+                <li><strong>Auto-fill Detection</strong> - Email/phone pre-filled based on registration method</li>
+                <li><strong>Progressive Steps</strong> - Step 1: Role selection, Step 2: Profile details</li>
+                <li><strong>GPS Integration</strong> - "Use Current Location" button with reverse geocoding</li>
+                <li><strong>Profile Completion</strong> - Submit triggers backend completion tracking</li>
+                <li><strong>Field Locking</strong> - Critical fields locked after first completion</li>
+                <li><strong>Welcome Message</strong> - Success toast: "Profile completed successfully!"</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function showTestScenarios() {
+            const scenarios = document.getElementById('test-scenarios');
+            scenarios.style.display = scenarios.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

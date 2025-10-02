@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const updateUserSchema = z.object({
     name: z.string().min(1).max(100).optional(),
-    phone: z.string().min(5).max(30).optional(),
+    phone: z.string()
+        .regex(/^\+91[6-9]\d{9}$/, 'Phone number must be in format +91xxxxxxxxxx (10 digits starting with 6-9)')
+        .optional(),
     location: z.string().min(2).max(100).optional(),
     address: z.string().max(500).optional(),
     username: z.string().email().optional(), // Allow username updates (admin-only check in controller)
@@ -11,8 +13,8 @@ export const updateUserSchema = z.object({
 
 export const updateWorkerProfileSchema = z.object({
     skillType: z.string().min(1).max(50).optional(),
-    experienceYears: z.number().int().min(0).max(60).optional(),
-    hourlyRate: z.number().int().min(0).max(10000).optional(),
+    experienceYears: z.union([z.number(), z.string().transform(val => val === '' ? undefined : parseInt(val, 10))]).pipe(z.number().int().min(0).max(60)).optional(),
+    // hourlyRate: z.union([z.number(), z.string().transform(val => val === '' ? undefined : parseFloat(val))]).pipe(z.number().min(0).max(10000)).optional(), // DISABLED - not required at this time
     availability: z.string().min(1).max(120).optional(),
     description: z.string().min(1).max(500).optional(),
     isAvailable: z.boolean().optional()

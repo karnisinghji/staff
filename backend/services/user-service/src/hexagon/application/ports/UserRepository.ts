@@ -6,6 +6,8 @@ export interface UpdateUserFields {
     location?: string;
     email?: string;
     address?: string;
+    profileCompletedAt?: string;
+    profileLockedAt?: string;
 }
 
 export interface UserRepositoryPort {

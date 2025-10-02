@@ -415,6 +415,22 @@ export class MatchingController {
                 return;
             }
 
+            // Check if either user has blocked the other
+            const blockCheck = await pool.query(`
+                SELECT blocker_id FROM user_blocks 
+                WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)
+            `, [senderId, receiverId]);
+
+            if (blockCheck.rows.length > 0) {
+                const blockerIsCurrentUser = blockCheck.rows[0].blocker_id === senderId;
+                if (blockerIsCurrentUser) {
+                    res.status(400).json({ success: false, message: 'Cannot send team request to a user you have blocked' });
+                } else {
+                    res.status(400).json({ success: false, message: 'Cannot send team request - user is not accepting requests from you' });
+                }
+                return;
+            }
+
             // Check if request already exists
             const existingRequest = await pool.query(
                 'SELECT id, status FROM team_requests WHERE sender_id = $1 AND receiver_id = $2',
@@ -489,9 +505,14 @@ export class MatchingController {
                 FROM team_requests tr
                 JOIN users u ON tr.sender_id = u.id
                 LEFT JOIN contractor_profiles cp ON u.id = cp.user_id
+                LEFT JOIN user_blocks ub ON (
+                    (ub.blocker_id = $1 AND ub.blocked_id = tr.sender_id) OR 
+                    (ub.blocker_id = tr.sender_id AND ub.blocked_id = $1)
+                )
                 WHERE tr.receiver_id = $1 
                 AND tr.status = 'pending'
                 AND tr.expires_at > CURRENT_TIMESTAMP
+                AND ub.id IS NULL
                 ORDER BY tr.created_at DESC
             `, [req.user.id]);
 
@@ -692,7 +713,11 @@ export class MatchingController {
                 JOIN users u ON tm.team_member_id = u.id
                 LEFT JOIN contractor_profiles cp ON u.id = cp.user_id
                 LEFT JOIN worker_profiles wp ON u.id = wp.user_id
-                WHERE tm.user_id = $1
+                LEFT JOIN user_blocks ub ON (
+                    (ub.blocker_id = $1 AND ub.blocked_id = tm.team_member_id) OR 
+                    (ub.blocker_id = tm.team_member_id AND ub.blocked_id = $1)
+                )
+                WHERE tm.user_id = $1 AND ub.id IS NULL
                 ORDER BY tm.created_at DESC
             `, [req.user.id]);
 
@@ -763,6 +788,178 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error removing team member',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    };
+
+    // Block a user
+    blockUser = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { blockedUserId, reason } = req.body;
+
+            // Validate input
+            if (!blockedUserId) {
+                res.status(400).json({ success: false, message: 'blockedUserId is required' });
+                return;
+            }
+
+            // Check if user is trying to block themselves
+            if (req.user.id === blockedUserId) {
+                res.status(400).json({ success: false, message: 'Cannot block yourself' });
+                return;
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [blockedUserId]);
+            if (userCheck.rows.length === 0) {
+                res.status(404).json({ success: false, message: 'User not found' });
+                return;
+            }
+
+            // Insert block relationship (or update if exists)
+            await pool.query(`
+                INSERT INTO user_blocks (blocker_id, blocked_id, reason)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (blocker_id, blocked_id) 
+                DO UPDATE SET reason = EXCLUDED.reason, created_at = CURRENT_TIMESTAMP
+            `, [req.user.id, blockedUserId, reason || null]);
+
+            logger.info(`User ${req.user.id} blocked user ${blockedUserId}`);
+
+            res.json({
+                success: true,
+                message: 'User blocked successfully',
+                data: { blockedUserId, reason }
+            });
+
+        } catch (error) {
+            logger.error('Error blocking user:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error blocking user',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    };
+
+    // Unblock a user
+    unblockUser = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { blockedUserId } = req.body;
+
+            // Validate input
+            if (!blockedUserId) {
+                res.status(400).json({ success: false, message: 'blockedUserId is required' });
+                return;
+            }
+
+            // Remove block relationship
+            const result = await pool.query(
+                'DELETE FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2',
+                [req.user.id, blockedUserId]
+            );
+
+            if (result.rowCount === 0) {
+                res.status(404).json({ success: false, message: 'Block relationship not found' });
+                return;
+            }
+
+            logger.info(`User ${req.user.id} unblocked user ${blockedUserId}`);
+
+            res.json({
+                success: true,
+                message: 'User unblocked successfully',
+                data: { blockedUserId }
+            });
+
+        } catch (error) {
+            logger.error('Error unblocking user:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error unblocking user',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    };
+
+    // Get blocked users list
+    getBlockedUsers = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const result = await pool.query(`
+                SELECT 
+                    ub.id as block_id,
+                    ub.blocked_id,
+                    ub.reason,
+                    ub.created_at as blocked_at,
+                    u.name as blocked_user_name,
+                    u.email as blocked_user_email,
+                    u.role as blocked_user_role
+                FROM user_blocks ub
+                JOIN users u ON ub.blocked_id = u.id
+                WHERE ub.blocker_id = $1
+                ORDER BY ub.created_at DESC
+            `, [req.user.id]);
+
+            res.json({
+                success: true,
+                message: `Found ${result.rows.length} blocked users`,
+                data: { blockedUsers: result.rows }
+            });
+
+        } catch (error) {
+            logger.error('Error getting blocked users:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving blocked users',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    };
+
+    // Check if a user is blocked
+    checkBlockStatus = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { userId } = req.params;
+
+            const result = await pool.query(
+                'SELECT id FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2',
+                [req.user.id, userId]
+            );
+
+            res.json({
+                success: true,
+                data: {
+                    isBlocked: result.rows.length > 0,
+                    userId
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error checking block status:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error checking block status',
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
         }

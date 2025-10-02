@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ContractorRequirementsList } from './ContractorRequirementsList';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Base matching service URL (without specific endpoint)
 const MATCHING_BASE = import.meta.env.VITE_MATCHING_BASE || 'http://localhost:3003/api/matching';
@@ -219,12 +221,7 @@ export const MatchSearchPage: React.FC = () => {
       const matches = data.matches || data.data?.matches;
       
       // Debug: Log the API response to see what data we're getting
-      console.log('API Response:', data);
-      console.log('Matches:', matches);
-      if (matches && matches.length > 0) {
-        console.log('First match:', matches[0]);
-        console.log('First match phone:', matches[0].phone);
-      }
+      // API call successful - matches loaded
       
       if (res.ok && Array.isArray(matches)) {
         setResults(matches);
@@ -274,13 +271,13 @@ export const MatchSearchPage: React.FC = () => {
         setShowRequestModal(false);
         setRequestMessage('');
         setSelectedMatch(null);
-        alert('Team request sent successfully!');
+        toast.success('✅ Team request sent successfully!');
       } else {
-        alert(data.message || 'Failed to send team request');
+        toast.error(data.message || 'Failed to send team request');
       }
     } catch (error) {
       console.error('Error sending team request:', error);
-      alert('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
     }
   };
 
@@ -304,27 +301,25 @@ export const MatchSearchPage: React.FC = () => {
         setShowContactModal(false);
         setContactMessage('');
         setSelectedContactMatch(null);
-        alert('Message sent successfully!');
+        toast.success('✅ Message sent successfully!');
       } else {
-        alert(data.message || 'Failed to send message');
+        toast.error(data.message || 'Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
     }
   };
 
   const initiateCall = async (match: any, type: 'voice' | 'video') => {
     try {
       // Debug: Log the match object to see what data we have
-      console.log('initiateCall - match object:', match);
-      console.log('initiateCall - match.phone:', match.phone);
-      console.log('initiateCall - match.phoneNumber:', match.phoneNumber);
+      // Check for available phone number
       
       // Check if we have phone number for direct calling
       if (match.phone || match.phoneNumber) {
         const phoneNumber = match.phone || match.phoneNumber;
-        console.log('initiateCall - Using phone number:', phoneNumber);
+        // Direct phone call available
         if (type === 'voice') {
           // Open device's phone app
           window.open(`tel:${phoneNumber}`, '_self');
@@ -332,7 +327,7 @@ export const MatchSearchPage: React.FC = () => {
           return;
         }
       } else {
-        console.log('initiateCall - No phone number found, falling back to WebRTC notification');
+        // No phone number - use app notification system
       }
 
       // For WebRTC or video calls, first notify the other user
@@ -351,11 +346,11 @@ export const MatchSearchPage: React.FC = () => {
 
       if (response.ok) {
         setShowCallModal(false);
-        alert(`${type === 'voice' ? 'Voice' : 'Video'} call request sent! The other person will be notified.`);
+        toast.success(`📞 ${type === 'voice' ? 'Voice' : 'Video'} call request sent! The other person will be notified.`);
         
         // In a real implementation, you'd integrate with WebRTC or a calling service
         // For now, we'll show a placeholder for WebRTC implementation
-        console.log(`Initiating ${type} call with ${match.name}`);
+        // Call request initiated
         
         // TODO: Implement WebRTC calling logic here
         // - Create peer connection
@@ -363,11 +358,11 @@ export const MatchSearchPage: React.FC = () => {
         // - Start media streams
         
       } else {
-        alert('Failed to send call request');
+        toast.error('Failed to send call request');
       }
     } catch (error) {
       console.error('Error initiating call:', error);
-      alert('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
     }
   };
 
@@ -383,8 +378,7 @@ export const MatchSearchPage: React.FC = () => {
   };
 
   const handleCallWorker = (match: any) => {
-    // Debug: Show what we have
-    console.log('handleCallWorker called with:', match);
+    // Initiate call with worker
     alert(`Debug: Phone number is ${match.phone || 'not found'}`);
     
     setSelectedCallMatch(match);
@@ -409,6 +403,7 @@ export const MatchSearchPage: React.FC = () => {
 
   return (
     <>
+      <ToastContainer position="top-right" autoClose={3000} />
       <style>{`
         .search-bg {
           min-height: 100vh;
@@ -838,6 +833,18 @@ export const MatchSearchPage: React.FC = () => {
                   Current Location
                 </label>
               </div>
+              {locationType === '__current__' && location && (
+                <div style={{ 
+                  padding: '0.7rem', 
+                  backgroundColor: '#f0fdf4', 
+                  border: '1px solid #bbf7d0', 
+                  borderRadius: '7px', 
+                  fontSize: '0.9rem',
+                  color: '#166534'
+                }}>
+                  📍 <strong>Current Location:</strong> {location}
+                </div>
+              )}
               {locationType === 'name' && (
                 <input
                   type="text"
@@ -879,19 +886,27 @@ export const MatchSearchPage: React.FC = () => {
                 </button>
               )}
             </div>
-            <input
-              type="number"
-              min={1}
-              max={500}
-              value={maxDistance}
-              onChange={e => setMaxDistance(Number(e.target.value))}
-              required
-              placeholder="Max Distance (km)"
-              style={{ fontSize: '1rem', padding: '0.7rem', borderRadius: 7, width: '100%' }}
-            />
-            <button type="button" className="secondary-btn" onClick={() => setShowAdvanced(s => !s)}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="maxDistance" style={{ fontWeight: '500', fontSize: '0.9rem', color: '#374151' }}>
+                Max Distance (km)
+              </label>
+              <input
+                id="maxDistance"
+                type="number"
+                name="maxDistance"
+                min={1}
+                max={500}
+                value={maxDistance}
+                onChange={e => setMaxDistance(Number(e.target.value))}
+                required
+                placeholder="Enter maximum distance"
+                style={{ fontSize: '1rem', padding: '0.7rem', borderRadius: 7, width: '100%' }}
+              />
+            </div>
+            {/* Advanced filters button disabled for now */}
+            {/* <button type="button" className="secondary-btn" onClick={() => setShowAdvanced(s => !s)}>
               {showAdvanced ? 'Hide Advanced' : 'Show Advanced Filters'}
-            </button>
+            </button> */}
             {showAdvanced && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <select
