@@ -1,24 +1,21 @@
-name: Deploy to Railway
+name: 🚀 Deploy Contractor-Worker Platform to Railway
 
 on:
   push:
-    branches: [ main, dev ]
-  pull_request:
     branches: [ main ]
+    paths:
+      - 'backend/services/**'
+      - '.github/workflows/**'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  NODE_VERSION: '18'
 
 jobs:
-  deploy:
+  # Build and test before deployment
+  test:
+    name: 🧪 Test Services
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        service: 
-          - { name: 'auth-service', port: 3001, path: 'backend/services/auth-service' }
-          - { name: 'user-service', port: 3002, path: 'backend/services/user-service' }
-          - { name: 'matching-service', port: 3003, path: 'backend/services/matching-service' }
-          - { name: 'communication-service', port: 3004, path: 'backend/services/communication-service' }
-          - { name: 'notification-service', port: 3005, path: 'backend/services/notification-service' }
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,27 +23,113 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: '${{ matrix.service.path }}/package-lock.json'
-
-    - name: Install Railway CLI
-      run: npm install -g @railway/cli
+        cache-dependency-path: 'backend/package-lock.json'
 
     - name: Install dependencies
       run: |
-        cd ${{ matrix.service.path }}
+        cd backend
         npm ci
 
-    - name: Build service
+    - name: Run tests
+      run: |
+        cd backend
+        npm test
+
+  # Deploy each service
+  deploy:
+    name: 🚀 Deploy Services
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    strategy:
+      matrix:
+        service: 
+          - { 
+              name: 'auth-service', 
+              path: 'backend/services/auth-service',
+              description: 'Authentication & JWT service'
+            }
+          - { 
+              name: 'user-service', 
+              path: 'backend/services/user-service',
+              description: 'User profiles & management'
+            }
+          - { 
+              name: 'matching-service', 
+              path: 'backend/services/matching-service',
+              description: 'Worker-contractor matching'
+            }
+          - { 
+              name: 'communication-service', 
+              path: 'backend/services/communication-service',
+              description: 'Messages & communication'
+            }
+          - { 
+              name: 'notification-service', 
+              path: 'backend/services/notification-service',
+              description: 'Push notifications'
+            }
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: '${{ matrix.service.path }}/package-lock.json'
+
+    - name: 📦 Install Railway CLI
+      run: npm install -g @railway/cli
+
+    - name: 📥 Install dependencies for ${{ matrix.service.name }}
+      run: |
+        cd ${{ matrix.service.path }}
+        npm ci --only=production
+
+    - name: 🔨 Build ${{ matrix.service.name }}
       run: |
         cd ${{ matrix.service.path }}
         npm run build
 
-    - name: Deploy to Railway
+    - name: 🚀 Deploy ${{ matrix.service.name }} to Railway
       run: |
         cd ${{ matrix.service.path }}
         railway login --token ${{ secrets.RAILWAY_TOKEN }}
-        railway up --service ${{ matrix.service.name }}
+        railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+        railway up --service ${{ matrix.service.name }} --detach
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+    - name: ✅ Deployment Success
+      run: |
+        echo "🎉 Successfully deployed ${{ matrix.service.name }}"
+        echo "📝 Description: ${{ matrix.service.description }}"
+
+  # Notify deployment status
+  notify:
+    name: 📢 Notify Deployment Status
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: 📢 Deployment Complete
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "🎉 All services deployed successfully!"
+          echo "✅ auth-service - Authentication & JWT"
+          echo "✅ user-service - User profiles & management"  
+          echo "✅ matching-service - Worker-contractor matching"
+          echo "✅ communication-service - Messages & communication"
+          echo "✅ notification-service - Push notifications"
+          echo ""
+          echo "🌐 Your backend is now live and ready for mobile apps!"
+        else
+          echo "❌ Deployment failed. Check the logs above."
+          exit 1
+        fi
