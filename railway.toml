@@ -1,16 +1,14 @@
-# Railway Monorepo Configuration
-# This file helps Railway understand our microservices structure
+[variables]
+NODE_ENV = "production"
 
-[build]
-builder = "NIXPACKS"
+[phases.setup]
+nixPkgs = ["nodejs", "npm"]
 
-[deploy]
-# This is a monorepo with multiple services
-# Each service has its own nixpacks.toml configuration
+[phases.install]
+cmds = ["npm install"]
 
-# Service locations:
-# - backend/services/auth-service
-# - backend/services/user-service  
-# - backend/services/matching-service
-# - backend/services/communication-service
-# - backend/services/notification-service
+[phases.build]
+cmds = ["npm run build:services"]
+
+[start]
+cmd = "echo 'Monorepo - Deploy individual services'"

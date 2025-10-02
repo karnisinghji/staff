@@ -1,0 +1,28 @@
+{
+  "name": "contractor-worker-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contractor-Worker Platform Microservices",
+  "scripts": {
+    "build": "npm run build:services",
+    "build:services": "npm run build:auth && npm run build:user && npm run build:matching && npm run build:communication && npm run build:notification",
+    "build:auth": "cd backend/services/auth-service && npm install && npm run build",
+    "build:user": "cd backend/services/user-service && npm install && npm run build", 
+    "build:matching": "cd backend/services/matching-service && npm install && npm run build",
+    "build:communication": "cd backend/services/communication-service && npm install && npm run build",
+    "build:notification": "cd backend/services/notification-service && npm install && npm run build",
+    "start": "echo 'This is a monorepo. Please deploy individual services.'",
+    "postinstall": "npm run install:services",
+    "install:services": "cd backend/services/auth-service && npm install && cd ../user-service && npm install && cd ../matching-service && npm install && cd ../communication-service && npm install && cd ../notification-service && npm install"
+  },
+  "workspaces": [
+    "backend/services/*",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

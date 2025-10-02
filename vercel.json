@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "name": "contractor-worker-platform",
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/services/auth-service/src/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "backend/services/user-service/src/index.ts", 
+      "use": "@vercel/node"
+    },
+    {
+      "src": "backend/services/matching-service/src/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "backend/services/communication-service/src/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "backend/services/notification-service/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/backend/services/auth-service/src/index.ts"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/backend/services/user-service/src/index.ts"
+    },
+    {
+      "src": "/api/matching/(.*)",
+      "dest": "/backend/services/matching-service/src/index.ts"
+    },
+    {
+      "src": "/api/communication/(.*)",
+      "dest": "/backend/services/communication-service/src/index.ts"
+    },
+    {
+      "src": "/api/notification/(.*)",
+      "dest": "/backend/services/notification-service/src/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
