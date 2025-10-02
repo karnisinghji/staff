@@ -23,10 +23,25 @@ for service in "${services[@]}"; do
     echo "🚀 Deploying $service..."
     cd "backend/services/$service"
     
-    # Build the service
-    npm run build
+    # Check if package.json exists
+    if [ ! -f "package.json" ]; then
+        echo "❌ package.json not found in $service"
+        cd ../../..
+        continue
+    fi
+    
+    # Install dependencies
+    echo "📦 Installing dependencies..."
+    npm install
+    
+    # Build the service (if build script exists)
+    if npm run | grep -q "build"; then
+        echo "🔨 Building $service..."
+        npm run build
+    fi
     
     # Deploy to Railway
+    echo "🚀 Deploying to Railway..."
     railway up --service "$service"
     
     cd ../../..
