@@ -41,7 +41,21 @@ export const demoFetch = async (url: string, options: RequestInit = {}): Promise
         if (url.includes('/signup')) {
             mockData = { success: true, message: 'Demo: Account created successfully! You can now explore the app.' };
         } else if (url.includes('/login')) {
-            mockData = { success: true, token: 'demo-token-12345', user: { id: 1, email: 'demo@example.com', role: 'contractor' } };
+            // Create a valid JWT-like token for demo (header.payload.signature)
+            const demoPayload = {
+                id: 1,
+                email: 'demo@example.com',
+                role: 'contractor',
+                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // expires in 24 hours
+            };
+            const demoToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+                btoa(JSON.stringify(demoPayload)) +
+                '.demo-signature';
+            mockData = {
+                success: true,
+                accessToken: demoToken,
+                user: { id: 1, email: 'demo@example.com', role: 'contractor', name: 'Demo User' }
+            };
         } else if (url.includes('/profile')) {
             mockData = { success: true, user: { id: 1, name: 'Demo User', email: 'demo@example.com', role: 'contractor' } };
         } else if (url.includes('/skills')) {
