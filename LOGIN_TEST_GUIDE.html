@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - Staff Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .credentials {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 4px solid #1976d2;
+            background: #f8f9fa;
+        }
+        .success {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .link {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🔐 Login Test Guide</h1>
+        <p>Your login authentication has been fixed! Here's how to test it:</p>
+
+        <div class="credentials">
+            <h3>Demo Login Credentials</h3>
+            <p><strong>Email:</strong> any@email.com (any email works)</p>
+            <p><strong>Password:</strong> anypassword (any password works)</p>
+            <p><em>In demo mode, all credentials are accepted for testing purposes</em></p>
+        </div>
+
+        <h3>🧪 Test Steps:</h3>
+        
+        <div class="step">
+            <strong>Step 1:</strong> Go to <a href="https://staff-karnisinghji.vercel.app/login" class="link" target="_blank">Login Page</a>
+        </div>
+
+        <div class="step">
+            <strong>Step 2:</strong> Enter any email (e.g., test@demo.com)
+        </div>
+
+        <div class="step">
+            <strong>Step 3:</strong> Enter any password (e.g., password123)
+        </div>
+
+        <div class="step">
+            <strong>Step 4:</strong> Click "Login"
+        </div>
+
+        <div class="step">
+            <strong>Expected Result:</strong> <span class="success">✅ Successful login → Redirect to Dashboard</span>
+        </div>
+
+        <h3>🔧 What Was Fixed:</h3>
+        <ul>
+            <li><strong>Token Format:</strong> Created valid JWT-like token structure</li>
+            <li><strong>Token Field:</strong> Fixed accessToken vs token mismatch</li>
+            <li><strong>JWT Decoding:</strong> Added proper payload for AuthContext</li>
+            <li><strong>User Data:</strong> Enhanced demo user information</li>
+            <li><strong>Expiration:</strong> Set 24-hour token expiry</li>
+        </ul>
+
+        <h3>🎉 Live Testing:</h3>
+        <p>Visit your app: <a href="https://staff-karnisinghji.vercel.app" class="link" target="_blank">https://staff-karnisinghji.vercel.app</a></p>
+        
+        <p><em>The deployment should be live in 1-2 minutes after the git push!</em></p>
+
+        <div style="margin-top: 30px; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+            <strong>🚀 Next Steps After Testing:</strong>
+            <ul>
+                <li>Test registration flow</li>
+                <li>Test dashboard navigation</li>
+                <li>Test profile management</li>
+                <li>Test mobile responsiveness</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

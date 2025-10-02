@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { SkillsTagInput } from '../common/SkillsTagInput';
 import { ProfileSharing } from '../common/ProfileSharing';
 import { PortfolioSection } from '../common/PortfolioSection';
+import { API_CONFIG, demoFetch } from '../../config/api';
 import { LocationSelector } from '../common/LocationSelector';
 // import { ProfileCompletionModal } from '../common/ProfileCompletionModal';
 import { useProfileCompletion, getFieldLockStatus } from '../../hooks/useProfileCompletion';
@@ -266,12 +267,12 @@ const EnhancedProfilePage: React.FC = () => {
   useEffect(() => {
     const loadSkills = async () => {
       try {
-        const res = await axios.get('http://localhost:3002/api/users/skills', {
-          withCredentials: true,
+        const res = await demoFetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         // Handle backend response format { success: true, data: skills }
-        const skillsData = res.data?.data || res.data || [];
+        const data = await res.json();
+        const skillsData = data?.skills || data?.data || [];
         setSkills(Array.isArray(skillsData) ? skillsData : []);
       } catch (err) {
         console.log('Failed to load skills:', err);

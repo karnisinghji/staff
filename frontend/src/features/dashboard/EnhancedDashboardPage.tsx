@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
 import { SkeletonStats, SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
+import { API_CONFIG, demoFetch } from '../../config/api';
 
 interface TeamRequest {
   id: number;
@@ -274,7 +275,7 @@ const EnhancedDashboardPage: React.FC = () => {
       setLoading(true);
       
       // Fetch pending team requests
-      const requestsResponse = await fetch('http://localhost:3003/api/matching/team-requests/received', {
+      const requestsResponse = await demoFetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -282,7 +283,7 @@ const EnhancedDashboardPage: React.FC = () => {
       });
 
       // Fetch team members
-      const teamResponse = await fetch('http://localhost:3003/api/matching/my-team', {
+      const teamResponse = await demoFetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -334,7 +335,7 @@ const EnhancedDashboardPage: React.FC = () => {
 
     setActionLoading(requestId);
     try {
-      const response = await fetch(`http://localhost:3003/api/matching/team-requests/${requestId}`, {
+      const response = await demoFetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

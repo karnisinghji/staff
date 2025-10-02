@@ -3,9 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
 import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
-
-const MATCHING_BASE = import.meta.env.VITE_MATCHING_BASE || 'http://localhost:3003/api/matching';
-const USER_BASE = import.meta.env.VITE_USER_BASE || 'http://localhost:3002';
+import { API_CONFIG, demoFetch } from '../../config/api';
 
 interface FilterChipProps {
   label: string;
@@ -436,7 +434,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     const fetchSkills = async () => {
       try {
         setSkillsLoading(true);
-        const response = await fetch(`${USER_BASE}/api/users/skills`, {
+        const response = await demoFetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

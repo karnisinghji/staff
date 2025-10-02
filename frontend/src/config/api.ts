@@ -60,6 +60,27 @@ export const demoFetch = async (url: string, options: RequestInit = {}): Promise
             mockData = { success: true, user: { id: 1, name: 'Demo User', email: 'demo@example.com', role: 'contractor' } };
         } else if (url.includes('/skills')) {
             mockData = { success: true, skills: ['plumbing', 'electrical', 'carpentry', 'painting', 'construction'] };
+        } else if (url.includes('/team-requests/received')) {
+            mockData = {
+                success: true, requests: [
+                    { id: 1, senderName: 'John Doe', projectTitle: 'Home Renovation', message: 'Need plumbing expert', date: '2025-10-01' },
+                    { id: 2, senderName: 'Jane Smith', projectTitle: 'Kitchen Remodel', message: 'Looking for electrician', date: '2025-10-02' }
+                ]
+            };
+        } else if (url.includes('/my-team')) {
+            mockData = {
+                success: true, team: [
+                    { id: 1, name: 'Mike Wilson', role: 'Electrician', status: 'active' },
+                    { id: 2, name: 'Sarah Johnson', role: 'Plumber', status: 'active' }
+                ]
+            };
+        } else if (url.includes('/profile')) {
+            mockData = {
+                success: true, user: {
+                    id: 1, name: 'Demo User', email: 'demo@example.com', role: 'contractor',
+                    phoneNumber: '+1234567890', location: 'New York, NY'
+                }
+            };
         }
 
         // Simulate network delay
