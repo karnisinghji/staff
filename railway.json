@@ -1,0 +1,65 @@
+{
+  "name": "Contractor Worker Platform",
+  "description": "A platform connecting contractors and workers for construction projects",
+  "repository": "https://github.com/karnisinghji/staff",
+  "services": [
+    {
+      "name": "auth-service",
+      "source": {
+        "type": "git",
+        "repo": "karnisinghji/staff",
+        "dir": "backend/services/auth-service"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "JWT_EXPIRES_IN": "24h"
+      }
+    },
+    {
+      "name": "user-service", 
+      "source": {
+        "type": "git",
+        "repo": "karnisinghji/staff",
+        "dir": "backend/services/user-service"
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "matching-service",
+      "source": {
+        "type": "git", 
+        "repo": "karnisinghji/staff",
+        "dir": "backend/services/matching-service"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "MAX_MATCHING_DISTANCE_KM": "50",
+        "DEFAULT_SEARCH_RADIUS_KM": "25"
+      }
+    },
+    {
+      "name": "communication-service",
+      "source": {
+        "type": "git",
+        "repo": "karnisinghji/staff", 
+        "dir": "backend/services/communication-service"
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "notification-service",
+      "source": {
+        "type": "git",
+        "repo": "karnisinghji/staff",
+        "dir": "backend/services/notification-service" 
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
