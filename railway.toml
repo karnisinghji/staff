@@ -1,0 +1,16 @@
+# Railway Monorepo Configuration
+# This file helps Railway understand our microservices structure
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# This is a monorepo with multiple services
+# Each service has its own nixpacks.toml configuration
+
+# Service locations:
+# - backend/services/auth-service
+# - backend/services/user-service  
+# - backend/services/matching-service
+# - backend/services/communication-service
+# - backend/services/notification-service
