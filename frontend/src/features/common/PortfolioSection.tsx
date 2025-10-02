@@ -41,14 +41,14 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   userRole,
   portfolioItems,
   certifications,
-  socialLinks,
+  // socialLinks,
   onPortfolioUpdate,
-  onCertificationsUpdate,
-  onSocialLinksUpdate
+  // onCertificationsUpdate,
+  // onSocialLinksUpdate
 }) => {
   const [activeTab, setActiveTab] = useState<'portfolio' | 'certifications' | 'social'>('portfolio');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
+  const [_showAddForm, setShowAddForm] = useState(false);
+  const [_editingItem] = useState<PortfolioItem | null>(null);
 
   // Sample data for demonstration
   const samplePortfolio: PortfolioItem[] = [
@@ -88,15 +88,15 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
     }
   ];
 
-  const addPortfolioItem = (item: Omit<PortfolioItem, 'id'>) => {
-    const newItem: PortfolioItem = {
-      ...item,
-      id: Date.now().toString()
-    };
-    onPortfolioUpdate([...portfolioItems, newItem]);
-    setShowAddForm(false);
-    toast.success('Portfolio item added successfully!');
-  };
+  // const addPortfolioItem = (item: Omit<PortfolioItem, 'id'>) => {
+  //   const newItem: PortfolioItem = {
+  //     ...item,
+  //     id: Date.now().toString()
+  //   };
+  //   onPortfolioUpdate([...portfolioItems, newItem]);
+  //   setShowAddForm(false);
+  //   toast.success('Portfolio item added successfully!');
+  // };
 
   const removePortfolioItem = (id: string) => {
     onPortfolioUpdate(portfolioItems.filter(item => item.id !== id));

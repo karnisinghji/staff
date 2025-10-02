@@ -16,7 +16,7 @@ export const MatchSearchPage: React.FC = () => {
   const [results, setResults] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced] = useState(false);
   const [experienceLevel, setExperienceLevel] = useState(''); // beginner | intermediate | expert
   const [urgency, setUrgency] = useState(''); // low | medium | high
   const [budgetMax, setBudgetMax] = useState<number | ''>('');

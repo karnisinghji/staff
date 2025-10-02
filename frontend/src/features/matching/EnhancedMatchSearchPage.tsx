@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
-import { SkeletonCard, LoadingButton, LoadingSpinner } from '../../components/LoadingComponents';
+import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
 
 const MATCHING_BASE = import.meta.env.VITE_MATCHING_BASE || 'http://localhost:3003/api/matching';
 const USER_BASE = import.meta.env.VITE_USER_BASE || 'http://localhost:3002';
@@ -15,7 +15,7 @@ interface FilterChipProps {
   color?: string;
 }
 
-const FilterChip: React.FC<FilterChipProps> = ({ label, value, isActive, onClick, color = theme.colors.primary[500] }) => (
+const FilterChip: React.FC<FilterChipProps> = ({ label, isActive, onClick, color = theme.colors.primary[500] }) => (
   <button
     onClick={onClick}
     style={{
@@ -568,13 +568,14 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     }, 1000);
   };
 
-  const toggleFilter = (filter: string) => {
-    setActiveFilters(prev => 
-      prev.includes(filter) 
-        ? prev.filter(f => f !== filter)
-        : [...prev, filter]
-    );
-  };
+  // Toggle filter function (currently unused)
+  // const toggleFilter = (filter: string) => {
+  //   setActiveFilters(prev => 
+  //     prev.includes(filter) 
+  //       ? prev.filter(f => f !== filter)
+  //       : [...prev, filter]
+  //   );
+  // };
 
   const clearAllFilters = () => {
     setSkillType('');

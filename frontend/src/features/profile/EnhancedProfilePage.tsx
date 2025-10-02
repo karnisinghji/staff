@@ -4,18 +4,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useAutoSave } from '../../hooks/useAutoSave';
+// import { useAutoSave } from '../../hooks/useAutoSave';
 import { SkillsTagInput } from '../common/SkillsTagInput';
 import { ProfileSharing } from '../common/ProfileSharing';
 import { PortfolioSection } from '../common/PortfolioSection';
 import { LocationSelector } from '../common/LocationSelector';
-import { ProfileCompletionModal } from '../common/ProfileCompletionModal';
-import { useProfileCompletion, getAutoFillData, getFieldLockStatus } from '../../hooks/useProfileCompletion';
+// import { ProfileCompletionModal } from '../common/ProfileCompletionModal';
+import { useProfileCompletion, getFieldLockStatus } from '../../hooks/useProfileCompletion';
 import { 
   ValidationIndicator, 
   validateField, 
   ValidationRules, 
-  ProgressIndicator,
+  // ProgressIndicator,
   AnimatedSuccess 
 } from '../common/ValidationComponents';
 import InvitationSystem from '../invitations/InvitationSystem';
@@ -187,15 +187,15 @@ const EnhancedProfilePage: React.FC = () => {
   const [skillTypeOptions, setSkillTypeOptions] = useState<{ value: string; label: string }[]>([
     { value: '', label: 'Select skill type' }
   ]);
-  const [skillsLoading, setSkillsLoading] = useState(false);
-  const [skillsError, setSkillsError] = useState('');
+  const [_skillsLoading, setSkillsLoading] = useState(false);
+  const [_skillsError, setSkillsError] = useState('');
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [activeSection, setActiveSection] = useState<'basic' | 'professional' | 'portfolio' | 'sharing' | 'invitations'>('basic');
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Avatar upload states
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [_avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Separate state for editing (form) and for displaying saved profile (profile)
@@ -236,7 +236,7 @@ const EnhancedProfilePage: React.FC = () => {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   
   // Enhanced states for new features
-  const [validationResults, setValidationResults] = useState<{[key: string]: any}>({});
+  // const [validationResults] = useState<{[key: string]: any}>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [portfolioData, setPortfolioData] = useState<{
     projects: PortfolioItem[];
@@ -250,9 +250,9 @@ const EnhancedProfilePage: React.FC = () => {
   const [skills, setSkills] = useState<string[]>([]);
 
   // Profile completion states
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  // const [showCompletionModal, setShowCompletionModal] = useState(false);
   const completionStatus = useProfileCompletion(profile, user);
-  const autoFillData = getAutoFillData(user);
+  // const autoFillData = getAutoFillData(user);
 
   // Check if we should show the completion modal
   // TEMPORARILY DISABLED - Modal is disabled for some time
@@ -1340,15 +1340,15 @@ const EnhancedProfilePage: React.FC = () => {
                     {registrationType === 'unknown' && 'Standard account'}
                   </span>
                 </div>
-                {profile.profileCompletedAt && (
+                {(profile as any).profileCompletedAt && (
                   <div className="detail-item">
                     <span className="detail-label">Completed:</span>
                     <span className="detail-value">
-                      {new Date(profile.profileCompletedAt).toLocaleDateString()}
+                      {new Date((profile as any).profileCompletedAt).toLocaleDateString()}
                     </span>
                   </div>
                 )}
-                {profile.profileLockedAt && (
+                {(profile as any).profileLockedAt && (
                   <div className="detail-item">
                     <span className="detail-label">Secured:</span>
                     <span className="detail-value">🔒 Locked</span>
