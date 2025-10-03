@@ -9,26 +9,26 @@ export declare const registerSchema: z.ZodEffects<z.ZodEffects<z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     password: string;
     email?: string | undefined;
-    username?: string | undefined;
     roles?: [string, ...string[]] | undefined;
+    username?: string | undefined;
     role?: string | undefined;
 }, {
     password: string;
     email?: string | undefined;
-    username?: string | undefined;
     roles?: [string, ...string[]] | undefined;
+    username?: string | undefined;
     role?: string | undefined;
 }>, {
     password: string;
     email?: string | undefined;
-    username?: string | undefined;
     roles?: [string, ...string[]] | undefined;
+    username?: string | undefined;
     role?: string | undefined;
 }, {
     password: string;
     email?: string | undefined;
-    username?: string | undefined;
     roles?: [string, ...string[]] | undefined;
+    username?: string | undefined;
     role?: string | undefined;
 }>, {
     email: string | undefined;
@@ -37,8 +37,8 @@ export declare const registerSchema: z.ZodEffects<z.ZodEffects<z.ZodObject<{
 }, {
     password: string;
     email?: string | undefined;
-    username?: string | undefined;
     roles?: [string, ...string[]] | undefined;
+    username?: string | undefined;
     role?: string | undefined;
 }>;
 export declare const loginSchema: z.ZodEffects<z.ZodEffects<z.ZodObject<{
