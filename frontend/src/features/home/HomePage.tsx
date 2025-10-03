@@ -23,8 +23,8 @@ export const HomePage: React.FC = () => (
 
     {/* Right: Images */}
     <div className={styles.rightSection}>
-  <img src="/images/fort1.png" alt="Fort 1" className={styles.fortImage} />
-  <img src="/images/fort2.png" alt="Fort 2" className={styles.fortImage} />
+  <img src="/staff/images/fort1.png" alt="Fort 1" className={styles.fortImage} />
+  <img src="/staff/images/fort2.png" alt="Fort 2" className={styles.fortImage} />
     </div>
   </div>
 );

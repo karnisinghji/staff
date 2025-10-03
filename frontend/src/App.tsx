@@ -71,11 +71,7 @@ const App: React.FC = () => (
             </ProtectedRoute>
           } />
           {/* Example: <Route path="/details/:id" element={<MatchDetailsPage match={...} />} /> */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Navigate to="/dashboard" />
-            </ProtectedRoute>
-          } />
+          <Route path="/" element={<HomePage />} />
           <Route path="/home" element={<HomePage />} />
         </Routes>
       </Router>
