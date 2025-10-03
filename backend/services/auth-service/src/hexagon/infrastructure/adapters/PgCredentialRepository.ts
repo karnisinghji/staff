@@ -6,11 +6,12 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
     constructor(private pool: Pool) { }
 
     async findByEmail(email: string): Promise<UserCredentials | null> {
-        // Search by username (which stores the unique identifier - email or phone)
+        // Search by email only
         const query = `
-            SELECT id, email, username, password_hash, role::text as roles, created_at 
+            SELECT id, email, name, password_hash, role::text as roles, created_at 
             FROM users 
-            WHERE (LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)) AND is_active = true
+            WHERE LOWER(email) = LOWER($1) AND is_active = true
+            LIMIT 1
         `;
 
         const result = await this.pool.query(query, [email]);
@@ -22,7 +23,7 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
         const row = result.rows[0];
         return {
             id: row.id,
-            email: row.username || row.email, // Use username as the primary identifier
+            email: row.email,
             passwordHash: row.password_hash,
             roles: [row.roles], // Convert single role to array format
             createdAt: row.created_at
@@ -54,33 +55,29 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
 
     async create(cred: Omit<UserCredentials, 'createdAt'>): Promise<UserCredentials> {
         const query = `
-            INSERT INTO users (id, username, email, password_hash, role, name, phone, location, is_active)
-            VALUES ($1, $2, $3, $4, $5::user_role, $6, $7, $8, true)
-            RETURNING id, username, email, password_hash, role::text as roles, created_at
+            INSERT INTO users (id, email, password_hash, role, name, phone, location, is_active)
+            VALUES ($1, $2, $3, $4::user_role, $5, $6, $7, true)
+            RETURNING id, email, name, password_hash, role::text as roles, created_at
         `;
 
         // Extract primary role for the enum field
         const primaryRole = cred.roles && cred.roles.length > 0 ? cred.roles[0] : 'worker';
 
-        // Use email field value as username (it contains the login identifier - email or phone)
-        const username = cred.email.toLowerCase();
-
         // Set default values for required fields that aren't in UserCredentials
         const name = 'User'; // Default name, could be enhanced later
 
-        // Determine if the username is a phone number or email
-        const isPhone = /^[\+]?[0-9]{7,15}$/.test(username);
+        // Determine if the email is a phone number or email
+        const isPhone = /^[\+]?[0-9]{7,15}$/.test(cred.email);
 
         // Properly separate email and phone columns
-        const emailValue = isPhone ? null : username;  // NULL if phone registration, email if email registration
-        const phoneValue = isPhone ? username : null;  // phone number if phone registration, NULL if email registration
+        const emailValue = isPhone ? null : cred.email;  // NULL if phone registration, email if email registration
+        const phoneValue = isPhone ? cred.email : null;  // phone number if phone registration, NULL if email registration
         const location = 'Not specified'; // Default location, could be enhanced later
 
         try {
             const result = await this.pool.query(query, [
                 cred.id,
-                username,          // username: login identifier (email or phone)
-                emailValue,        // email: actual email or NULL
+                emailValue || cred.email,  // email: actual email 
                 cred.passwordHash,
                 primaryRole,
                 name,
@@ -95,7 +92,7 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
             const row = result.rows[0];
             return {
                 id: row.id,
-                email: row.username, // Return username as the identifier
+                email: row.email, // Return email from database
                 passwordHash: row.password_hash,
                 roles: [row.roles], // Convert single role to array format
                 createdAt: row.created_at
@@ -104,10 +101,7 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
             // PostgreSQL unique constraint violation error code
             if (error.code === '23505') {
                 // Check which constraint was violated
-                if (error.constraint === 'users_username_key' || error.detail?.includes('username')) {
-                    const identifier = isPhone ? 'phone number' : 'email';
-                    throw new Error(`USERNAME_TAKEN:${identifier}`);
-                } else if (error.constraint === 'users_email_key' || error.constraint === 'users_email_unique' || error.detail?.includes('email')) {
+                if (error.constraint === 'users_email_key' || error.constraint === 'users_email_unique' || error.detail?.includes('email')) {
                     throw new Error('EMAIL_TAKEN');
                 } else if (error.constraint === 'users_phone_unique' || error.detail?.includes('phone')) {
                     throw new Error('PHONE_TAKEN');
