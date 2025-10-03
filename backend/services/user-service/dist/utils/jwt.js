@@ -6,23 +6,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const logger_1 = require("./logger");
-// Enforce presence of JWT_SECRET; provide an explicit local dev fallback to avoid immediate crashes
-let rawSecret = process.env.JWT_SECRET;
-if (!rawSecret) {
-    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-        rawSecret = 'insecure-local-dev-secret';
-        logger_1.logger.warn('JWT_SECRET not set; using insecure local development fallback. DO NOT use in production.');
-    }
-    else {
-        logger_1.logger.error('JWT_SECRET is not defined for user-service. Token verification will throw until configured.');
-    }
-}
-const verifyToken = (token) => {
+// Get JWT secret dynamically to ensure env is loaded
+const getJwtSecret = () => {
+    const rawSecret = process.env.JWT_SECRET;
     if (!rawSecret) {
-        throw new Error('JWT secret not configured');
+        if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+            logger_1.logger.warn('JWT_SECRET not set; using insecure local development fallback. DO NOT use in production.');
+            return 'insecure-local-dev-secret';
+        }
+        else {
+            throw new Error('JWT_SECRET is not defined for user-service. Token verification will fail.');
+        }
     }
+    return rawSecret;
+};
+const verifyToken = (token) => {
+    const secret = getJwtSecret();
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, rawSecret);
+        const decoded = jsonwebtoken_1.default.verify(token, secret);
         // Map auth-service token format to user-service AuthUser format
         return {
             id: decoded.sub || decoded.id,

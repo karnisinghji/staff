@@ -18,12 +18,21 @@ class PgUserRepository {
             username: r.username,
             role: r.role,
             name: r.name,
+            email: r.email,
             location: r.location,
+            address: r.address,
             phone: r.phone,
+            profileCompletedAt: r.profile_completed_at?.toISOString() || null,
+            profileLockedAt: r.profile_locked_at?.toISOString() || null,
             createdAt: r.created_at
         });
     }
     async updateUser(id, fields) {
+        // First get the current user to check for registration field edge cases
+        const currentUser = await this.findById(id);
+        if (!currentUser)
+            throw new DomainErrors_1.NotFoundError('User not found');
+        const current = currentUser.toPrimitives();
         const updates = [];
         const values = [];
         let idx = 1;
@@ -47,6 +56,14 @@ class PgUserRepository {
             updates.push(`address = $${idx++}`);
             values.push(fields.address);
         }
+        if (fields.profileCompletedAt !== undefined) {
+            updates.push(`profile_completed_at = $${idx++}`);
+            values.push(fields.profileCompletedAt);
+        }
+        if (fields.profileLockedAt !== undefined) {
+            updates.push(`profile_locked_at = $${idx++}`);
+            values.push(fields.profileLockedAt);
+        }
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(id);
         const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`;
@@ -57,16 +74,30 @@ class PgUserRepository {
             const r = res.rows[0];
             return new User_1.UserEntity({
                 id: r.id, username: r.username, role: r.role, name: r.name,
-                location: r.location, phone: r.phone, createdAt: r.created_at
+                email: r.email, location: r.location, address: r.address, phone: r.phone,
+                profileCompletedAt: r.profile_completed_at?.toISOString() || null,
+                profileLockedAt: r.profile_locked_at?.toISOString() || null,
+                createdAt: r.created_at
             });
         }
         catch (error) {
             // Handle duplicate email/phone constraint violations
             if (error.code === '23505') {
+                // Check if user is trying to set their phone/email to their registration username
+                const isSettingPhoneToUsername = fields.phone && fields.phone === current.username;
+                const isSettingEmailToUsername = fields.email && fields.email === current.username;
                 if (error.constraint === 'users_email_key' || error.constraint === 'users_email_unique' || error.detail?.includes('email')) {
+                    if (isSettingEmailToUsername) {
+                        // This is the user setting their email to their registration email - return current user
+                        return currentUser;
+                    }
                     throw new DomainErrors_1.ConflictError('This email is already in use by another account');
                 }
                 else if (error.constraint === 'users_phone_unique' || error.detail?.includes('phone')) {
+                    if (isSettingPhoneToUsername) {
+                        // This is the user setting their phone to their registration phone - return current user
+                        return currentUser;
+                    }
                     throw new DomainErrors_1.ConflictError('This phone number is already in use by another account');
                 }
                 throw new DomainErrors_1.ConflictError('This information is already in use by another account');
@@ -140,6 +171,16 @@ class PgProfileRepository {
         this.pool = pool;
     }
     async getWorkerProfile(userId) {
+        // First, check and reset expired availability statuses
+        await this.pool.query(`
+            UPDATE worker_profiles 
+            SET is_available = false, availability_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $1 
+            AND is_available = true 
+            AND availability_expires_at IS NOT NULL 
+            AND availability_expires_at < NOW()
+        `, [userId]);
+        // Then get the updated profile
         const res = await this.pool.query('SELECT * FROM worker_profiles WHERE user_id = $1', [userId]);
         return res.rows[0] || null;
     }
@@ -151,38 +192,81 @@ class PgProfileRepository {
         const map = {
             skillType: 'skill_type',
             experienceYears: 'experience_years',
-            hourlyRate: 'hourly_rate',
+            // hourlyRate: 'hourly_rate', // DISABLED - not required at this time
             availability: 'availability',
             description: 'description',
             isAvailable: 'is_available'
         };
-        // Build column names and values for UPSERT
-        const columns = ['user_id'];
-        const values = [userId];
-        const updateSets = [];
-        let idx = 2;
-        for (const k of Object.keys(fields)) {
-            const col = map[k];
-            if (col) {
-                columns.push(col);
-                values.push(fields[k]);
-                updateSets.push(`${col} = $${idx++}`);
+        // Check if worker profile exists
+        const existing = await this.getWorkerProfile(userId);
+        if (existing) {
+            // UPDATE existing record
+            const updateSets = [];
+            const values = [];
+            let idx = 1;
+            for (const k of Object.keys(fields)) {
+                const col = map[k];
+                if (col) {
+                    updateSets.push(`${col} = $${idx++}`);
+                    values.push(fields[k]);
+                }
             }
+            // Handle availability expiry logic
+            if (fields.isAvailable !== undefined) {
+                if (fields.isAvailable === true) {
+                    // Set expiry to 4 hours from now when becoming available
+                    updateSets.push(`availability_expires_at = NOW() + INTERVAL '4 hours'`);
+                }
+                else {
+                    // Clear expiry when becoming unavailable
+                    updateSets.push(`availability_expires_at = NULL`);
+                }
+            }
+            if (updateSets.length === 0) {
+                return existing; // No changes to make
+            }
+            updateSets.push(`updated_at = CURRENT_TIMESTAMP`);
+            values.push(userId); // for WHERE clause
+            const sql = `
+                UPDATE worker_profiles 
+                SET ${updateSets.join(', ')}
+                WHERE user_id = $${idx}
+                RETURNING *
+            `;
+            const res = await this.pool.query(sql, values);
+            if (!res.rows[0])
+                throw new DomainErrors_1.NotFoundError('Failed to update worker profile');
+            return res.rows[0];
         }
-        // Use INSERT ... ON CONFLICT UPDATE (UPSERT)
-        const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-        updateSets.push('updated_at = CURRENT_TIMESTAMP');
-        const sql = `
-            INSERT INTO worker_profiles (${columns.join(', ')}, created_at, updated_at)
-            VALUES (${placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (user_id) 
-            DO UPDATE SET ${updateSets.join(', ')}
-            RETURNING *
-        `;
-        const res = await this.pool.query(sql, values);
-        if (!res.rows[0])
-            throw new DomainErrors_1.NotFoundError('Failed to create or update worker profile');
-        return res.rows[0];
+        else {
+            // INSERT new record - ensure all required fields are present
+            const columns = ['id', 'user_id'];
+            const values = [userId, userId];
+            let idx = 3;
+            // Add skill_type with default if not provided
+            columns.push('skill_type');
+            values.push(fields.skillType || 'other');
+            // Add other fields
+            for (const k of Object.keys(fields)) {
+                if (k === 'skillType')
+                    continue; // Already handled above
+                const col = map[k];
+                if (col) {
+                    columns.push(col);
+                    values.push(fields[k]);
+                }
+            }
+            const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+            const sql = `
+                INSERT INTO worker_profiles (${columns.join(', ')}, created_at, updated_at)
+                VALUES (${placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                RETURNING *
+            `;
+            const res = await this.pool.query(sql, values);
+            if (!res.rows[0])
+                throw new DomainErrors_1.NotFoundError('Failed to create worker profile');
+            return res.rows[0];
+        }
     }
     async updateContractorProfile(userId, fields) {
         const map = {
@@ -214,15 +298,28 @@ class PgSkillRepository {
         this.pool = pool;
     }
     async listSkillTypes() {
-        // Assuming a static reference table `skill_types` (fallback to distinct skill_type from worker_profiles if absent)
+        // Query the skill_type ENUM values from PostgreSQL system catalog
         try {
-            const res = await this.pool.query('SELECT name FROM skill_types ORDER BY name ASC');
-            if (res.rowCount)
+            const res = await this.pool.query(`
+                SELECT enumlabel as name 
+                FROM pg_enum 
+                WHERE enumtypid = (
+                    SELECT oid 
+                    FROM pg_type 
+                    WHERE typname = 'skill_type'
+                )
+                ORDER BY enumlabel ASC
+            `);
+            if (res.rowCount && res.rowCount > 0) {
                 return res.rows.map(r => r.name);
+            }
         }
-        catch { /* fall back */ }
-        const distinct = await this.pool.query('SELECT DISTINCT skill_type FROM worker_profiles WHERE skill_type IS NOT NULL');
-        return distinct.rows.map(r => r.skill_type).sort();
+        catch (error) {
+            console.error('Error querying skill_type ENUM:', error);
+        }
+        // Fallback to distinct values from worker_profiles if ENUM query fails
+        const distinct = await this.pool.query('SELECT DISTINCT skill_type FROM worker_profiles WHERE skill_type IS NOT NULL ORDER BY skill_type');
+        return distinct.rows.map(r => r.skill_type);
     }
 }
 exports.PgSkillRepository = PgSkillRepository;

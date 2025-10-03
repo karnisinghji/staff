@@ -138,6 +138,16 @@ function buildApp(versionOrOptions) {
             res.status(500).json({ success: false, message: e.message || 'Failed to send notification' });
         }
     });
+    // WebSocket route placeholder - returns upgrade required
+    app.get('/ws', (req, res) => {
+        logger.info(`WebSocket connection attempt from ${req.ip} - returning upgrade required`);
+        res.status(426).json({
+            success: false,
+            message: 'Upgrade Required',
+            upgrade: 'WebSocket',
+            note: 'WebSocket server not yet implemented'
+        });
+    });
     // 404
     app.use((req, res) => {
         logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);

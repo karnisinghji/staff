@@ -7,8 +7,12 @@ export declare class UpdateUserUseCase {
         username: string;
         role: "worker" | "contractor";
         name?: string | null;
+        email?: string | null;
         location?: string | null;
+        address?: string | null;
         phone?: string | null;
+        profileCompletedAt?: string | null;
+        profileLockedAt?: string | null;
         createdAt: Date;
     }>;
 }

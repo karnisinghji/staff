@@ -27,10 +27,18 @@ catch (e) {
 }
 function buildApp() {
     const app = (0, express_1.default)();
-    (0, shared_1.applyStandardSecurity)(app, { rateLimit: true, trustProxy: true });
+    // More permissive rate limiting for development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const rateLimitConfig = isDevelopment
+        ? { windowMs: 1 * 60 * 1000, limit: 1000 } // 1000 requests per minute in dev
+        : { windowMs: 15 * 60 * 1000, limit: 100 }; // 100 requests per 15 minutes in prod
+    (0, shared_1.applyStandardSecurity)(app, { rateLimit: rateLimitConfig, trustProxy: true });
     app.use((0, cors_1.default)({
-        origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-        credentials: true
+        origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
     }));
     app.use(express_1.default.json({ limit: '10mb' }));
     app.use(express_1.default.urlencoded({ extended: true }));

@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const shared_1 = require("../../shared");
 const morgan_1 = __importDefault(require("morgan"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
+const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
 const logger_1 = require("./utils/logger");
 const DomainErrors_1 = require("./hexagon/domain/errors/DomainErrors");
 const metrics_1 = require("./observability/metrics");
@@ -109,6 +110,7 @@ function buildApp() {
     });
     // Routes
     app.use('/', userRoutes_1.default);
+    app.use('/', invitationRoutes_1.default);
     // 404 handler
     app.use((req, res) => {
         logger_1.logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);

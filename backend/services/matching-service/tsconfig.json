@@ -18,11 +18,14 @@
         }
     ],
     "include": [
-        "src/**/*",
-        "src/tests/**/*",
-        "src/express.d.ts"
+        "src/**/*.ts"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "dist",
+        "**/__tests__",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/tests"
     ]
 }

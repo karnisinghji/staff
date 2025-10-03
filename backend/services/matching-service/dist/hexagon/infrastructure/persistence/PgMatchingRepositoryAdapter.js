@@ -3,29 +3,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PgMatchingRepositoryAdapter = void 0;
 const db_1 = require("../../../utils/db");
 const location_1 = require("../../../utils/location");
-const matching_1 = require("../../../utils/matching");
 const logger_1 = require("../../../utils/logger");
 // Temporary environment-driven limits
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-const MIN_SCORE = 30;
+const MIN_SCORE = 0; // Temporarily lowered to debug search results
 class PgMatchingRepositoryAdapter {
     // FIRST SLICE: Only implement findWorkers. Others throw until migrated.
     async findWorkers(criteria) {
         try {
-            if (!criteria.location)
+            logger_1.logger.info(`FindWorkers: Starting search with criteria: ${JSON.stringify(criteria)}`);
+            if (!criteria.location) {
+                logger_1.logger.warn('FindWorkers: No location provided in criteria');
                 return [];
-            const criteriaLocation = await (0, location_1.geocodeLocation)(`${criteria.location.lat},${criteria.location.lng}`); // TODO replace with proper forward geocode call when location type finalized
-            if (!criteriaLocation)
-                return [];
-            // For this first slice we reuse legacy query (skill filtering simplified)
+            }
+            // Check if we have fallback coordinates (US center) and expand search radius
+            const isUSCenterFallback = Math.abs(criteria.location.lat - 39.8283) < 0.01 && Math.abs(criteria.location.lng - (-98.5795)) < 0.01;
+            const effectiveMaxDistance = isUSCenterFallback ? 2000 : (criteria.maxDistanceKm || 25);
+            if (isUSCenterFallback) {
+                logger_1.logger.warn(`FindWorkers: Detected US center fallback coordinates, expanding search radius to ${effectiveMaxDistance}km`);
+            }
             const skill = (criteria.skills && criteria.skills[0]) || null;
-            if (!skill)
+            if (!skill) {
+                logger_1.logger.warn('FindWorkers: No skills provided in criteria');
                 return [];
+            }
             const query = `
-                SELECT u.id as worker_id, u.name as worker_name, u.location,
+                SELECT u.id as worker_id, u.name as worker_name, u.location, u.email, u.phone,
                        wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
-                       wp.total_jobs, wp.availability_status, wp.is_available, wp.description
+                       wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
                 FROM users u
                 INNER JOIN worker_profiles wp ON u.id = wp.id
                 WHERE u.role = 'worker' AND u.is_active = true AND wp.skill_type = $1 AND wp.availability_status = 'available'
@@ -33,33 +39,62 @@ class PgMatchingRepositoryAdapter {
             `;
             const dbRes = await db_1.pool.query(query, [skill]);
             const workers = dbRes.rows || [];
-            const enriched = [];
-            for (const w of workers) {
-                if (!w.location)
-                    continue;
-                const wLoc = await (0, location_1.geocodeLocation)(w.location);
-                if (!wLoc)
-                    continue;
-                const distanceKm = (0, location_1.calculateDistance)(criteriaLocation, wLoc);
-                if (typeof criteria.maxDistanceKm === 'number' && distanceKm > criteria.maxDistanceKm)
-                    continue;
-                const score = (0, matching_1.calculateWorkerMatchScore)({ ...w, matchScore: 0 }, // legacy util expects object with working fields
-                wLoc, {
-                    skillType: w.skill_type,
-                    location: w.location,
-                    maxDistance: criteria.maxDistanceKm ?? 999999,
-                    urgency: 'medium',
-                    experienceLevel: 'intermediate'
-                }, criteriaLocation, criteria.weights);
-                enriched.push({ id: w.worker_id, skills: [w.skill_type], distanceKm, score, matchScore: score });
-            }
-            const sorted = (0, matching_1.sortMatchesByScore)(enriched); // returns array with matchScore
-            const filteredWithScore = (0, matching_1.filterByMinimumScore)(sorted, MIN_SCORE);
-            const filtered = filteredWithScore.map(w => ({ id: w.id, skills: w.skills, distanceKm: w.distanceKm, score: w.score }));
-            const page = Math.max(1, criteria.page || 1);
-            const pageSize = Math.min(MAX_LIMIT, criteria.pageSize || DEFAULT_LIMIT);
-            const offset = (page - 1) * pageSize;
-            return filtered.slice(offset, offset + pageSize);
+            logger_1.logger.info(`FindWorkers: Found ${workers.length} workers with skill "${skill}" in database`);
+            logger_1.logger.info(`FindWorkers: Search location is lat=${criteria.location.lat}, lng=${criteria.location.lng}`);
+            // Convert search location to match calculateDistance format
+            const searchLocation = { latitude: criteria.location.lat, longitude: criteria.location.lng };
+            const results = await Promise.all(workers.map(async (w, index) => {
+                if (!w.location) {
+                    logger_1.logger.warn(`FindWorkers: Worker ${w.worker_name} has no location data`);
+                    return null;
+                }
+                const workerLocation = await (0, location_1.geocodeLocation)(w.location);
+                if (!workerLocation) {
+                    logger_1.logger.warn(`FindWorkers: Failed to geocode location "${w.location}" for worker ${w.worker_name}`);
+                    return null;
+                }
+                const distanceKm = (0, location_1.calculateDistance)(searchLocation, workerLocation);
+                logger_1.logger.info(`FindWorkers: Distance from search location to ${w.location} (${w.worker_name}): ${distanceKm.toFixed(2)}km`);
+                // Calculate enhanced score (similar to contractor scoring)
+                const ratingScore = (w.rating || 0) * 20; // 0-100 scale
+                const distanceScore = Math.max(0, 50 - distanceKm); // Closer = better, max 50 points
+                const experienceScore = Math.min(30, (w.total_jobs || 0) * 2); // Max 30 points from experience
+                const score = ratingScore + distanceScore + experienceScore;
+                return {
+                    id: w.worker_id,
+                    name: w.worker_name,
+                    skills: [w.skill_type],
+                    location: w.location || 'Location not specified',
+                    hourlyRate: w.hourly_rate || 0,
+                    rating: w.rating || 0,
+                    experienceYears: w.experience_years || 0,
+                    totalJobs: w.total_jobs || 0,
+                    availabilityStatus: w.availability_status,
+                    bio: w.bio,
+                    email: w.email,
+                    phone: w.phone,
+                    distanceKm: Math.round(distanceKm * 100) / 100, // Round to 2 decimal places
+                    score: Math.round(score)
+                };
+            }));
+            // Filter out null results and apply distance filter
+            const validResults = results.filter(w => w !== null);
+            let filteredResults = validResults;
+            if (effectiveMaxDistance && effectiveMaxDistance > 0) {
+                filteredResults = validResults.filter(worker => (worker.distanceKm ?? 999) <= effectiveMaxDistance);
+            } // Sort by distance (closest first), then by score (highest first)
+            filteredResults.sort((a, b) => {
+                const distanceA = a.distanceKm || 999;
+                const distanceB = b.distanceKm || 999;
+                const scoreA = a.score || 0;
+                const scoreB = b.score || 0;
+                if (Math.abs(distanceA - distanceB) < 0.1) {
+                    return scoreB - scoreA; // Same distance, sort by score
+                }
+                return distanceA - distanceB; // Sort by distance
+            });
+            logger_1.logger.info(`FindWorkers: Returning ${filteredResults.length} worker matches (filtered from ${validResults.length} by distance <= ${effectiveMaxDistance}km)`);
+            return filteredResults;
         }
         catch (e) {
             logger_1.logger.error('PgMatchingRepositoryAdapter.findWorkers error', e);
@@ -68,47 +103,91 @@ class PgMatchingRepositoryAdapter {
     }
     async findContractors(criteria) {
         try {
-            if (!criteria.location)
-                return [];
-            const criteriaLocation = await (0, location_1.geocodeLocation)(`${criteria.location.lat},${criteria.location.lng}`);
-            if (!criteriaLocation)
-                return [];
+            logger_1.logger.info(`FindContractors: Starting search with criteria: ${JSON.stringify(criteria)}`);
+            // Simplified query to get contractors with their profile info
             const query = `
-                SELECT u.id as contractor_id, u.name as contractor_name, u.location,
+                SELECT u.id as contractor_id, u.name as contractor_name, u.location, u.email,
                        cp.company_name, cp.need_worker_status, cp.rating, cp.total_projects
                 FROM users u
-                INNER JOIN contractor_profiles cp ON u.id = cp.id
-                WHERE u.role = 'contractor' AND u.is_active = true
+                INNER JOIN contractor_profiles cp ON u.id = cp.user_id
+                WHERE u.role = 'contractor' AND u.is_active = true AND cp.need_worker_status = true
                 ORDER BY cp.rating DESC, cp.total_projects DESC
+                LIMIT $1
             `;
-            const dbRes = await db_1.pool.query(query);
-            const contractors = dbRes.rows || [];
-            const enriched = [];
-            for (const c of contractors) {
-                if (!c.location)
-                    continue;
-                const cLoc = await (0, location_1.geocodeLocation)(c.location);
-                if (!cLoc)
-                    continue;
-                const distanceKm = (0, location_1.calculateDistance)(criteriaLocation, cLoc);
-                if (typeof criteria.maxDistanceKm === 'number' && distanceKm > criteria.maxDistanceKm)
-                    continue;
-                const score = (0, matching_1.calculateContractorMatchScore)({ ...c, matchScore: 0 }, cLoc, {
-                    skillType: (criteria.skillsNeeded && criteria.skillsNeeded[0]) || '',
-                    location: c.location,
-                    maxDistance: criteria.maxDistanceKm ?? 999999,
-                    urgency: 'medium',
-                    experienceLevel: 'intermediate'
-                }, criteriaLocation, criteria.weights);
-                enriched.push({ id: c.contractor_id, skillsNeeded: [], distanceKm, score, matchScore: score });
-            }
-            const sorted = (0, matching_1.sortMatchesByScore)(enriched);
-            const filteredWithScore = (0, matching_1.filterByMinimumScore)(sorted, MIN_SCORE);
-            const filtered = filteredWithScore.map(c => ({ id: c.id, skillsNeeded: c.skillsNeeded, distanceKm: c.distanceKm, score: c.score }));
-            const page = Math.max(1, criteria.page || 1);
             const pageSize = Math.min(MAX_LIMIT, criteria.pageSize || DEFAULT_LIMIT);
-            const offset = (page - 1) * pageSize;
-            return filtered.slice(offset, offset + pageSize);
+            const dbRes = await db_1.pool.query(query, [pageSize]);
+            const contractors = dbRes.rows || [];
+            logger_1.logger.info(`FindContractors: Found ${contractors.length} contractors in database`);
+            // Convert to ContractorCandidate format with real distance calculations
+            const searchLocation = criteria.location ? { latitude: criteria.location.lat, longitude: criteria.location.lng } : null;
+            if (searchLocation) {
+                logger_1.logger.info(`FindContractors: Search location is lat=${searchLocation.latitude}, lng=${searchLocation.longitude}`);
+                // Check if this is the US geographic center fallback (indicates location detection failed)
+                if (Math.abs(searchLocation.latitude - 39.8283) < 0.01 && Math.abs(searchLocation.longitude - (-98.5795)) < 0.01) {
+                    logger_1.logger.warn(`FindContractors: Using US center fallback location - expanding search radius`);
+                    // Temporarily expand max distance to find contractors when using fallback location
+                    if (criteria.maxDistanceKm && criteria.maxDistanceKm < 2000) {
+                        criteria.maxDistanceKm = 2000; // Expand to 2000km to cover North America
+                        logger_1.logger.info(`FindContractors: Expanded search radius to ${criteria.maxDistanceKm}km for fallback location`);
+                    }
+                }
+            }
+            const results = await Promise.all(contractors.map(async (c, index) => {
+                let distanceKm = 999; // Default high distance if location can't be determined
+                // Calculate real distance if we have search location and contractor location
+                if (searchLocation && c.location) {
+                    try {
+                        const contractorLocation = await (0, location_1.geocodeLocation)(c.location);
+                        if (contractorLocation) {
+                            distanceKm = (0, location_1.calculateDistance)(searchLocation, contractorLocation);
+                            logger_1.logger.info(`FindContractors: Distance from search location to ${c.location} (${c.company_name}): ${distanceKm}km`);
+                        }
+                        else {
+                            logger_1.logger.warn(`FindContractors: Could not geocode contractor location: ${c.location}`);
+                        }
+                    }
+                    catch (error) {
+                        logger_1.logger.warn(`Failed to geocode contractor location: ${c.location}`, error);
+                    }
+                }
+                // Calculate score based on rating, distance, and project count
+                const ratingScore = (parseFloat(c.rating) || 0) * 20; // Max 100 points for 5-star rating
+                const distanceScore = Math.max(0, 50 - distanceKm); // Closer = higher score, max 50 points
+                const projectScore = Math.min(30, (c.total_projects || 0) * 0.5); // Max 30 points for experience
+                const totalScore = Math.round(ratingScore + distanceScore + projectScore);
+                return {
+                    id: c.contractor_id,
+                    skillsNeeded: [], // No specific skills needed for now
+                    distanceKm: Math.round(distanceKm * 100) / 100, // Round to 2 decimal places
+                    score: Math.max(0, Math.min(100, totalScore)), // Ensure score is between 0-100
+                    // Add extra fields for display
+                    contractorName: c.contractor_name,
+                    companyName: c.company_name || 'Unknown Company',
+                    location: c.location || 'Location not specified',
+                    rating: c.rating || 0,
+                    totalProjects: c.total_projects || 0,
+                    needWorkerStatus: c.need_worker_status,
+                    email: c.email
+                };
+            }));
+            // Filter by max distance if specified
+            let filteredResults = results;
+            if (criteria.maxDistanceKm && criteria.maxDistanceKm > 0) {
+                filteredResults = results.filter(contractor => (contractor.distanceKm || 999) <= criteria.maxDistanceKm);
+            }
+            // Sort by distance (closest first), then by score (highest first)
+            filteredResults.sort((a, b) => {
+                const distanceA = a.distanceKm || 999;
+                const distanceB = b.distanceKm || 999;
+                const scoreA = a.score || 0;
+                const scoreB = b.score || 0;
+                if (Math.abs(distanceA - distanceB) < 0.1) {
+                    return scoreB - scoreA; // Same distance, sort by score
+                }
+                return distanceA - distanceB; // Sort by distance
+            });
+            logger_1.logger.info(`FindContractors: Returning ${filteredResults.length} contractor matches (filtered from ${results.length} by distance <= ${criteria.maxDistanceKm}km)`);
+            return filteredResults;
         }
         catch (e) {
             logger_1.logger.error('PgMatchingRepositoryAdapter.findContractors error', e);

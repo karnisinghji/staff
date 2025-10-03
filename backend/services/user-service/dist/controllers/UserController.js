@@ -186,8 +186,8 @@ class UserController {
                     });
                     return;
                 }
-                const { skillType, experienceYears, hourlyRate, availability, description, isAvailable } = req.body;
-                const updates = { skillType, experienceYears, hourlyRate, availability, description, isAvailable };
+                const { skillType, experienceYears, /* hourlyRate, */ availability, description, isAvailable } = req.body;
+                const updates = { skillType, experienceYears, /* hourlyRate, */ availability, description, isAvailable };
                 // Remove undefined values
                 Object.keys(updates).forEach(key => {
                     if (updates[key] === undefined) {

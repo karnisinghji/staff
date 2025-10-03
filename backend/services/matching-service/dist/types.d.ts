@@ -136,7 +136,8 @@ export interface ApiResponse<T = any> {
     error?: string;
 }
 export interface AuthUser {
-    id: string;
-    email: string;
-    role: string;
+    sub: string;
+    roles: string[];
+    iat?: number;
+    exp?: number;
 }

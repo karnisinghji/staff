@@ -1,2 +1,5 @@
 import { AuthUser } from '../types';
-export declare const verifyToken: (token: string) => AuthUser;
+export declare const verifyToken: (token: string) => AuthUser & {
+    id: string;
+    role: string;
+};

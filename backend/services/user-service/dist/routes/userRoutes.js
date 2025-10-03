@@ -33,12 +33,12 @@ router.post('/api/auth/forgot-password', (0, rateLimit_1.forgotPasswordRateLimit
 router.get('/health', (_req, res) => {
     res.json(buildHealthPayload('user-service'));
 });
+// Public metadata (must come before :id routes)
+router.get('/api/users/skills', userController.getSkills);
 // User profile routes
 router.get('/api/users/profile', auth_1.authenticateToken, userController.getCurrentUser);
 router.get('/api/users/:id', auth_1.authenticateToken, userController.getUserById);
 router.put('/api/users/profile', auth_1.authenticateToken, (0, validation_1.validateBody)(schemas_1.updateUserSchema), userController.updateUser);
-// Public metadata
-router.get('/api/users/skills', userController.getSkills);
 // Worker profile routes
 router.put('/api/users/worker-profile', auth_1.authenticateToken, (0, auth_1.requireRole)(['worker']), (0, validation_1.validateBody)(schemas_1.updateWorkerProfileSchema), userController.updateWorkerProfile);
 // Contractor profile routes
@@ -49,7 +49,9 @@ router.get('/api/users/contacts', auth_1.authenticateToken, userController.getCo
 const createContactSharedSchema = zod_1.z.object({
     name: zod_1.z.string().min(1),
     email: zod_1.z.string().email().optional(),
-    phone: zod_1.z.string().min(5).optional(),
+    phone: zod_1.z.string()
+        .regex(/^\+91[6-9]\d{9}$/, 'Phone number must be in format +91xxxxxxxxxx (10 digits starting with 6-9)')
+        .optional(),
     tags: zod_1.z.array(zod_1.z.string()).max(20).optional()
 });
 router.post('/api/users/contacts', auth_1.authenticateToken, (0, shared_1.validate)({ schema: createContactSharedSchema }), userController.createContact);

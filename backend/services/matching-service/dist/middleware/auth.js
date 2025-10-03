@@ -36,7 +36,10 @@ const requireRole = (roles) => {
             });
             return;
         }
-        if (!roles.includes(req.user.role)) {
+        // Check if user has any of the required roles
+        const userRoles = req.user.roles || (req.user.role ? [req.user.role] : []);
+        const hasRequiredRole = roles.some(role => userRoles.includes(role));
+        if (!hasRequiredRole) {
             res.status(403).json({
                 success: false,
                 message: 'Insufficient permissions'

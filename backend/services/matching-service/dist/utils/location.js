@@ -52,7 +52,44 @@ const cityCoordinates = {
     'tulsa': { latitude: 36.1540, longitude: -95.9928 },
     'tampa': { latitude: 27.9506, longitude: -82.4572 },
     'arlington': { latitude: 32.7357, longitude: -97.1081 },
-    'new orleans': { latitude: 29.9511, longitude: -90.0715 }
+    'new orleans': { latitude: 29.9511, longitude: -90.0715 },
+    // Canadian cities
+    'toronto': { latitude: 43.6532, longitude: -79.3832 },
+    'toronto, on': { latitude: 43.6532, longitude: -79.3832 },
+    'vancouver': { latitude: 49.2827, longitude: -123.1207 },
+    'vancouver, bc': { latitude: 49.2827, longitude: -123.1207 },
+    'montreal': { latitude: 45.5017, longitude: -73.5673 },
+    'montreal, qc': { latitude: 45.5017, longitude: -73.5673 },
+    'calgary': { latitude: 51.0447, longitude: -114.0719 },
+    'calgary, ab': { latitude: 51.0447, longitude: -114.0719 },
+    'ottawa': { latitude: 45.4215, longitude: -75.6972 },
+    'ottawa, on': { latitude: 45.4215, longitude: -75.6972 },
+    'mississauga': { latitude: 43.5890, longitude: -79.6441 },
+    'mississauga, on': { latitude: 43.5890, longitude: -79.6441 },
+    'brampton': { latitude: 43.7315, longitude: -79.7624 },
+    'brampton, on': { latitude: 43.7315, longitude: -79.7624 },
+    'hamilton': { latitude: 43.2557, longitude: -79.8711 },
+    'hamilton, on': { latitude: 43.2557, longitude: -79.8711 },
+    // Indian cities
+    'jaipur': { latitude: 26.9124, longitude: 75.7873 },
+    'delhi': { latitude: 28.7041, longitude: 77.1025 },
+    'mumbai': { latitude: 19.0760, longitude: 72.8777 },
+    'bangalore': { latitude: 12.9716, longitude: 77.5946 },
+    'bengaluru': { latitude: 12.9716, longitude: 77.5946 },
+    'chennai': { latitude: 13.0827, longitude: 80.2707 },
+    'kolkata': { latitude: 22.5726, longitude: 88.3639 },
+    'hyderabad': { latitude: 17.3850, longitude: 78.4867 },
+    'pune': { latitude: 18.5204, longitude: 73.8567 },
+    'ahmedabad': { latitude: 23.0225, longitude: 72.5714 },
+    'surat': { latitude: 21.1702, longitude: 72.8311 },
+    'lucknow': { latitude: 26.8467, longitude: 80.9462 },
+    'kanpur': { latitude: 26.4499, longitude: 80.3319 },
+    'nagpur': { latitude: 21.1458, longitude: 79.0882 },
+    'indore': { latitude: 22.7196, longitude: 75.8577 },
+    'thane': { latitude: 19.2183, longitude: 72.9781 },
+    'bhopal': { latitude: 23.2599, longitude: 77.4126 },
+    'visakhapatnam': { latitude: 17.6868, longitude: 83.2185 },
+    'pimpri chinchwad': { latitude: 18.6298, longitude: 73.7997 }
 };
 const geocodeLocation = async (location) => {
     const normalizedLocation = location.toLowerCase().trim();
@@ -66,8 +103,8 @@ const geocodeLocation = async (location) => {
             return coords;
         }
     }
-    // Default to approximate center of US if not found
-    return { latitude: 39.8283, longitude: -98.5795 };
+    // Default to Toronto, Canada since our contractors are primarily Canadian
+    return { latitude: 43.6532, longitude: -79.3832 };
 };
 exports.geocodeLocation = geocodeLocation;
 const calculateDistance = (point1, point2) => {

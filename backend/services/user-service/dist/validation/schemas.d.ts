@@ -7,66 +7,61 @@ export declare const updateUserSchema: z.ZodEffects<z.ZodObject<{
     username: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    email?: string | undefined;
-    phone?: string | undefined;
-    name?: string | undefined;
     username?: string | undefined;
+    name?: string | undefined;
+    email?: string | undefined;
     location?: string | undefined;
     address?: string | undefined;
+    phone?: string | undefined;
 }, {
-    email?: string | undefined;
-    phone?: string | undefined;
-    name?: string | undefined;
     username?: string | undefined;
+    name?: string | undefined;
+    email?: string | undefined;
     location?: string | undefined;
     address?: string | undefined;
+    phone?: string | undefined;
 }>, {
-    email?: string | undefined;
-    phone?: string | undefined;
-    name?: string | undefined;
     username?: string | undefined;
+    name?: string | undefined;
+    email?: string | undefined;
     location?: string | undefined;
     address?: string | undefined;
+    phone?: string | undefined;
 }, {
-    email?: string | undefined;
-    phone?: string | undefined;
-    name?: string | undefined;
     username?: string | undefined;
+    name?: string | undefined;
+    email?: string | undefined;
     location?: string | undefined;
     address?: string | undefined;
+    phone?: string | undefined;
 }>;
 export declare const updateWorkerProfileSchema: z.ZodEffects<z.ZodObject<{
     skillType: z.ZodOptional<z.ZodString>;
-    experienceYears: z.ZodOptional<z.ZodNumber>;
-    hourlyRate: z.ZodOptional<z.ZodNumber>;
+    experienceYears: z.ZodOptional<z.ZodPipeline<z.ZodUnion<[z.ZodNumber, z.ZodEffects<z.ZodString, number | undefined, string>]>, z.ZodNumber>>;
     availability: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     isAvailable: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     skillType?: string | undefined;
     experienceYears?: number | undefined;
-    hourlyRate?: number | undefined;
     availability?: string | undefined;
     description?: string | undefined;
     isAvailable?: boolean | undefined;
 }, {
     skillType?: string | undefined;
-    experienceYears?: number | undefined;
-    hourlyRate?: number | undefined;
+    experienceYears?: string | number | undefined;
     availability?: string | undefined;
     description?: string | undefined;
     isAvailable?: boolean | undefined;
 }>, {
     skillType?: string | undefined;
     experienceYears?: number | undefined;
-    hourlyRate?: number | undefined;
     availability?: string | undefined;
     description?: string | undefined;
     isAvailable?: boolean | undefined;
 }, {
     skillType?: string | undefined;
-    experienceYears?: number | undefined;
-    hourlyRate?: number | undefined;
+    experienceYears?: string | number | undefined;
     availability?: string | undefined;
     description?: string | undefined;
     isAvailable?: boolean | undefined;

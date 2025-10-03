@@ -5,7 +5,6 @@ export declare class UpdateWorkerProfileUseCase {
     execute(userId: string, fields: Partial<{
         skillType: string;
         experienceYears: number;
-        hourlyRate: number;
         availability: string;
         description: string;
         isAvailable: boolean;

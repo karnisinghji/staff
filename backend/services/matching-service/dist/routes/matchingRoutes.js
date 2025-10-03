@@ -16,11 +16,13 @@ catch {
     });
 }
 const MatchingController_1 = require("../controllers/MatchingController");
+const ContractorRequirementController_1 = require("../controllers/ContractorRequirementController");
 const shared_1 = require("../../../shared");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 const matchingController = new MatchingController_1.MatchingController();
+const contractorRequirementController = new ContractorRequirementController_1.ContractorRequirementController();
 // Health check
 router.get('/health', (_req, res) => {
     res.json(buildHealthPayload('matching-service'));
@@ -59,7 +61,50 @@ const saveMatchBody = zod_1.z.object({
 router.post('/api/matching/save-match', auth_1.authenticateToken, (0, shared_1.validate)({ schema: saveMatchBody }), matchingController.saveMatch);
 router.get('/api/matching/saved-matches', auth_1.authenticateToken, matchingController.getSavedMatches);
 router.delete('/api/matching/saved-matches/:matchId', auth_1.authenticateToken, matchingController.deleteSavedMatch);
+// Team requests
+const sendTeamRequestBody = zod_1.z.object({
+    receiverId: zod_1.z.string().uuid(),
+    message: zod_1.z.string().max(500).optional(),
+    matchContext: zod_1.z.object({
+        skill: zod_1.z.string().optional(),
+        distance: zod_1.z.string().optional(),
+        matchScore: zod_1.z.number().optional(),
+        searchType: zod_1.z.string().optional() // 'worker' or 'contractor'
+    }).optional()
+});
+router.post('/api/matching/send-team-request', auth_1.authenticateToken, (0, shared_1.validate)({ schema: sendTeamRequestBody }), matchingController.sendTeamRequest);
+router.get('/api/matching/team-requests/received', auth_1.authenticateToken, matchingController.getReceivedTeamRequests);
+router.get('/api/matching/team-requests/sent', auth_1.authenticateToken, matchingController.getSentTeamRequests);
+const updateTeamRequestBody = zod_1.z.object({
+    status: zod_1.z.enum(['accepted', 'rejected'])
+});
+router.put('/api/matching/team-requests/:requestId', auth_1.authenticateToken, (0, shared_1.validate)({ schema: updateTeamRequestBody }), matchingController.updateTeamRequest);
+router.get('/api/matching/my-team', auth_1.authenticateToken, matchingController.getMyTeam);
+router.delete('/api/matching/team-members/:memberId', auth_1.authenticateToken, matchingController.removeTeamMember);
 // Statistics (could be restricted to admin users)
 router.get('/api/matching/stats', auth_1.authenticateToken, matchingController.getMatchingStats);
+// User blocking functionality
+const blockUserBody = zod_1.z.object({
+    blockedUserId: zod_1.z.string().uuid(),
+    reason: zod_1.z.enum(['harassment', 'unprofessional', 'spam', 'other']).optional()
+});
+const unblockUserBody = zod_1.z.object({
+    blockedUserId: zod_1.z.string().uuid()
+});
+router.post('/api/matching/block-user', auth_1.authenticateToken, (0, shared_1.validate)({ schema: blockUserBody }), matchingController.blockUser);
+router.post('/api/matching/unblock-user', auth_1.authenticateToken, (0, shared_1.validate)({ schema: unblockUserBody }), matchingController.unblockUser);
+router.get('/api/matching/blocked-users', auth_1.authenticateToken, matchingController.getBlockedUsers);
+router.get('/api/matching/block-status/:userId', auth_1.authenticateToken, matchingController.checkBlockStatus);
+// Contractor requirements
+const contractorRequirementBody = zod_1.z.object({
+    requiredWorkers: zod_1.z.number().int().min(1),
+    skills: zod_1.z.array(zod_1.z.string()).optional(),
+    location: zod_1.z.string().optional(),
+    notes: zod_1.z.string().optional()
+});
+// Contractor submits a requirement
+router.post('/api/matching/contractor-requirements', auth_1.authenticateToken, (0, auth_1.requireRole)(['contractor']), (0, shared_1.validate)({ schema: contractorRequirementBody }), (req, res) => contractorRequirementController.createRequirement(req, res));
+// Worker/anyone fetches all requirements
+router.get('/api/matching/contractor-requirements', auth_1.authenticateToken, (req, res) => contractorRequirementController.listRequirements(req, res));
 exports.default = router;
 //# sourceMappingURL=matchingRoutes.js.map
