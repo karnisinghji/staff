@@ -144,12 +144,25 @@ All services successfully compile TypeScript:
 
 ## Git Commits
 
-1. **Commit ed3fcac4**: "Fix TypeScript dependencies for all services"
+1. **Commit fef9983f**: "Add documentation about npm security vulnerabilities" ⭐ LATEST
+   - Documented that vulnerabilities are in devDependencies only
+   - Clarified no production impact
+   - Provided resolution options
+
+2. **Commit 5cadd69f**: "Fix: Remove jest from types array for production builds" 🔧 CRITICAL FIX
+   - Removed jest from TypeScript types (only needed for tests)
+   - Fixed "Cannot find type definition file for jest" error
+   - Production builds now work on Render
+
+3. **Commit feef2396**: "Add comprehensive build fixes documentation"
+   - Created RENDER_BUILD_FIXES.md
+
+4. **Commit ed3fcac4**: "Fix TypeScript dependencies for all services"
    - Added all missing runtime and dev dependencies
    - Fixed TypeScript configurations
    - All builds now pass successfully
 
-2. **Commit 39d268d4**: "Fix TypeScript build errors for Render deployment"
+5. **Commit 39d268d4**: "Fix TypeScript build errors for Render deployment"
    - Fixed auth-service dependencies
    - Added type definitions
    - Excluded test files from builds
@@ -178,9 +191,11 @@ All services successfully compile TypeScript:
 
 - ❌ **"Cannot find module 'express'"** → ✅ Added to dependencies
 - ❌ **"Could not find declaration file"** → ✅ Added @types packages
+- ❌ **"Cannot find type definition file for 'jest'"** → ✅ Removed jest from types array
 - ❌ **Test files causing build errors** → ✅ Excluded from production builds
 - ❌ **Missing runtime dependencies** → ✅ All dependencies properly declared
 - ❌ **TypeScript implicit 'any' errors** → ✅ Fixed with type definitions
+- ⚠️ **npm audit vulnerabilities** → ℹ️ DevDependencies only, no production impact
 
 ## Documentation
 
