@@ -2,32 +2,64 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
 
+// Get backend URLs from environment variables (for production deployment)
+const getServiceUrl = (localUrl: string, envVar: string, defaultProd: string) => {
+    if (isDevelopment) {
+        return localUrl;
+    }
+    // Use environment variable if set, otherwise use default
+    return import.meta.env[envVar] || defaultProd;
+};
+
 // Base API URLs
 export const API_CONFIG = {
     // For development - use localhost
-    AUTH_SERVICE: isDevelopment
-        ? 'http://localhost:3001/api/auth'
-        : '/api/auth',
+    // For production - use Render.com URLs (can be overridden with env vars)
+    AUTH_SERVICE: getServiceUrl(
+        'http://localhost:3001/api/auth',
+        'VITE_AUTH_SERVICE_URL',
+        'https://staff-auth-service.onrender.com/api/auth'
+    ),
 
-    USER_SERVICE: isDevelopment
-        ? 'http://localhost:3002/api/users'
-        : '/api/users',
+    USER_SERVICE: getServiceUrl(
+        'http://localhost:3002/api/users',
+        'VITE_USER_SERVICE_URL',
+        'https://staff-user-service.onrender.com/api/users'
+    ),
 
-    MATCHING_SERVICE: isDevelopment
-        ? 'http://localhost:3003/api/matching'
-        : '/api/matching',
+    MATCHING_SERVICE: getServiceUrl(
+        'http://localhost:3003/api/matching',
+        'VITE_MATCHING_SERVICE_URL',
+        'https://staff-matching-service.onrender.com/api/matching'
+    ),
 
-    COMMUNICATION_SERVICE: isDevelopment
-        ? 'http://localhost:3004/api/communication'
-        : '/api/communication',
+    COMMUNICATION_SERVICE: getServiceUrl(
+        'http://localhost:3004/api/communication',
+        'VITE_COMMUNICATION_SERVICE_URL',
+        'https://staff-communication-service.onrender.com/api/communication'
+    ),
 
-    NOTIFICATION_SERVICE: isDevelopment
-        ? 'http://localhost:3005/api/notification'
-        : '/api/notification'
+    NOTIFICATION_SERVICE: getServiceUrl(
+        'http://localhost:3005/api/notification',
+        'VITE_NOTIFICATION_SERVICE_URL',
+        'https://staff-notification-service.onrender.com/api/notification'
+    )
 };
 
-// For production demo, we'll create mock responses
-export const DEMO_MODE = isProduction;
+// WebSocket URLs for real-time features
+export const WS_CONFIG = {
+    COMMUNICATION: isDevelopment
+        ? 'ws://localhost:3004/ws'
+        : import.meta.env.VITE_WS_COMMUNICATION_URL || 'wss://staff-communication-service.onrender.com/ws',
+
+    NOTIFICATION: isDevelopment
+        ? 'ws://localhost:3005/ws'
+        : import.meta.env.VITE_WS_NOTIFICATION_URL || 'wss://staff-notification-service.onrender.com/ws'
+};
+
+// Demo mode - set to false to use real backend
+// Set to true if you want to test with mock data (no backend needed)
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || false;
 
 // Demo fetch function that returns mock data in production
 export const demoFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
