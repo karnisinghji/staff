@@ -19,15 +19,15 @@ logger.info('Loaded environment for user-service');
 const app = buildApp();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(requestContextMiddleware as any);
-const PORT = process.env.PORT || 3002;
+const PORT = parseInt(process.env.PORT || '3002', 10);
 
 let server: any;
 let expiryJobInterval: NodeJS.Timeout;
 
 if (process.env.NODE_ENV !== 'test') {
-    server = app.listen(PORT, () => {
+    server = app.listen(PORT, '0.0.0.0', () => {
         logger.info(`👥 User Service running on port ${PORT}`);
-        logger.info(`🏥 Health check available at http://localhost:${PORT}/health`);
+        logger.info(`🏥 Health check available at http://0.0.0.0:${PORT}/health`);
     });
 
     // Start background job for availability expiry

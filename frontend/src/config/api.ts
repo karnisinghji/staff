@@ -2,48 +2,27 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
 
-// Get backend URLs from environment variables (for production deployment)
-const getServiceUrl = (localUrl: string, envVar: string, defaultProd: string) => {
-    if (isDevelopment) {
-        return localUrl;
-    }
-    // Use environment variable if set, otherwise use default
-    return import.meta.env[envVar] || defaultProd;
-};
-
-// Base API URLs
+// Base API URLs for production and development
 export const API_CONFIG = {
-    // For development - use localhost
-    // For production - use Render.com URLs (can be overridden with env vars)
-    AUTH_SERVICE: getServiceUrl(
-        'http://localhost:3001/api/auth',
-        'VITE_AUTH_SERVICE_URL',
-        'https://staff-auth-service.onrender.com/api/auth'
-    ),
+    AUTH_SERVICE: isProduction
+        ? 'https://staff-auth-service-gsg3.onrender.com/api/auth'
+        : 'http://localhost:3001/api/auth',
 
-    USER_SERVICE: getServiceUrl(
-        'http://localhost:3002/api/users',
-        'VITE_USER_SERVICE_URL',
-        'https://staff-user-service.onrender.com/api/users'
-    ),
+    USER_SERVICE: isProduction
+        ? 'https://staff-user-service.onrender.com/api/users'
+        : 'http://localhost:3002/api/users',
 
-    MATCHING_SERVICE: getServiceUrl(
-        'http://localhost:3003/api/matching',
-        'VITE_MATCHING_SERVICE_URL',
-        'https://staff-matching-service.onrender.com/api/matching'
-    ),
+    MATCHING_SERVICE: isProduction
+        ? 'https://staff-matching-service.onrender.com/api/matching'
+        : 'http://localhost:3003/api/matching',
 
-    COMMUNICATION_SERVICE: getServiceUrl(
-        'http://localhost:3004/api/communication',
-        'VITE_COMMUNICATION_SERVICE_URL',
-        'https://staff-communication-service.onrender.com/api/communication'
-    ),
+    COMMUNICATION_SERVICE: isProduction
+        ? 'https://staff-communication-service-cdqt.onrender.com/api/communication'
+        : 'http://localhost:3004/api/communication',
 
-    NOTIFICATION_SERVICE: getServiceUrl(
-        'http://localhost:3005/api/notification',
-        'VITE_NOTIFICATION_SERVICE_URL',
-        'https://staff-notification-service.onrender.com/api/notification'
-    )
+    NOTIFICATION_SERVICE: isProduction
+        ? 'https://staff-notification-service.onrender.com/api/notification'
+        : 'http://localhost:3005/api/notification'
 };
 
 // WebSocket URLs for real-time features
