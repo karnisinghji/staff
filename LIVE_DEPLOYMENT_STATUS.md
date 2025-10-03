@@ -27,10 +27,12 @@ curl -X POST https://staff-auth-service-gsg3.onrender.com/api/auth/login \
 
 ---
 
-### 2. User Service - Pending ⏳
-- **Expected URL**: https://staff-user-service.onrender.com
-- **Status**: Waiting for deployment
-- Check Render dashboard for deployment status
+### 2. User Service - LIVE ✅
+- **URL**: https://staff-user-service.onrender.com
+- **Status**: 🟢 Online
+- **Health Check**: Available at `/health`
+- **Port**: 10000 (Render default)
+- **⚠️ Database**: Needs DATABASE_URL configuration
 
 ---
 
