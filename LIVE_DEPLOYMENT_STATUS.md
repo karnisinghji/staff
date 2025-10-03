@@ -1,5 +1,16 @@
 # 🚀 Live Deployment Status
 
+## 🎉 ALL SERVICES LIVE! (5/5)
+
+**Quick Health Check URLs:**
+- Auth: https://staff-auth-service-gsg3.onrender.com/health
+- User: https://staff-user-service.onrender.com/health
+- Matching: https://staff-matching-service.onrender.com/health
+- Communication: https://staff-communication-service-cdqt.onrender.com/health
+- Notification: https://staff-notification-service.onrender.com/health
+
+---
+
 ## ✅ Services Deployed
 
 ### 1. Auth Service - LIVE ✅
@@ -36,17 +47,40 @@ curl -X POST https://staff-auth-service-gsg3.onrender.com/api/auth/login \
 
 ---
 
-### 3. Matching Service - Pending ⏳
-- **Expected URL**: https://staff-matching-service.onrender.com
-- **Status**: Waiting for deployment
-- Check Render dashboard for deployment status
+### 3. Matching Service - LIVE ✅
+- **URL**: https://staff-matching-service.onrender.com
+- **Health Check**: ✅ Responding
+- **Status**: 🟢 Online
+- **Default Search Radius**: 25km
+- **Port**: 10000 (Render default)
+
+**Test Commands:**
+```bash
+# Health check
+curl https://staff-matching-service.onrender.com/health
+```
 
 ---
 
-### 4. Communication Service - Pending ⏳
-- **Expected URL**: https://staff-communication-service.onrender.com
-- **Status**: Waiting for deployment
-- Check Render dashboard for deployment status
+### 4. Communication Service - LIVE ✅
+- **URL**: https://staff-communication-service-cdqt.onrender.com
+- **Health Check**: ✅ Responding
+- **Status**: 🟢 Online
+- **Port**: 10000 (Render default)
+
+**Test Commands:**
+```bash
+# Health check
+curl https://staff-communication-service-cdqt.onrender.com/health
+```
+
+---
+
+### 5. Notification Service - LIVE ✅
+- **URL**: https://staff-notification-service.onrender.com  
+- **Health Check**: ✅ Responding
+- **Status**: 🟢 Online
+- **Port**: 10000 (Render default)
 
 ---
 
