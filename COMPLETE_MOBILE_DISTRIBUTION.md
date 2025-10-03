@@ -9,7 +9,7 @@ Your Contractor Worker Platform now has **4 complete mobile distribution paths**
 ## **📱 Option 1: PWA (Progressive Web App) - LIVE NOW ✅**
 
 ### **🚀 Instant Access**
-- **Live URL**: https://contractor-worker-platform.vercel.app
+- **Live URL**: https://karnisinghji.github.io/staff/
 - **Installation**: Direct from browser (Safari/Chrome)
 - **Status**: **READY FOR USERS NOW**
 
@@ -138,7 +138,7 @@ Your Contractor Worker Platform now has **4 complete mobile distribution paths**
 
 ### **✅ IMMEDIATE ACCESS (Available Now)**
 ```
-🔗 Direct PWA Link: https://contractor-worker-platform.vercel.app
+🔗 Direct PWA Link: https://karnisinghji.github.io/staff/
 
 📱 Installation Instructions:
 • iOS: Safari → Share → Add to Home Screen

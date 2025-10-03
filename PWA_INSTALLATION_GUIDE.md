@@ -5,7 +5,7 @@
 ### 🍎 **For iPhone/iPad Users**
 
 1. **Open Safari** browser (must use Safari, not Chrome)
-2. **Go to**: https://contractor-worker-platform.vercel.app
+2. **Go to**: https://karnisinghji.github.io/staff/
 3. **Tap the Share button** (square with arrow pointing up)
 4. **Scroll down** and tap **"Add to Home Screen"**
 5. **Tap "Add"** in the top right corner
@@ -14,7 +14,7 @@
 ### 🤖 **For Android Users**
 
 1. **Open Chrome** browser (recommended)
-2. **Go to**: https://contractor-worker-platform.vercel.app
+2. **Go to**: https://karnisinghji.github.io/staff/
 3. **Tap the three dots menu** (⋮) in the top right
 4. **Tap "Add to Home screen"** or **"Install app"**
 5. **Tap "Add"** to confirm
@@ -63,5 +63,5 @@
 ---
 
 **Ready to get started?**  
-👉 **Visit**: https://contractor-worker-platform.vercel.app  
+👉 **Visit**: https://karnisinghji.github.io/staff/  
 📱 **Install now** and start connecting with work opportunities!
