@@ -17,13 +17,18 @@ export class UserService {
     private resetTokens: { [userId: string]: { token: string, expires: number } } = {};
 
     constructor() {
-        this.pool = new Pool({
+        // Use DATABASE_URL if available, otherwise fall back to individual env vars
+        const dbConfig = process.env.DATABASE_URL ? {
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        } : {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '5432'),
             database: process.env.DB_NAME || 'contractor_worker_platform',
             user: process.env.DB_USER || 'postgres',
             password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
-        });
+        };
+        this.pool = new Pool(dbConfig);
     }
 
     // Find user by email

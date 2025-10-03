@@ -1,7 +1,14 @@
 import { Pool } from 'pg';
 
 // Database connection configuration
-const dbConfig = {
+// Use DATABASE_URL if available, otherwise fall back to individual env vars
+const dbConfig = process.env.DATABASE_URL ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+} : {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     database: process.env.DB_NAME || 'contractor_worker_platform',

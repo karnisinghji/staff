@@ -2,7 +2,14 @@ import { Pool } from 'pg';
 import { logger } from './logger';
 
 // A single, shared pool for the entire application
-export const pool = new Pool({
+// Use DATABASE_URL if available, otherwise fall back to individual env vars
+const dbConfig = process.env.DATABASE_URL ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+} : {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     database: process.env.DB_NAME || 'contractor_worker_platform',
@@ -11,7 +18,9 @@ export const pool = new Pool({
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
-});
+};
+
+export const pool = new Pool(dbConfig);
 
 pool.on('error', (err, client) => {
     logger.error('Unexpected error on idle client', err);

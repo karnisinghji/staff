@@ -4,7 +4,15 @@ import { buildApp } from './app';
 import { requestContextMiddleware, enableGracefulShutdown, stopTracing } from '../../shared';
 import { startAvailabilityExpiryJob } from './jobs/availabilityExpiry';
 
-initEnv({ serviceName: 'user-service', required: ['JWT_SECRET', 'DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'] });
+// Check for either DATABASE_URL or individual DB vars
+const hasDbUrl = process.env.DATABASE_URL;
+const hasIndividualDbVars = process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD;
+
+if (!hasDbUrl && !hasIndividualDbVars) {
+    throw new Error('Either DATABASE_URL or individual DB environment variables (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD) must be provided');
+}
+
+initEnv({ serviceName: 'user-service', required: ['JWT_SECRET'] });
 getRequired('JWT_SECRET', 'user-service');
 logger.info('Loaded environment for user-service');
 

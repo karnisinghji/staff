@@ -27,13 +27,18 @@ let container: HexContainer | null = null;
 
 export function getHexContainer(): HexContainer {
     if (container) return container;
-    const pool = new Pool({
+    // Use DATABASE_URL if available, otherwise fall back to individual env vars
+    const dbConfig = process.env.DATABASE_URL ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    } : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'contractor_worker_platform',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
-    });
+    };
+    const pool = new Pool(dbConfig);
     const userRepo = new PgUserRepository(pool);
     const contactRepo = new PgContactRepository(pool);
     const profileRepo = new PgProfileRepository(pool);

@@ -14,14 +14,19 @@ let invitationController: InvitationController;
 function getInvitationController(): InvitationController {
     if (!invitationController) {
         // Create pool with environment variables (loaded by this time)
-        pool = new Pool({
+        // Use DATABASE_URL if available, otherwise fall back to individual env vars
+        const dbConfig = process.env.DATABASE_URL ? {
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        } : {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '5432'),
             database: process.env.DB_NAME || 'contractor_worker_platform',
             user: process.env.DB_USER || 'postgres',
             password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
             ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-        });
+        };
+        pool = new Pool(dbConfig);
 
         console.log('[invitationRoutes] Database config:', {
             host: process.env.DB_HOST || 'localhost',
