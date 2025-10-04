@@ -1,79 +1,3 @@
-#name: Deploy Frontend to GitHub Pages
-#
-#on:
-#  push:
-#    branches: [ main ]
-#    paths:
-#      - 'frontend/**'
-#      - '.github/workflows/deploy-frontend.yml'
-#
-#permissions:
-#  contents: write
-#
-#concurrency:
-#  group: pages-${{ github.ref }}
-#  cancel-in-progress: true
-#
-#jobs:
-#  build-and-deploy:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Set up Node.js
-#        uses: actions/setup-node@v4
-#        with:
-#          node-version: '18'
-#          cache: 'npm'
-#          cache-dependency-path: frontend/package-lock.json
-#
-#      - name: Prep npm env
-#        run: |
-#          echo "Using temp HOME: $RUNNER_TEMP"
-#          mkdir -p "$RUNNER_TEMP/npm-cache"
-#          : > "$RUNNER_TEMP/empty-npmrc"
-#        env:
-#          RUNNER_TEMP: ${{ runner.temp }}
-#
-#      - name: Verify npm is healthy
-#        env:
-#          HOME: ${{ runner.temp }}
-#          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
-#          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
-#          NPM_CONFIG_GLOBALCONFIG: /dev/null
-#        run: |
-#          npm --version
-#          node --version
-#          npm cache verify
-#
-#      - name: Install dependencies
-#        working-directory: ./frontend
-#        env:
-#          HOME: ${{ runner.temp }}
-#          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
-#          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
-#          NPM_CONFIG_GLOBALCONFIG: /dev/null
-#        run: npm ci
-#
-#      - name: Build
-#        working-directory: ./frontend
-#        env:
-#          HOME: ${{ runner.temp }}
-#          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
-#          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
-#          NPM_CONFIG_GLOBALCONFIG: /dev/null
-#        run: npm run build
-#
-#      - name: Deploy to GitHub Pages
-#        uses: peaceiris/actions-gh-pages@v3
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          publish_dir: ./frontend/dist
-
-
-
 name: Deploy Frontend to GitHub Pages
 
 on:
@@ -122,16 +46,40 @@ jobs:
           node --version
           npm cache verify
 
-      - name: Install dependencies
+      # Remove Capacitor dependencies and config files that cause build issues
+      - name: Remove Capacitor dependencies and configs
         working-directory: ./frontend
-        run: npm ci --userconfig "$NPM_CONFIG_USERCONFIG" --globalconfig "$NPM_CONFIG_GLOBALCONFIG"
+        run: |
+          echo "Removing Capacitor dependencies from package.json..."
+          jq 'del(.dependencies["@capacitor/android"]) | 
+              del(.dependencies["@capacitor/cli"]) | 
+              del(.dependencies["@capacitor/core"]) | 
+              del(.dependencies["@capacitor/ios"]) |
+              del(.devDependencies["@capacitor/cli"]) |
+              del(.devDependencies["@capacitor/core"])' package.json > package.json.new
+          mv package.json.new package.json
+          
+          echo "Removing any Capacitor config files..."
+          rm -f capacitor.config.ts capacitor.config.json .capacitorrc || true
+          
+          echo "Creating clean environment file..."
+          echo "VITE_DEMO_MODE=false" > .env.production
+          
+          echo "Modified package.json successfully"
+
+      - name: Install dependencies 
+        working-directory: ./frontend
+        # Using npm install instead of ci since we modified package.json
+        run: npm install --no-save
 
       - name: Build
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          echo "NODE_ENV=production" > .env
+          npm run build
 
       # Optional SPA fallback (for React Router/Vite)
-      - name: Create 404 for SPA (optional)
+      - name: Create 404 for SPA (required for React Router)
         run: cp ./frontend/dist/index.html ./frontend/dist/404.html || true
 
       - name: Deploy to GitHub Pages
