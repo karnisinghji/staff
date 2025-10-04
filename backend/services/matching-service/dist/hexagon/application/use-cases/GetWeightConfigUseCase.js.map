@@ -1,1 +1,0 @@
-{"version":3,"file":"GetWeightConfigUseCase.js","sourceRoot":"","sources":["../../../../src/hexagon/application/use-cases/GetWeightConfigUseCase.ts"],"names":[],"mappings":";;;AAEA,MAAa,sBAAsB;IAC/B,YAA6B,IAA4B;QAA5B,SAAI,GAAJ,IAAI,CAAwB;IAAI,CAAC;IAC9D,KAAK,CAAC,OAAO;QACT,OAAO,IAAI,CAAC,IAAI,CAAC,eAAe,EAAE,CAAC;IACvC,CAAC;CACJ;AALD,wDAKC"}

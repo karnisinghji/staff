@@ -1,2 +1,0 @@
-{"ts":"2025-09-30T04:39:18.454Z","level":"info","service":"communication-service","msg":"📞 Communication Service running on port 3004"}
-{"ts":"2025-09-30T04:39:18.457Z","level":"info","service":"communication-service","msg":"🏥 Health check available at http://localhost:3004/health"}

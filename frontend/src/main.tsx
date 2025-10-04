@@ -5,6 +5,15 @@ import App from './App.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from './contexts/ToastContext';
 
+// Restore the path from sessionStorage (set by 404.html for GitHub Pages SPA)
+(function() {
+  const redirect = sessionStorage.getItem('redirect');
+  sessionStorage.removeItem('redirect');
+  if (redirect && redirect !== location.pathname) {
+    history.replaceState(null, '', redirect);
+  }
+})();
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

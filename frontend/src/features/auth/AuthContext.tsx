@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, type ReactNode } from 'react';
+import React, { createContext, useState, useContext, useCallback, type ReactNode } from 'react';
 
 interface AuthState {
   token: string | null;
@@ -38,42 +38,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Invalid token, force logout
       logout();
     }
-  }, [token]);
+  }, [token, logout]);
 
-  // Auto-logout on token expiry
-  React.useEffect(() => {
-    if (!token) return;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.exp) {
-        const expiry = payload.exp * 1000;
-        const now = Date.now();
-        if (expiry < now) {
-          logout();
-        } else {
-          const timeout = setTimeout(() => logout(), expiry - now);
-          return () => clearTimeout(timeout);
-        }
-      }
-    } catch (e) {
-      // Invalid token, force logout
-      logout();
-    }
-  }, [token]);
-
-  const login = (newToken: string, newUser: any) => {
+  const login = useCallback((newToken: string, newUser: any) => {
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout }}>

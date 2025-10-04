@@ -6,20 +6,20 @@ Your auth service is **LIVE** but getting database connection errors because `DA
 
 ---
 
-## 📋 Steps to Fix (In Render Dashboard)
+## 📋 Steps to Fix (In Railway Dashboard)
 
-### 1. Go to Render Dashboard
-Visit: https://dashboard.render.com
+### 1. Go to Railway Dashboard
+Visit: https://railway.app/dashboard
 
-### 2. Select Your Auth Service
-Find: **staff-auth-service**
+### 2. Select Your Project
+Find: **staff-platform**
 
-### 3. Go to Environment Tab
-Click on **Environment** in the left sidebar
+### 3. Go to Variables Tab
+Click on **Variables** in the left sidebar
 
 ### 4. Add Required Environment Variables
 
-Click **Add Environment Variable** and add these:
+Click **Add Variable** and add these:
 
 #### ✅ DATABASE_URL (REQUIRED)
 ```

@@ -5,35 +5,35 @@ const isProduction = import.meta.env.MODE === 'production';
 // Base API URLs for production and development
 export const API_CONFIG = {
     AUTH_SERVICE: isProduction 
-        ? 'https://staff-auth-service-production.up.railway.app/api/auth'
+        ? 'https://simple-auth-service-production.up.railway.app/api/auth'
         : 'http://localhost:3001/api/auth',
 
     USER_SERVICE: isProduction
-        ? 'https://staff-user-service-production.up.railway.app/api/users'
+        ? 'https://user-service-production.up.railway.app/api/users'
         : 'http://localhost:3002/api/users',
 
     MATCHING_SERVICE: isProduction
-        ? 'https://staff-matching-service-production.up.railway.app/api/matching'
+        ? 'https://matching-service-production.up.railway.app/api/matching'
         : 'http://localhost:3003/api/matching',
 
     COMMUNICATION_SERVICE: isProduction
-        ? 'https://staff-communication-service-production.up.railway.app/api/communication'
+        ? 'https://communication-service-production.up.railway.app/api/communication'
         : 'http://localhost:3004/api/communication',
 
     NOTIFICATION_SERVICE: isProduction
-        ? 'https://staff-notification-service-production.up.railway.app/api/notification'
+        ? 'https://notification-service-production.up.railway.app/api/notification'
         : 'http://localhost:3005/api/notification'
 };
 
 // WebSocket URLs for real-time features
 export const WS_CONFIG = {
-    COMMUNICATION: isDevelopment
-        ? 'ws://localhost:3004/ws'
-        : import.meta.env.VITE_WS_COMMUNICATION_URL || 'wss://staff-communication-service-production.up.railway.app/ws',
+    COMMUNICATION: isProduction
+        ? import.meta.env.VITE_WS_COMMUNICATION_URL || 'wss://communication-service-production.up.railway.app/ws'
+        : 'ws://localhost:3004/ws',
 
-    NOTIFICATION: isDevelopment
-        ? 'ws://localhost:3005/ws'
-        : import.meta.env.VITE_WS_NOTIFICATION_URL || 'wss://staff-notification-service-production.up.railway.app/ws'
+    NOTIFICATION: isProduction
+        ? import.meta.env.VITE_WS_NOTIFICATION_URL || 'wss://notification-service-production.up.railway.app/ws'
+        : 'ws://localhost:3005/ws'
 };
 
 // Demo mode - set to false to use real backend

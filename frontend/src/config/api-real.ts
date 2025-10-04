@@ -10,23 +10,23 @@ export const REAL_API_CONFIG = {
     // Update these URLs when you deploy your backend services
     AUTH_SERVICE: isDevelopment
         ? 'http://localhost:3001/api/auth'
-        : 'https://your-auth-service.railway.app/api/auth',
+        : 'https://simple-auth-service-production.up.railway.app/api/auth',
 
     USER_SERVICE: isDevelopment
         ? 'http://localhost:3002/api/users'
-        : 'https://your-user-service.railway.app/api/users',
+        : 'https://user-service-production.up.railway.app/api/users',
 
     MATCHING_SERVICE: isDevelopment
         ? 'http://localhost:3003/api/matching'
-        : 'https://your-matching-service.railway.app/api/matching',
+        : 'https://matching-service-production.up.railway.app/api/matching',
 
     COMMUNICATION_SERVICE: isDevelopment
         ? 'http://localhost:3004/api/communication'
-        : 'https://your-communication-service.railway.app/api/communication',
+        : 'https://communication-service-production.up.railway.app/api/communication',
 
     NOTIFICATION_SERVICE: isDevelopment
         ? 'http://localhost:3005/api/notification'
-        : 'https://your-notification-service.railway.app/api/notification'
+        : 'https://notification-service-production.up.railway.app/api/notification'
 };
 
 // Demo API configuration (current)
