@@ -26,78 +26,58 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      # Create a fresh package.json without Capacitor
-      - name: Create fresh package.json without Capacitor
+      # Install Yarn
+      - name: Enable Corepack and setup Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+
+      # Remove Capacitor from package.json
+      - name: Remove Capacitor dependencies
         working-directory: ./frontend
         run: |
-          echo "Creating clean package.json without Capacitor..."
-          # Extract only needed dependencies without Capacitor
-          jq '{
-            "name": .name,
-            "version": .version,
-            "private": true,
-            "type": "module",
-            "scripts": .scripts,
-            "dependencies": (
-              .dependencies | 
-              del(.["@capacitor/android"]) | 
-              del(.["@capacitor/cli"]) | 
-              del(.["@capacitor/core"]) | 
-              del(.["@capacitor/ios"])
-            ),
-            "devDependencies": (
-              .devDependencies | 
-              del(.["@capacitor/cli"]) |
-              del(.["@capacitor/core"])
-            )
-          }' package.json > clean-package.json
+          echo "Removing Capacitor from package.json..."
+          jq 'del(.dependencies["@capacitor/android"]) | 
+              del(.dependencies["@capacitor/cli"]) | 
+              del(.dependencies["@capacitor/core"]) | 
+              del(.dependencies["@capacitor/ios"]) |
+              del(.devDependencies["@capacitor/cli"]) |
+              del(.devDependencies["@capacitor/core"])' package.json > package.temp.json
+          mv package.temp.json package.json
           
-          # Show the clean package.json
-          echo "Clean package.json created:"
-          cat clean-package.json
+          # Remove Capacitor config files
+          rm -f capacitor.config.ts capacitor.config.json .capacitorrc* || true
+          rm -rf android ios || true
           
-          # Replace original with clean one
-          mv clean-package.json package.json
-          
-          # Remove any Capacitor config files
-          rm -f capacitor.config.ts capacitor.config.json .capacitorrc* android/capacitor.settings.gradle ios/App/capacitor.config.json || true
-          
-          # Create clean env files
+          # Clean env
           echo "VITE_DEMO_MODE=false" > .env.production
-          echo "NODE_ENV=production" > .env
+          
+          echo "Modified package.json:"
+          cat package.json
 
-      # Create a separate folder for clean install
-      - name: Setup clean build directory
+      # Install with Yarn (bypasses npm config loading issues)
+      - name: Install dependencies with Yarn
+        working-directory: ./frontend
         run: |
-          mkdir -p clean-frontend
-          cp -r frontend/src frontend/public frontend/index.html frontend/package.json frontend/vite.config.ts frontend/.env* clean-frontend/
-          ls -la clean-frontend
+          yarn install --frozen-lockfile || yarn install
+          yarn list --depth=0
 
-      # Install dependencies in clean directory
-      - name: Install dependencies
-        working-directory: ./clean-frontend
-        run: |
-          npm install --no-package-lock
-          npm list --depth=0
-
-      # Build in clean directory
+      # Build
       - name: Build
-        working-directory: ./clean-frontend
+        working-directory: ./frontend
         run: |
-          npm run build
+          NODE_ENV=production yarn build
           ls -la dist
 
       # Create 404.html fallback for SPA routing
       - name: Create 404 for SPA
-        working-directory: ./clean-frontend
+        working-directory: ./frontend
         run: cp dist/index.html dist/404.html || true
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./clean-frontend/dist
+          publish_dir: ./frontend/dist
           enable_jekyll: false
