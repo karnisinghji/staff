@@ -74,7 +74,6 @@
 
 
 
-
 name: Deploy Frontend to GitHub Pages
 
 on:
@@ -95,13 +94,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    env:
-      HOME: ${{ runner.temp }}
-      NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
-      NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
-      NPM_CONFIG_GLOBALCONFIG: /dev/null
-      NPM_CONFIG_PROJECTCONFIG: ${{ runner.temp }}/empty-npmrc  # <-- key line
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,29 +101,26 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18'            # or 20 if supported
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      # Create npm-safe env using $RUNNER_TEMP and persist to $GITHUB_ENV
       - name: Prep npm env
         run: |
-          echo "Using temp HOME: $RUNNER_TEMP"
+          echo "HOME=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          echo "NPM_CONFIG_CACHE=$RUNNER_TEMP/npm-cache" >> "$GITHUB_ENV"
+          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/empty-npmrc" >> "$GITHUB_ENV"
+          echo "NPM_CONFIG_GLOBALCONFIG=/dev/null" >> "$GITHUB_ENV"
+          echo "NPM_CONFIG_PROJECTCONFIG=$RUNNER_TEMP/empty-npmrc" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/npm-cache"
           : > "$RUNNER_TEMP/empty-npmrc"
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
 
       - name: Verify npm is healthy
         run: |
           npm --version
           node --version
           npm cache verify
-
-      # Optional: If you prefer instead of PROJECTCONFIG, physically disable repo .npmrc
-      # - name: Disable repo .npmrc temporarily
-      #   run: |
-      #     mv .npmrc .npmrc.disabled 2>/dev/null || true
-      #     mv frontend/.npmrc frontend/.npmrc.disabled 2>/dev/null || true
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -141,6 +130,7 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      # Optional SPA fallback (for React Router/Vite)
       - name: Create 404 for SPA (optional)
         run: cp ./frontend/dist/index.html ./frontend/dist/404.html || true
 
@@ -150,4 +140,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
           enable_jekyll: false
-
