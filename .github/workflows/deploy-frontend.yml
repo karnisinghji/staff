@@ -60,7 +60,10 @@ jobs:
       - name: Install dependencies with Yarn
         working-directory: ./frontend
         run: |
-          yarn install --frozen-lockfile || yarn install
+          # Create a minimal yarn.lock to prevent workspace detection
+          touch yarn.lock
+          # Install without workspaces - only frontend dependencies
+          yarn install --no-immutable || yarn install
           yarn list --depth=0
 
       # Build
