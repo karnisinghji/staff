@@ -50,8 +50,22 @@ jobs:
           rm -f capacitor.config.ts capacitor.config.json .capacitorrc* || true
           rm -rf android ios || true
           
-          # Clean env
-          echo "VITE_DEMO_MODE=false" > .env.production
+          # Create production env with Railway URLs
+          cat > .env.production << 'EOF'
+          VITE_MODE=production
+          VITE_DEMO_MODE=false
+          
+          # Production Backend URLs - Railway
+          VITE_AUTH_SERVICE_URL=https://simple-auth-service-production.up.railway.app
+          VITE_USER_SERVICE_URL=https://user-service-production.up.railway.app
+          VITE_MATCHING_SERVICE_URL=https://matching-service-production.up.railway.app
+          VITE_COMMUNICATION_SERVICE_URL=https://communication-service-production.up.railway.app
+          VITE_NOTIFICATION_SERVICE_URL=https://notification-service-production.up.railway.app
+          
+          # WebSocket URLs
+          VITE_WS_COMMUNICATION_URL=wss://communication-service-production.up.railway.app/ws
+          VITE_WS_NOTIFICATION_URL=wss://notification-service-production.up.railway.app/ws
+          EOF
           
           echo "Modified package.json:"
           cat package.json
@@ -70,8 +84,9 @@ jobs:
       - name: Build
         working-directory: ./frontend
         run: |
-          NODE_ENV=production yarn build
+          yarn build --mode production
           ls -la dist
+          echo "Build completed successfully"
 
       # Create 404.html fallback for SPA routing
       - name: Create 404 for SPA
