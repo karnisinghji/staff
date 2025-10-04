@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Helper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .token {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .credentials {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <h1>🔐 Authentication Helper</h1>
+        <p>This page helps you get fresh authentication tokens for testing the application.</p>
+        
+        <div class="credentials">
+            <h3>Test Login Credentials:</h3>
+            <p><strong>Email:</strong> test@contractor.com</p>
+            <p><strong>Password:</strong> testpass123</p>
+            <p><strong>Role:</strong> contractor</p>
+        </div>
+        
+        <button onclick="login()">🔄 Get Fresh Token</button>
+        <button onclick="testMyTeam()">👥 Test My Team API</button>
+        <button onclick="testFindWorkers()">🔍 Test Find Workers API</button>
+        
+        <div id="status"></div>
+        <div id="tokenDisplay"></div>
+        <div id="apiResults"></div>
+    </div>
+
+    <div class="auth-card">
+        <h2>How to Use Fresh Token:</h2>
+        <ol>
+            <li><strong>Click "Get Fresh Token"</strong> to generate a new authentication token</li>
+            <li><strong>Copy the token</strong> from the display below</li>
+            <li><strong>Login to the app</strong> at <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+            <li><strong>Use credentials:</strong> test@contractor.com / testpass123</li>
+            <li><strong>Test features:</strong> Worker search, My Team, Profile, Messages</li>
+        </ol>
+        
+        <h3>Troubleshooting:</h3>
+        <ul>
+            <li><strong>Token expired:</strong> Tokens expire after 15 minutes - click "Get Fresh Token"</li>
+            <li><strong>Login issues:</strong> Make sure backend services are running</li>
+            <li><strong>API errors:</strong> Check that you're using the fresh token</li>
+        </ul>
+    </div>
+
+    <script>
+        let currentToken = '';
+        
+        async function login() {
+            const statusDiv = document.getElementById('status');
+            const tokenDiv = document.getElementById('tokenDisplay');
+            
+            statusDiv.innerHTML = '<div style="color: #666;">Logging in...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@contractor.com',
+                        password: 'testpass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.accessToken) {
+                    currentToken = data.accessToken;
+                    statusDiv.innerHTML = '<div class="success">✅ Login successful!</div>';
+                    tokenDiv.innerHTML = `
+                        <h3>Fresh Access Token:</h3>
+                        <div class="token">${data.accessToken}</div>
+                        <p><strong>Expires in:</strong> ${data.expiresInSeconds} seconds (${Math.round(data.expiresInSeconds/60)} minutes)</p>
+                        <p><strong>Use this token</strong> for API calls or browser testing</p>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Login failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testMyTeam() {
+            if (!currentToken) {
+                alert('Please get a fresh token first!');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<div style="color: #666;">Testing My Team API...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3003/api/matching/my-team', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML = `
+                        <h3>My Team API Results:</h3>
+                        <div class="success">✅ Found ${data.data.teamMembers.length} team members</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ API Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFindWorkers() {
+            if (!currentToken) {
+                alert('Please get a fresh token first!');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<div style="color: #666;">Testing Find Workers API...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3003/api/matching/find-workers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        skillType: 'carpenter',
+                        location: 'Toronto, ON',
+                        maxDistance: 50
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML = `
+                        <h3>Find Workers API Results:</h3>
+                        <div class="success">✅ Found ${data.data.matches.length} workers</div>
+                        <pre>${JSON.stringify(data.data.matches.slice(0, 2), null, 2)}</pre>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">❌ API Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-login on page load
+        window.onload = function() {
+            login();
+        };
+    </script>
+</body>
+</html>
