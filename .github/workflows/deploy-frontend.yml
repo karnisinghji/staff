@@ -64,7 +64,7 @@ jobs:
           touch yarn.lock
           # Install without workspaces - only frontend dependencies
           yarn install --no-immutable || yarn install
-          yarn list --depth=0
+          echo "Dependencies installed successfully"
 
       # Build
       - name: Build
