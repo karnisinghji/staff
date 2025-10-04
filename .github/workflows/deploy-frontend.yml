@@ -17,9 +17,6 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
 
     steps:
       - name: Checkout code
@@ -28,20 +25,45 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: '18'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Prep npm env
+        run: |
+          echo "Using temp HOME: $RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/npm-cache"
+          : > "$RUNNER_TEMP/empty-npmrc"
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+
       - name: Verify npm is healthy
+        env:
+          HOME: ${{ runner.temp }}
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
+          NPM_CONFIG_GLOBALCONFIG: /dev/null
         run: |
           npm --version
           node --version
           npm cache verify
 
       - name: Install dependencies
+        working-directory: ./frontend
+        env:
+          HOME: ${{ runner.temp }}
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
+          NPM_CONFIG_GLOBALCONFIG: /dev/null
         run: npm ci
 
       - name: Build
+        working-directory: ./frontend
+        env:
+          HOME: ${{ runner.temp }}
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-npmrc
+          NPM_CONFIG_GLOBALCONFIG: /dev/null
         run: npm run build
 
       - name: Deploy to GitHub Pages
