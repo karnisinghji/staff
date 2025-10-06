@@ -1,29 +1,32 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "allowJs": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "moduleDetection": "auto",
-        "composite": true
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../../shared/src/*"]
     },
-    "references": [
-        {
-            "path": "../shared"
-        }
-    ],
-    "include": [
-        "src/**/*",
-        "src/express.d.ts"
-    ],
-    "exclude": [
-        "node_modules",
-        "**/*.spec.ts",
-        "**/*.test.ts"
-    ]
+    "types": ["node", "express"],
+    "allowJs": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true
+  },
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ],
+  "include": [
+    "src/**/*",
+    "../../shared/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
 }

@@ -2,18 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import { applyStandardSecurity, createReadinessRegistry, runReadiness, startTracing } from '../../shared';
 import morgan from 'morgan';
-import { createUserRoutes } from './routes/userRoutes';
+import userRoutes from './routes/userRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import { logger } from './utils/logger';
 import { DomainError } from './hexagon/domain/errors/DomainErrors';
 import { userMetricsBundle } from './observability/metrics';
 import { corsOptions } from '../../shared/cors';
-import { getHexContainer } from './hexagon/bootstrap/container';
-
-// Type definition for app options
-interface BuildAppOptions {
-    serviceName?: string;
-}
 
 // Shared metrics placeholders (resolved at build time)
 let exposeMetricsEndpoint: any = null;
@@ -37,8 +31,7 @@ try {
  */
 export function buildApp(options: BuildAppOptions = {}) {
     const app = express();
-    const serviceName = options.serviceName || 'user-service';
-    const container = getHexContainer();
+    const serviceName = 'user-service';
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
 
     // Security middleware (shared) + custom headers

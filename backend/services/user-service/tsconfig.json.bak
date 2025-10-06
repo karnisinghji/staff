@@ -1,0 +1,35 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "baseUrl": "src",
+        "paths": {
+            "@shared/*": ["../../shared/src/*"]
+        },
+        "allowJs": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "moduleDetection": "auto",
+        "composite": true,
+        "typeRoots": ["./src/types", "./node_modules/@types"],
+        "skipLibCheck": true
+    },
+    "references": [
+        {
+            "path": "../shared"
+        }
+    ],
+    "include": [
+        "src/**/*",
+        "src/types/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+    ]
+}

@@ -5,24 +5,24 @@ const isProduction = import.meta.env.MODE === 'production';
 // Base API URLs for production and development
 export const API_CONFIG = {
     AUTH_SERVICE: isProduction 
-        ? 'https://simple-auth-service-production.up.railway.app/api/auth'
-        : 'http://localhost:3001/api/auth',
+        ? 'https://simple-auth-service-production.up.railway.app'
+        : 'http://localhost:3001',
 
     USER_SERVICE: isProduction
-        ? 'https://user-service-production.up.railway.app/api/users'
-        : 'http://localhost:3002/api/users',
+        ? 'https://user-service-production.up.railway.app'
+        : 'http://localhost:3002',
 
     MATCHING_SERVICE: isProduction
-        ? 'https://matching-service-production.up.railway.app/api/matching'
-        : 'http://localhost:3003/api/matching',
+        ? 'https://matching-service-production.up.railway.app'
+        : 'http://localhost:3003',
 
     COMMUNICATION_SERVICE: isProduction
-        ? 'https://communication-service-production.up.railway.app/api/communication'
-        : 'http://localhost:3004/api/communication',
+        ? 'https://communication-service-production.up.railway.app'
+        : 'http://localhost:3004',
 
     NOTIFICATION_SERVICE: isProduction
-        ? 'https://notification-service-production.up.railway.app/api/notification'
-        : 'http://localhost:3005/api/notification'
+        ? 'https://notification-service-production.up.railway.app'
+        : 'http://localhost:3005'
 };
 
 // WebSocket URLs for real-time features

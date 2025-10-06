@@ -38,7 +38,7 @@ export const RegisterPage: React.FC = () => {
     }
     try {
       // Always send as 'username' to match backend
-      let payload: any = { username: contact, password, role };
+      const payload: any = { username: contact, password, role };
       console.log('Register payload:', payload);
       const response = await demoFetch(`${API_CONFIG.AUTH_SERVICE}/signup`, {
           method: 'POST',
