@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
 const App: React.FC = () => (
   <AuthProvider>
     <NotificationProvider>
-      <Router>
+      <Router basename="/staff/">
         <GlobalAnimations />
         <NavBar />
         <NotificationList />

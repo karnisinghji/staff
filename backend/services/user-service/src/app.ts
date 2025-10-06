@@ -7,6 +7,7 @@ import invitationRoutes from './routes/invitationRoutes';
 import { logger } from './utils/logger';
 import { DomainError } from './hexagon/domain/errors/DomainErrors';
 import { userMetricsBundle } from './observability/metrics';
+import { corsOptions } from '../../shared/cors';
 
 // Shared metrics placeholders (resolved at build time)
 let exposeMetricsEndpoint: any = null;
@@ -28,7 +29,7 @@ try {
  *  - Future dependency injection (pass fakes/mocks) by extending options signature
  *  - Consistent instrumentation & error-handling assembly.
  */
-export function buildApp(): express.Express {
+export function buildApp(options: BuildAppOptions = {}) {
     const app = express();
     const serviceName = 'user-service';
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
@@ -47,14 +48,9 @@ export function buildApp(): express.Express {
         }
         next();
     });
+    // app.use(cors(corsOptions));
     app.use(cors({
-        origin: [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000',
-            ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
-        ],
-        credentials: true
+        origin: 'https://karnisinghji.github.io'
     }));
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
@@ -104,9 +100,15 @@ export function buildApp(): express.Express {
         res.status(code).json(agg);
     });
 
-    // Routes
-    app.use('/', userRoutes);
-    app.use('/', invitationRoutes);
+    // Health check endpoint (accessible both with and without /api prefix)
+    app.get(['/health', '/api/health'], (req, res) => {
+        res.status(200).send('OK');
+    });
+
+    // Apply routes with proper prefix handling
+    const routes = createUserRoutes(container);
+    app.use('/users', routes);
+    app.use('/api/users', routes);
 
     // 404 handler
     app.use((req, res) => {

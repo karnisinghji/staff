@@ -67,7 +67,9 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     app.locals.version = version;
 
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
-    app.use(cors());
+    app.use(cors({
+        origin: 'https://karnisinghji.github.io'
+    }));
     app.use(express.json());
     app.use(morgan('dev'));
 
