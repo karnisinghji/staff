@@ -54,7 +54,7 @@ export const DEMO_API_CONFIG = {
 
 // 🎛️ TOGGLE BETWEEN DEMO AND REAL DATABASE
 // Set to true for demo mode, false for real database
-export const USE_DEMO_MODE = false; // 👈 Change this to false when ready
+export const USE_DEMO_MODE = false; // 👈 Demo mode disabled, use real APIs
 
 // Use appropriate configuration based on mode
 export const API_CONFIG = USE_DEMO_MODE ? DEMO_API_CONFIG : REAL_API_CONFIG;
