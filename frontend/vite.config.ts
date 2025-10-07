@@ -6,24 +6,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: '/staff/', // GitHub Pages deployment path
+    base: '/staff/',
     build: {
       outDir: 'dist',
       sourcemap: true,
-      // Ensure proper SPA routing for GitHub Pages
-      rollupOptions: {
-        output: {
-          manualChunks: undefined
-        }
-      }
     },
     define: {
       __VITE_ENV__: JSON.stringify(env),
     },
-    server: {
-      // Local development settings
-      port: 5173,
-      host: true
-    }
   };
 });

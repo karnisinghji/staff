@@ -19,6 +19,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return stored ? JSON.parse(stored) : null;
   });
 
+  const login = useCallback((newToken: string, newUser: any) => {
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }, []);
+
   // Auto-logout on token expiry
   React.useEffect(() => {
     if (!token) return;
@@ -39,20 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout();
     }
   }, [token, logout]);
-
-  const login = useCallback((newToken: string, newUser: any) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-  }, []);
-
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  }, []);
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout }}>

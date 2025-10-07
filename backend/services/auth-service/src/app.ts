@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport';
-import { corsOptions } from '../../shared/cors';
 // Security handled via shared helper
 import { applyStandardSecurity, buildHealthPayload as sharedBuildHealthPayload, createReadinessRegistry, runReadiness, startTracing } from '../../shared';
 // Health payload helper: prefer shared implementation via stable relative path (runtime-safe) with fallback.
@@ -55,10 +54,17 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
     // Initialize tracing lazily (no-op if env not set)
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
     // CORS configuration - allow requests from frontend
-    // app.use(cors(corsOptions));
     app.use(cors({
-        origin: 'https://karnisinghji.github.io'
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            process.env.FRONTEND_URL || 'http://localhost:5173'
+        ],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
     }));
+
     // Cast due to potential duplicate @types/express versions across service and shared packages
     app.use(requestContextMiddleware as any);
     app.use(express.json());
@@ -130,13 +136,8 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
 
     // Container & routes
     const container = buildContainer();
-    // API prefix middleware
-    app.use((req, res, next) => {
-        if (req.path.startsWith('/api/')) {
-            req.url = req.url.replace('/api', '');
-        }
-        next();
-    });
+    app.use('/api/auth', createAuthRoutes(container));
+    app.use('/api/auth', createOAuthRoutes());
 
     // Readiness registry (extend with DB / cache when available)
     const readiness = createReadinessRegistry();
@@ -144,14 +145,9 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
     readiness.register('startupWarmup', async () => ({ name: 'startupWarmup', status: process.uptime() > 5 ? 'ok' : 'degraded' }));
 
     // Health simple endpoint (reflect metrics & version placeholders later if needed)
-    app.get(['/health', '/api/health'], (req, res) => {
-        res.status(200).send('OK');
+    app.get('/health', (_req, res) => {
+        res.json(buildHealthPayload(serviceName, (process as any).env.npm_package_version));
     });
-
-    // Apply routes with proper prefix handling
-    const routes = createAuthRoutes(container);
-    app.use('/auth', routes);
-    app.use('/api/auth', routes);
 
     // Readiness endpoint
     app.get('/ready', async (_req, res) => {
