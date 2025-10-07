@@ -14,7 +14,7 @@ export const REAL_API_CONFIG = {
 
     USER_SERVICE: isDevelopment
         ? 'http://localhost:3002/api/users'
-        : 'https://user-service-production.up.railway.app/api/users',
+        : 'https://user-service-production-f141.up.railway.app/api/users',
 
     MATCHING_SERVICE: isDevelopment
         ? 'http://localhost:3003/api/matching'
@@ -22,11 +22,11 @@ export const REAL_API_CONFIG = {
 
     COMMUNICATION_SERVICE: isDevelopment
         ? 'http://localhost:3004/api/communication'
-        : 'https://communication-service-production.up.railway.app/api/communication',
+        : 'https://communication-service-production-c165.up.railway.app/api/communication',
 
     NOTIFICATION_SERVICE: isDevelopment
         ? 'http://localhost:3005/api/notification'
-        : 'https://notification-service-production.up.railway.app/api/notification'
+        : 'https://notification-service-production-8738.up.railway.app/api/notification'
 };
 
 // Demo API configuration (current)
