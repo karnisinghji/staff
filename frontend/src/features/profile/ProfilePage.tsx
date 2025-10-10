@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_CONFIG } from '../../config/api';
 
 // Helper to determine registration type (email / phone)
 function getRegistrationType(username: string) {
@@ -145,7 +146,7 @@ const ProfilePage: React.FC = () => {
 
   const fetchProfile = useCallback(async () => {
     if (!token) return null;
-    const res = await axios.get('http://localhost:3002/api/users/profile', {
+    const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -190,7 +191,7 @@ const ProfilePage: React.FC = () => {
     setSkillsLoading(true);
     setSkillsError('');
     try {
-      const res = await axios.get('http://localhost:3002/api/users/skills');
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
       const list: string[] = res.data?.data || [];
       const options = [{ value: '', label: 'Select skill type' }, ...list.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))];
       setSkillTypeOptions(options);
@@ -237,19 +238,19 @@ const ProfilePage: React.FC = () => {
     mutationFn: async (payload: { userPayload: any; workerPayload?: any; contractorPayload?: any }) => {
       const { userPayload, workerPayload, contractorPayload } = payload;
       if (Object.keys(userPayload).length > 0) {
-        await axios.put('http://localhost:3002/api/users/profile', userPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/profile`, userPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'worker' && workerPayload && Object.keys(workerPayload).length > 0) {
-        await axios.put('http://localhost:3002/api/users/worker-profile', workerPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/worker-profile`, workerPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'contractor' && contractorPayload && Object.keys(contractorPayload).length > 0) {
-        await axios.put('http://localhost:3002/api/users/contractor-profile', contractorPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/contractor-profile`, contractorPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });

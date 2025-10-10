@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_CONFIG } from '../../config/api';
 
 interface WorkerProfile {
   isAvailable?: boolean;
@@ -39,7 +40,7 @@ const StatusPage: React.FC = () => {
     queryKey: ['profile'],
     queryFn: async () => {
       if (!token) return null;
-      const res = await axios.get('http://localhost:3002/api/users/profile', {
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
         withCredentials: true,
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -52,7 +53,7 @@ const StatusPage: React.FC = () => {
   const mutation = useMutation({
     mutationFn: async (available: boolean) => {
       await axios.put(
-        'http://localhost:3002/api/users/worker-profile',
+        `${API_CONFIG.USER_SERVICE}/api/users/worker-profile`,
         { isAvailable: available },
         {
           withCredentials: true,
@@ -159,8 +160,7 @@ const StatusPage: React.FC = () => {
     setSuccessMsg('');
     setErrorMsg('');
     try {
-      // TODO: Replace with actual backend endpoint
-      await axios.post('http://localhost:3003/api/matching/contractor-requirements', {
+      await axios.post(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements`, {
         requiredWorkers: Number(requiredWorkers)
       }, {
         withCredentials: true,

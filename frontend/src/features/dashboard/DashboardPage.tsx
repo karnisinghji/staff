@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface TeamRequest {
   id: number;
@@ -36,7 +37,7 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       
       // Fetch pending team requests
-      const requestsResponse = await fetch('http://localhost:3003/api/matching/team-requests/received', {
+      const requestsResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -44,7 +45,7 @@ const DashboardPage: React.FC = () => {
       });
 
       // Fetch team members
-      const teamResponse = await fetch('http://localhost:3003/api/matching/my-team', {
+      const teamResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ const DashboardPage: React.FC = () => {
 
     setActionLoading(requestId);
     try {
-      const response = await fetch(`http://localhost:3003/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
