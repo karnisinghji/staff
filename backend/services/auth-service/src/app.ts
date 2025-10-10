@@ -58,6 +58,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
         origin: [
             'http://localhost:5173',
             'http://localhost:5174',
+            'https://karnisinghji.github.io',
             process.env.FRONTEND_URL || 'http://localhost:5173'
         ],
         credentials: true,
@@ -147,6 +148,15 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
     // Health simple endpoint (reflect metrics & version placeholders later if needed)
     app.get('/health', (_req, res) => {
         res.json(buildHealthPayload(serviceName, (process as any).env.npm_package_version));
+    });
+
+    // Root route for basic service verification
+    app.get('/', (_req, res) => {
+        res.json({
+            service: serviceName,
+            status: 'running',
+            timestamp: new Date().toISOString()
+        });
     });
 
     // Readiness endpoint
