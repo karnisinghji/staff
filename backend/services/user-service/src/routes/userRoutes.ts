@@ -19,10 +19,11 @@ export function createUserRoutes(container: HexContainer) {
     router.get('/skills', userController.getSkills);
     router.post('/forgot-password', forgotPasswordRateLimit(), validateBody(forgotPasswordSchema), userController.forgotPassword);
 
-    // Protected routes
+    // Protected routes (all routes below require authentication)
     router.use(authenticateToken);
 
-    // User profile routes - using hexagonal use cases directly via the controller
+    // User profile routes
+    router.get('/profile', userController.getCurrentUser);
     router.get('/profile/complete', async (req, res) => {
         if (!req.user?.id) {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -30,8 +31,16 @@ export function createUserRoutes(container: HexContainer) {
         const result = await container.getCompleteProfile.execute(req.user.id);
         res.json({ success: true, data: result });
     });
+    router.get('/:id', userController.getUserById);
+    router.put('/profile', userController.updateUser);
+    router.put('/worker-profile', userController.updateWorkerProfile);
+    router.put('/contractor-profile', userController.updateContractorProfile);
 
-    // Route for updating user data
+    // Contact routes
+    router.get('/contacts', userController.getContacts);
+    router.post('/contacts', userController.createContact);
+
+    // Deprecated PATCH route - kept for backward compatibility
     router.patch('/profile', async (req, res) => {
         if (!req.user?.id) {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
