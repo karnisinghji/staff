@@ -391,7 +391,7 @@ const EnhancedProfilePage: React.FC = () => {
     setSkillsLoading(true);
     setSkillsError('');
     try {
-      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills');
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
       const list: string[] = res.data?.data || [];
       const options = [{ value: '', label: 'Select skill type' }, ...list.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))];
       setSkillTypeOptions(options);
