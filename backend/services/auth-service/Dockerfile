@@ -7,7 +7,7 @@ FROM node:20.11-alpine AS build
 WORKDIR /app
 COPY package*.json tsconfig.json ./
 COPY src ./src
-RUN npm ci && npm run build
+RUN npm ci && npx tsc src/index.ts --outDir dist --esModuleInterop --resolveJsonModule --module commonjs --target es2020
 
 FROM node:20.11-alpine AS runner
 WORKDIR /app
