@@ -88,6 +88,15 @@ jobs:
           ls -la dist
           echo "Build completed successfully"
 
+      # Stamp HTML with build metadata to force CDN cache refresh
+      - name: Stamp HTML with build info
+        run: |
+          echo "🏷️  Injecting build metadata into HTML..."
+          node scripts/stamp-html.js
+          echo "✅ HTML stamped with SHA: $(git rev-parse --short HEAD)"
+          echo "📄 Verifying stamped HTML:"
+          grep -A 3 "Build Info" frontend/dist/index.html || echo "⚠️  Build stamp not found"
+
       # Create 404.html fallback for SPA routing
       - name: Create 404 for SPA
         working-directory: ./frontend
