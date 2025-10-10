@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { applyStandardSecurity } from '../../shared';
+import { applyStandardSecurity } from './shared';
 import morgan from 'morgan';
 import matchingRoutes from './routes/matchingRoutes';
 import adminRoutes from './routes/adminRoutes';
@@ -12,7 +12,7 @@ let exposeMetricsEndpoint: any = null;
 let sharedMiddleware: any = null;
 try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const m = require('../../shared');
+    const m = require('./shared');
     sharedFactory = m.createHttpMetrics;
     exposeMetricsEndpoint = m.exposeMetricsEndpoint;
     sharedMiddleware = m.metricsMiddleware;

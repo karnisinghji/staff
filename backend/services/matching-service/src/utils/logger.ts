@@ -2,8 +2,7 @@
 let loggerImpl: any;
 try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // Three levels up: utils -> src -> matching-service -> (services) then shared
-    const { createLogger } = require('../../../shared/src/logger');
+    const { createLogger } = require('../shared/logger');
     loggerImpl = createLogger({ serviceName: 'matching-service' });
 } catch (e) {
     const fallback = (level: string, message: string, meta?: any) => {

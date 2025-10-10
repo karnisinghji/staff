@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { buildApp } from './app';
-import { requestContextMiddleware, enableGracefulShutdown } from '../../shared';
+import { requestContextMiddleware, enableGracefulShutdown } from './shared';
 
 dotenv.config();
 

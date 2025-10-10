@@ -1,7 +1,7 @@
 import { Router } from 'express';
 let buildHealthPayload: any;
 try {
-    ({ buildHealthPayload } = require('../../../shared/src/health'));
+    ({ buildHealthPayload } = require('../shared/health'));
 } catch {
     buildHealthPayload = (service: string, version?: string, domain?: any) => ({
         status: 'ok',
@@ -14,7 +14,7 @@ try {
 }
 import { MatchingController } from '../controllers/MatchingController';
 import { ContractorRequirementController } from '../controllers/ContractorRequirementController';
-import { validate } from '../../../shared';
+import { validate } from '../shared';
 import { z } from 'zod';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
