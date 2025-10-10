@@ -267,7 +267,7 @@ const EnhancedProfilePage: React.FC = () => {
   useEffect(() => {
     const loadSkills = async () => {
       try {
-  const res = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
+  const res = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/skills`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         // Handle backend response format { success: true, data: skills }

@@ -434,7 +434,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     const fetchSkills = async () => {
       try {
         setSkillsLoading(true);
-  const response = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
+  const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/skills`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -531,7 +531,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     setActionLoading(`team-${match.id}`);
     
     try {
-  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests`, {
+  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

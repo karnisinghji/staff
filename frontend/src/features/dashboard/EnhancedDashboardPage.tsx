@@ -275,7 +275,7 @@ const EnhancedDashboardPage: React.FC = () => {
       setLoading(true);
       
       // Fetch pending team requests
-  const requestsResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/received`, {
+  const requestsResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -335,7 +335,7 @@ const EnhancedDashboardPage: React.FC = () => {
 
     setActionLoading(requestId);
     try {
-  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/${requestId}`, {
+  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
