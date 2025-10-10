@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Auth Service Dockerfile (multi-stage build)
-ARG NODE_VERSION=20-alpine
+# Auth Service Dockerfile (multi-stage build) - v1.3.0-fresh
+ARG NODE_VERSION=20.11-alpine
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -16,9 +16,13 @@ RUN npm ci && npm run build
 
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
+# Force cache bust with timestamp
+ARG CACHEBUST=1
+RUN echo "Build timestamp: $CACHEBUST"
 ENV NODE_ENV=production \
     PORT=3000 \
-    SERVICE_NAME=auth-service
+    SERVICE_NAME=auth-service \
+    BUILD_VERSION=1.3.0-fresh
 # Copy production node_modules and compiled dist
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
