@@ -8,7 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { SkillsTagInput } from '../common/SkillsTagInput';
 import { ProfileSharing } from '../common/ProfileSharing';
 import { PortfolioSection } from '../common/PortfolioSection';
-import { API_CONFIG, demoFetch } from '../../config/api';
+import { API_CONFIG } from '../../config/api';
 import { LocationSelector } from '../common/LocationSelector';
 // import { ProfileCompletionModal } from '../common/ProfileCompletionModal';
 import { useProfileCompletion, getFieldLockStatus } from '../../hooks/useProfileCompletion';
@@ -267,7 +267,7 @@ const EnhancedProfilePage: React.FC = () => {
   useEffect(() => {
     const loadSkills = async () => {
       try {
-        const res = await demoFetch(`${API_CONFIG.USER_SERVICE}/skills`, {
+  const res = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         // Handle backend response format { success: true, data: skills }

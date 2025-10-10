@@ -1,24 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { API_CONFIG, demoFetch } from '../../config/api';
-
+import { API_CONFIG } from '../../config/api';
 export const LoginPage: React.FC = () => {
   const { login, token } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (token) {
-      navigate('/dashboard');
-    }
-  }, [token, navigate]);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (token) {
-      navigate('/dashboard');
-    }
-  }, []);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -27,20 +13,24 @@ export const LoginPage: React.FC = () => {
   const [showSuccessBar, setShowSuccessBar] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (token) {
+      navigate('/dashboard');
+    }
+  }, [token, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-  const payload = { email: username, password };
-  // Submitting login request
+    const payload = { email: username, password };
     try {
-      const res = await demoFetch(`${API_CONFIG.AUTH_SERVICE}/login`, {
+      const res = await fetch(`${API_CONFIG.AUTH_SERVICE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      // Login response received
       if (res.ok && data.accessToken) {
         try {
           login(data.accessToken, data.user);
@@ -48,49 +38,86 @@ export const LoginPage: React.FC = () => {
         } catch (loginErr) {
           setError('There was a problem saving your login. Please try again.');
           setLoading(false);
-          return;
         }
-        // navigation will happen in useEffect
+      } else if (data.error) {
+        setError(typeof data.error === 'string' ? data.error : 'Login failed. Please try again.');
+        setLoading(false);
       } else {
-        if (data.error && typeof data.error === 'string' && data.error.toLowerCase().includes('invalid')) {
-          setError('Invalid username or password. Please try again.');
-        } else if (data.error && typeof data.error === 'object' && data.error.message) {
-          setError(data.error.message);
-        } else if (data.error) {
-          setError(typeof data.error === 'string' ? data.error : 'Login failed. Please try again.');
-        } else {
-          setError('Login failed. Please try again.');
-        }
+        setError('Login failed. Please try again.');
+        setLoading(false);
       }
     } catch (err) {
-      setError('Network error');
-    } finally {
+      setError('Network error. Please try again later.');
       setLoading(false);
     }
   };
 
   return (
     <>
+      <div className="login-bg">
+        <form className="login-form" onSubmit={handleSubmit} aria-label="Login form" tabIndex={0}>
+          <h2 id="login-title">Login</h2>
+          {showSuccessBar && (
+            <div className="success-bar" role="status" aria-live="polite">
+              Login successful!
+              <button className="close-btn" onClick={() => setShowSuccessBar(false)} aria-label="Close success message">&times;</button>
+            </div>
+          )}
+          <label htmlFor="login-username" style={{display:'none'}}>Username</label>
+          <input
+            id="login-username"
+            type="text"
+            placeholder="Username (email or mobile)"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+          />
+          <label htmlFor="login-password" style={{display:'none'}}>Password</label>
+          <input
+            id="login-password"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+          <div style={{display:'flex',alignItems:'center',marginBottom:'1rem'}}>
+            <input
+              id="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              style={{marginRight:'0.5rem'}}
+            />
+            <label htmlFor="remember-me">Remember me</label>
+          </div>
+          {error && <div className="error" role="alert">{error}</div>}
+          <button type="submit" disabled={loading} aria-busy={loading} aria-label="Login">
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+          <a href="/forgot-password" className="forgot-password-link">Forgot password?</a>
+        </form>
+      </div>
       <style>{`
         .login-bg {
           min-height: 100vh;
           display: flex;
-          justify-content: center;
           align-items: center;
-          background: #f5f7fa;
-          padding: 2rem;
+          justify-content: center;
+          background: linear-gradient(120deg, #e3f2fd 0%, #f7f9fc 100%);
         }
         .login-form {
-          width: 100%;
-          max-width: 420px;
-          min-width: 320px;
-          padding: 2.5rem 2.5rem 2rem 2.5rem;
-          border-radius: 16px;
           background: #fff;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+          padding: 2.5rem 2rem 2rem 2rem;
+          border-radius: 16px;
+          box-shadow: 0 4px 24px rgba(25,118,210,0.10);
           display: flex;
           flex-direction: column;
           gap: 1.5rem;
+          min-width: 320px;
+          max-width: 400px;
         }
         .login-form h2 {
           text-align: center;
@@ -126,6 +153,42 @@ export const LoginPage: React.FC = () => {
           text-align: center;
           font-weight: 500;
         }
+        .forgot-password-link {
+          color: #1976d2;
+          text-decoration: none;
+          font-size: 1rem;
+          transition: color 0.2s;
+        }
+        .forgot-password-link:hover {
+          color: #115293;
+          text-decoration: underline;
+        }
+        .success-bar {
+          background: #43a047;
+          color: #fff;
+          padding: 0.8rem 1.2rem;
+          border-radius: 8px;
+          font-weight: 600;
+          text-align: center;
+          margin-bottom: 1rem;
+          position: relative;
+          box-shadow: 0 2px 8px rgba(67,160,71,0.12);
+          animation: fadeIn 0.3s;
+        }
+        .close-btn {
+          background: none;
+          border: none;
+          color: #fff;
+          font-size: 1.2rem;
+          position: absolute;
+          right: 12px;
+          top: 8px;
+          cursor: pointer;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (max-width: 600px) {
           .login-form {
             max-width: 100vw;
@@ -142,104 +205,6 @@ export const LoginPage: React.FC = () => {
             padding: 0.7rem;
             border-radius: 7px;
           }
-        }
-      `}</style>
-      <div className="login-bg">
-        <form className="login-form" onSubmit={handleSubmit} aria-label="Login form" tabIndex={0}>
-          <h2 id="login-title">Login</h2>
-          {showSuccessBar && (
-            <div className="success-bar" role="status" aria-live="polite">
-              Login successful!
-              <button className="close-btn" onClick={() => setShowSuccessBar(false)} aria-label="Close success message">&times;</button>
-            </div>
-          )}
-          <label htmlFor="login-username" style={{display:'none'}}>Username</label>
-          <input
-            id="login-username"
-            type="text"
-            placeholder="Username (email or mobile)"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            required
-            aria-label="Username"
-            autoComplete="username"
-          />
-          <label htmlFor="login-password" style={{display:'none'}}>Password</label>
-          <input
-            id="login-password"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            aria-label="Password"
-            autoComplete="current-password"
-          />
-          <div className="login-options-row">
-            <label className="remember-me">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-              />
-              Remember me
-            </label>
-            <a href="/forgot-password" className="forgot-password-link">Forgot password?</a>
-          </div>
-          <button type="submit" disabled={loading} aria-busy={loading} aria-label="Login">
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-          {error && <div className="error" role="alert">{error}</div>}
-        </form>
-      </div>
-      <style>{`
-        .success-bar {
-          background: #43a047;
-          color: #fff;
-          padding: 0.8rem 1.2rem;
-          border-radius: 8px;
-          font-weight: 600;
-          text-align: center;
-          margin-bottom: 1rem;
-          position: relative;
-          box-shadow: 0 2px 8px rgba(67,160,71,0.12);
-          animation: fadeIn 0.3s;
-        }
-        .login-options-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: -0.5rem;
-        }
-        .remember-me {
-          display: flex;
-          align-items: center;
-          font-size: 1rem;
-          gap: 0.4rem;
-        }
-        .forgot-password-link {
-          color: #1976d2;
-          text-decoration: none;
-          font-size: 1rem;
-          transition: color 0.2s;
-        }
-        .forgot-password-link:hover {
-          color: #115293;
-          text-decoration: underline;
-        }
-        .close-btn {
-          background: none;
-          border: none;
-          color: #fff;
-          font-size: 1.2rem;
-          position: absolute;
-          right: 12px;
-          top: 8px;
-          cursor: pointer;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>

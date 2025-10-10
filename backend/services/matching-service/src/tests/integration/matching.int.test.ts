@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 describe('Matching integration tests', () => {
     it('find-workers requires contractor role and returns 200 when authorized', async () => {
-        const token = jwt.sign({ id: '550e8400-e29b-41d4-a716-446655440004', email: 'mike@example.com', role: 'contractor' }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ sub: '550e8400-e29b-41d4-a716-446655440004', email: 'mike@example.com', roles: ['contractor'] }, JWT_SECRET, { expiresIn: '1h' });
 
         const res = await request(app)
             .post('/api/matching/find-workers')
@@ -26,7 +26,7 @@ describe('Matching integration tests', () => {
     });
 
     it('find-contractors requires worker role and returns 200 when authorized', async () => {
-        const token = jwt.sign({ id: '550e8400-e29b-41d4-a716-446655440004', email: 'mike@example.com', role: 'worker' }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ sub: '550e8400-e29b-41d4-a716-446655440004', email: 'mike@example.com', roles: ['worker'] }, JWT_SECRET, { expiresIn: '1h' });
 
         const res = await request(app)
             .post('/api/matching/find-contractors')

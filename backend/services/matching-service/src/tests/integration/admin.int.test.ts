@@ -19,7 +19,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 describe('Admin endpoints', () => {
     it('GET /api/admin/matching/weights requires admin role', async () => {
-        const token = jwt.sign({ id: 'admin1', email: 'a@a.com', role: 'admin' }, JWT_SECRET);
+        const token = jwt.sign({ sub: 'admin1', email: 'a@a.com', roles: ['admin'] }, JWT_SECRET);
         const res = await request(app)
             .get('/api/admin/matching/weights')
             .set('Authorization', `Bearer ${token}`)
@@ -30,7 +30,7 @@ describe('Admin endpoints', () => {
     });
 
     it('PUT /api/admin/matching/weights updates weights', async () => {
-        const token = jwt.sign({ id: 'admin1', email: 'a@a.com', role: 'admin' }, JWT_SECRET);
+        const token = jwt.sign({ sub: 'admin1', email: 'a@a.com', roles: ['admin'] }, JWT_SECRET);
         const res = await request(app)
             .put('/api/admin/matching/weights')
             .set('Authorization', `Bearer ${token}`)
@@ -42,7 +42,7 @@ describe('Admin endpoints', () => {
     });
 
     it('POST /api/admin/matching/cache/invalidate clears cache', async () => {
-        const token = jwt.sign({ id: 'admin1', email: 'a@a.com', role: 'admin' }, JWT_SECRET);
+        const token = jwt.sign({ sub: 'admin1', email: 'a@a.com', roles: ['admin'] }, JWT_SECRET);
         const res = await request(app)
             .post('/api/admin/matching/cache/invalidate')
             .set('Authorization', `Bearer ${token}`)

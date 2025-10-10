@@ -34,7 +34,11 @@ export function buildApp(version: string): express.Express {
     // Shared security (helmet + basic rate limit)
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
     app.use(cors({
-        origin: 'https://karnisinghji.github.io'
+        origin: [
+            'https://karnisinghji.github.io',
+            'http://localhost:5173',
+            'http://localhost:5174'
+        ]
     }));
     app.use(express.json());
     app.use(morgan('dev'));

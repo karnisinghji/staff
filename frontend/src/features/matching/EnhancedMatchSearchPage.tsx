@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
 import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
-import { API_CONFIG, demoFetch } from '../../config/api';
+import { API_CONFIG } from '../../config/api';
 
 interface FilterChipProps {
   label: string;
@@ -434,7 +434,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     const fetchSkills = async () => {
       try {
         setSkillsLoading(true);
-        const response = await demoFetch(`${API_CONFIG.USER_SERVICE}/skills`, {
+  const response = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -490,7 +490,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         ...(pageNum > 1 && { offset: (pageNum - 1) * 12 })
       };
 
-      const response = await fetch(`${MATCHING_BASE}/${endpoint}`, {
+  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -531,7 +531,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     setActionLoading(`team-${match.id}`);
     
     try {
-      const response = await fetch(`${MATCHING_BASE}/team-requests`, {
+  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

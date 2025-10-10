@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { API_CONFIG, demoFetch } from '../../config/api';
+import { API_CONFIG } from '../../config/api';
 
 export const RegisterPage: React.FC = () => {
   const { token } = useAuth();
@@ -40,7 +40,7 @@ export const RegisterPage: React.FC = () => {
       // Always send as 'username' to match backend
       let payload: any = { username: contact, password, role };
       console.log('Register payload:', payload);
-      const response = await demoFetch(`${API_CONFIG.AUTH_SERVICE}/signup`, {
+      const response = await fetch(`${API_CONFIG.AUTH_SERVICE}/signup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
