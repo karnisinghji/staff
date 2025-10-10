@@ -4,10 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
 
-  // Auto-detect deployment platform
-  // Netlify: use root path
-  // GitHub Pages: use /staff/ subdirectory
-  const base = process.env.NETLIFY ? '/' : '/staff/';
+  // Use root path for Netlify deployment
+  // GitHub Pages uses /staff/ subdirectory (but we're migrating away from it)
+  const base = '/';
 
   return {
     plugins: [react()],
