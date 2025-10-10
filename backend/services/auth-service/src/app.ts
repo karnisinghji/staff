@@ -59,6 +59,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
             'http://localhost:5173',
             'http://localhost:5174',
             'https://karnisinghji.github.io',
+            'https://comeondost.netlify.app',
             process.env.FRONTEND_URL || 'http://localhost:5173'
         ],
         credentials: true,

@@ -36,6 +36,7 @@ export function buildApp(version: string): express.Express {
     app.use(cors({
         origin: [
             'https://karnisinghji.github.io',
+            'https://comeondost.netlify.app',
             'http://localhost:5173',
             'http://localhost:5174'
         ]

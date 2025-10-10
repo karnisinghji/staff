@@ -34,7 +34,8 @@ export function buildApp(): express.Express {
         origin: process.env.ALLOWED_ORIGINS?.split(',') || [
             'http://localhost:3000',
             'http://localhost:5173',
-            'https://karnisinghji.github.io'
+            'https://karnisinghji.github.io',
+            'https://comeondost.netlify.app'
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
