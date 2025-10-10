@@ -1,13 +1,13 @@
 FROM node:20.11-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install --omit=dev --legacy-peer-deps
 
 FROM node:20.11-alpine AS build
 WORKDIR /app
-COPY package*.json tsconfig.json ./
+COPY package.json tsconfig.json ./
 COPY src ./src
-RUN npm ci && npm run build
+RUN npm install --legacy-peer-deps && npm run build
 
 FROM node:20.11-alpine AS runner
 WORKDIR /app
