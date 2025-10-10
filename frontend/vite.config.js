@@ -1,5 +1,5 @@
 export default {
-  base: '/staff/',
+  base: '/',
   build: {
     outDir: 'dist'
   }
