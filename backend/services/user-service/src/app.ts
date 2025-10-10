@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { applyStandardSecurity, createReadinessRegistry, runReadiness, startTracing } from '../../shared';
+import { applyStandardSecurity, createReadinessRegistry, runReadiness, startTracing } from './shared';
 import morgan from 'morgan';
 import userRoutes from './routes/userRoutes';
 import invitationRoutes from './routes/invitationRoutes';
@@ -13,7 +13,7 @@ let exposeMetricsEndpoint: any = null;
 let sharedMetricsMiddlewareFactory: any = null;
 try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const shared = require('../../shared');
+    const shared = require('./shared');
     exposeMetricsEndpoint = shared.exposeMetricsEndpoint;
     sharedMetricsMiddlewareFactory = shared.metricsMiddleware;
 } catch (e) {

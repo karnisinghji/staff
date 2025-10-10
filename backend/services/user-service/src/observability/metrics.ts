@@ -2,12 +2,12 @@
 let createHttpMetrics: any;
 try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    createHttpMetrics = require('../../../shared').createHttpMetrics;
+    createHttpMetrics = require('../shared').createHttpMetrics;
 } catch (e1) {
     try {
         // Fallback path (when compiled output differs)
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        createHttpMetrics = require('../../shared').createHttpMetrics;
+        createHttpMetrics = require('../shared').createHttpMetrics;
     } catch (e2) {
         // Final fallback: provide a minimal local implementation so service/tests still function
         // eslint-disable-next-line @typescript-eslint/no-var-requires

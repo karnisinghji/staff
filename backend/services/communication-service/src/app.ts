@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import { applyStandardSecurity, validate } from '../../shared';
+import { applyStandardSecurity, validate } from './shared';
 import { z } from 'zod';
 import morgan from 'morgan';
 import { buildCommunicationModule } from './hexagon';
 let buildHealthPayload: any;
 try {
-    ({ buildHealthPayload } = require('../../shared/src/health'));
+    ({ buildHealthPayload } = require('./shared/health'));
 } catch {
     buildHealthPayload = (service: string, version?: string, domain?: any) => ({
         status: 'ok',
@@ -22,7 +22,7 @@ try {
 let shared: any = null;
 try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    shared = require('../../shared');
+    shared = require('./shared');
 } catch {
     // silent; we'll fallback
 }

@@ -1,7 +1,7 @@
 import { initEnv, getRequired } from './utils/env';
 import { logger } from './utils/logger';
 import { buildApp } from './app';
-import { requestContextMiddleware, enableGracefulShutdown, stopTracing } from '../../shared';
+import { requestContextMiddleware, enableGracefulShutdown, stopTracing } from './shared';
 import { startAvailabilityExpiryJob } from './jobs/availabilityExpiry';
 
 // Check for either DATABASE_URL or individual DB vars

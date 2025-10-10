@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import { buildApp } from './app';
-import { requestContextMiddleware, enableGracefulShutdown, createLogger } from '../../shared';
+import { requestContextMiddleware, enableGracefulShutdown, createLogger } from './shared';
 
 dotenv.config();
 const PORT = parseInt(process.env.PORT || '3005', 10);

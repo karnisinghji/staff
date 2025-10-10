@@ -37,7 +37,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: backend/services/${{ matrix.service }}
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Run Tests
         working-directory: backend/services/${{ matrix.service }}
