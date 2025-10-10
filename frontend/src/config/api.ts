@@ -5,7 +5,7 @@ const isProduction = import.meta.env.MODE === 'production';
 // Base API URLs for production and development
 export const API_CONFIG = {
     AUTH_SERVICE: isProduction
-        ? 'https://simple-auth-service-production.up.railway.app'
+        ? 'https://auth-service-production-d5c8.up.railway.app'
         : 'http://localhost:3001',
 
     USER_SERVICE: isProduction
