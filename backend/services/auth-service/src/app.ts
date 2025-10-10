@@ -3,7 +3,7 @@ import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport';
 // Security handled via shared helper
-import { applyStandardSecurity, buildHealthPayload as sharedBuildHealthPayload, createReadinessRegistry, runReadiness, startTracing } from '../../shared';
+import { applyStandardSecurity, buildHealthPayload as sharedBuildHealthPayload, createReadinessRegistry, runReadiness, startTracing } from './shared';
 // Health payload helper: prefer shared implementation via stable relative path (runtime-safe) with fallback.
 let buildHealthPayload: any;
 try {
@@ -20,7 +20,7 @@ try {
     });
 }
 import { buildContainer } from './hexagon';
-import { requestContextMiddleware } from '../../shared';
+import { requestContextMiddleware } from './shared';
 import { createAuthRoutes } from './http/routes';
 import { createOAuthRoutes } from './http/oauthRoutes'; interface LoggerLike { info: (...a: any[]) => void; warn: (...a: any[]) => void; error: (...a: any[]) => void }
 

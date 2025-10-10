@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { buildApp } from './app';
-import { enableGracefulShutdown, createLogger } from '../../shared';
+import { enableGracefulShutdown, createLogger } from './shared';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
