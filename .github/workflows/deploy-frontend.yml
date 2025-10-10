@@ -100,7 +100,10 @@ jobs:
       # Create 404.html fallback for SPA routing
       - name: Create 404 for SPA
         working-directory: ./frontend
-        run: cp dist/index.html dist/404.html || true
+        run: |
+          cp dist/index.html dist/404.html || true
+          touch dist/.nojekyll
+          echo "Created .nojekyll to disable Jekyll processing"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -108,3 +111,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
           enable_jekyll: false
+          force_orphan: true
