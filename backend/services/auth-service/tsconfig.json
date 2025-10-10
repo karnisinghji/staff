@@ -5,14 +5,8 @@
         "rootDir": "src",
         "types": [
             "node"
-        ],
-        "composite": true
+        ]
     },
-    "references": [
-        {
-            "path": "../shared"
-        }
-    ],
     "include": [
         "src/**/*.ts"
     ],
