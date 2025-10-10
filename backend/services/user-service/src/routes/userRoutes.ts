@@ -24,18 +24,23 @@ export function createUserRoutes(container: HexContainer) {
 
     // User profile routes - using hexagonal use cases directly via the controller
     router.get('/profile/complete', async (req, res) => {
+        if (!req.user?.id) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
         const result = await container.getCompleteProfile.execute(req.user.id);
         res.json({ success: true, data: result });
     });
 
     // Route for updating user data
     router.patch('/profile', async (req, res) => {
-        const result = await container.updateUser.execute({
-            userId: req.user.id,
-            ...req.body
-        });
+        if (!req.user?.id) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        const result = await container.updateUser.execute(req.user.id, req.body);
         res.json({ success: true, data: result });
     });
 
     return router;
 }
+
+export default createUserRoutes;
