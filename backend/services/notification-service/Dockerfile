@@ -3,13 +3,13 @@ ARG NODE_VERSION=20-alpine
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+RUN --mount=type=cache,id=npm-notif-deps,target=/root/.npm npm ci --omit=dev
 
 FROM node:${NODE_VERSION} AS build
 WORKDIR /app
 COPY package*.json tsconfig.json ./
 COPY src ./src
-RUN --mount=type=cache,target=/root/.npm npm ci && npm run build
+RUN --mount=type=cache,id=npm-notif-build,target=/root/.npm npm ci && npm run build
 
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
