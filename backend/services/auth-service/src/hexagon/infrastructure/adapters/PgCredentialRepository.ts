@@ -6,11 +6,11 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
     constructor(private pool: Pool) { }
 
     async findByEmail(email: string): Promise<UserCredentials | null> {
-        // Search by email only
+        // Search by email or username (which can be email or phone)
         const query = `
-            SELECT id, email, name, password_hash, role::text as roles, created_at 
+            SELECT id, email, username, name, password_hash, role::text as roles, created_at 
             FROM users 
-            WHERE LOWER(email) = LOWER($1) AND is_active = true
+            WHERE (LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)) AND is_active = true
             LIMIT 1
         `;
 
@@ -23,7 +23,7 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
         const row = result.rows[0];
         return {
             id: row.id,
-            email: row.email,
+            email: row.email || row.username,
             passwordHash: row.password_hash,
             roles: [row.roles], // Convert single role to array format
             createdAt: row.created_at
@@ -55,9 +55,9 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
 
     async create(cred: Omit<UserCredentials, 'createdAt'>): Promise<UserCredentials> {
         const query = `
-            INSERT INTO users (id, email, password_hash, role, name, phone, location, is_active)
-            VALUES ($1, $2, $3, $4::user_role, $5, $6, $7, true)
-            RETURNING id, email, name, password_hash, role::text as roles, created_at
+            INSERT INTO users (id, username, email, password_hash, role, name, phone, location, is_active)
+            VALUES ($1, $2, $3, $4, $5::user_role, $6, $7, $8, true)
+            RETURNING id, username, email, name, password_hash, role::text as roles, created_at
         `;
 
         // Extract primary role for the enum field
@@ -72,11 +72,13 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
         // Properly separate email and phone columns
         const emailValue = isPhone ? null : cred.email;  // NULL if phone registration, email if email registration
         const phoneValue = isPhone ? cred.email : null;  // phone number if phone registration, NULL if email registration
+        const username = cred.email; // Use email/phone as username
         const location = 'Not specified'; // Default location, could be enhanced later
 
         try {
             const result = await this.pool.query(query, [
                 cred.id,
+                username,          // username: email or phone (required field)
                 emailValue || cred.email,  // email: actual email 
                 cred.passwordHash,
                 primaryRole,
