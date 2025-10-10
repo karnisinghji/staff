@@ -155,6 +155,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
         res.json({
             service: serviceName,
             status: 'running',
+            version: '1.3.0-fixed',
             timestamp: new Date().toISOString()
         });
     });
