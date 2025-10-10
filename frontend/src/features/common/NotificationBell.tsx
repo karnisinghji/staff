@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface TeamRequest {
   id: number;
@@ -39,7 +40,7 @@ export const NotificationBell: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:3003/api/matching/team-requests/received', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -48,7 +49,8 @@ export const NotificationBell: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data && result.data.requests) {
+        // Safely handle API response with proper null checks
+        if (result?.success && result?.data && Array.isArray(result?.data?.requests)) {
           const pendingRequests = result.data.requests;
           setCount(pendingRequests.length);
           setRequests(pendingRequests.slice(0, 5)); // Show only first 5 in dropdown
@@ -56,9 +58,14 @@ export const NotificationBell: React.FC = () => {
           setCount(0);
           setRequests([]);
         }
+      } else {
+        // Handle non-OK responses
+        setCount(0);
+        setRequests([]);
       }
     } catch (error) {
       console.error('Error fetching team requests:', error);
+      // Always set safe defaults on error
       setCount(0);
       setRequests([]);
     }
@@ -76,7 +83,7 @@ export const NotificationBell: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3003/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -101,7 +108,7 @@ export const NotificationBell: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3003/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -315,7 +322,7 @@ export const NotificationBell: React.FC = () => {
             </div>
             
             <div className="notification-list">
-              {!requests || requests.length === 0 ? (
+              {!requests || !Array.isArray(requests) || requests.length === 0 ? (
                 <div className="empty-state">
                   <p>No pending team requests</p>
                 </div>
