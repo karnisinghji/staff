@@ -106,6 +106,11 @@ export function buildApp(): express.Express {
         res.status(code).json(agg);
     });
 
+    // Health check at root for Railway
+    app.get('/health', (_req, res) => {
+        res.status(200).send('OK');
+    });
+
     // Routes - mount with /api/users prefix to match frontend expectations
     app.use('/api/users', userRoutes);
     app.use('/', invitationRoutes);
