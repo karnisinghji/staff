@@ -1,0 +1,67 @@
+# Netlify Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # Directory to change to before starting a build
+  base = "frontend/"
+  
+  # Directory that contains the deploy-ready HTML files and assets
+  publish = "dist/"
+  
+  # Build command
+  command = "npm run build"
+
+[build.environment]
+  # Node version
+  NODE_VERSION = "20"
+  
+  # Vite production mode
+  NODE_ENV = "production"
+  VITE_MODE = "production"
+
+# Headers for all files
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # CORS for API calls (if needed)
+    Access-Control-Allow-Origin = "*"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache HTML with shorter duration (for updates)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# SPA redirect - must be at the end
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Optional: Branch deploy configuration
+[context.production]
+  command = "npm run build"
+  
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"

@@ -1,0 +1,9 @@
+# Netlify _redirects file
+# Handles SPA (Single Page Application) routing
+# All requests should return index.html to let React Router handle routing
+
+# API proxying (optional - if you want to proxy API calls through Netlify)
+# /api/*  https://auth-service-production-d5c8.up.railway.app/api/:splat  200
+
+# SPA fallback - serve index.html for all routes
+/*    /index.html   200
