@@ -3,9 +3,11 @@ import { useAuth } from '../auth/AuthContext';
 import { ContractorRequirementsList } from './ContractorRequirementsList';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_CONFIG } from '../../config/api';
 
 // Base matching service URL (without specific endpoint)
-const MATCHING_BASE = import.meta.env.VITE_MATCHING_BASE || 'http://localhost:3003/api/matching';
+const MATCHING_BASE = import.meta.env.VITE_MATCHING_BASE || `${API_CONFIG.MATCHING_SERVICE}/api/matching`;
+const COMMUNICATION_BASE = API_CONFIG.COMMUNICATION_SERVICE;
 
 export const MatchSearchPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -283,7 +285,7 @@ export const MatchSearchPage: React.FC = () => {
 
   const sendMessage = async (match: any, message: string) => {
     try {
-      const response = await fetch('http://localhost:3004/messages', {
+      const response = await fetch(`${COMMUNICATION_BASE}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -331,7 +333,7 @@ export const MatchSearchPage: React.FC = () => {
       }
 
       // For WebRTC or video calls, first notify the other user
-      const response = await fetch('http://localhost:3004/messages', {
+      const response = await fetch(`${COMMUNICATION_BASE}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -69,7 +69,6 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
     app.use(cors({
         origin: [
-            'https://karnisinghji.github.io',
             'https://comeondost.netlify.app',
             'http://localhost:5173',
             'http://localhost:5174'

@@ -40,12 +40,7 @@ const StatsCard: React.FC<{
   trend?: { value: number; isPositive: boolean };
   color: string;
 }> = ({ title, value, icon, trend, color }) => (
-  <div style={{
-    padding: theme.spacing.lg,
-    backgroundColor: 'white',
-    borderRadius: theme.borderRadius.lg,
-    boxShadow: theme.shadows.sm,
-    border: `1px solid ${theme.colors.neutral[200]}`,
+  <div className="responsive-card" style={{
     position: 'relative',
     overflow: 'hidden',
   }}>
@@ -283,7 +278,7 @@ const EnhancedDashboardPage: React.FC = () => {
       });
 
       // Fetch team members
-  const teamResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
+  const teamResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -461,10 +456,7 @@ const EnhancedDashboardPage: React.FC = () => {
   }
 
   return (
-    <div style={{
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: theme.spacing.xl,
+    <div className="responsive-container page-wrapper" style={{
       backgroundColor: theme.colors.neutral[50],
       minHeight: '100vh',
     }}>
@@ -473,16 +465,13 @@ const EnhancedDashboardPage: React.FC = () => {
         textAlign: 'center',
         marginBottom: theme.spacing.xl,
       }}>
-        <h1 style={{
-          fontSize: theme.typography.fontSize['4xl'],
-          fontWeight: theme.typography.fontWeight.bold,
+        <h1 className="responsive-heading-1" style={{
           color: theme.colors.neutral[900],
           marginBottom: theme.spacing.sm,
         }}>
           Welcome to Your Dashboard
         </h1>
-        <p style={{
-          fontSize: theme.typography.fontSize.lg,
+        <p className="responsive-heading-3" style={{
           color: theme.colors.neutral[600],
         }}>
           Manage your team connections and track your progress
@@ -490,9 +479,7 @@ const EnhancedDashboardPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      <div className="grid-4-cols" style={{
         gap: theme.spacing.lg,
         marginBottom: theme.spacing.xl,
       }}>

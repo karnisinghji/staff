@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { WS_CONFIG } from '../../config/api';
 
 interface Message {
   id: string;
@@ -20,7 +21,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Example WebSocket connection for real-time messaging
-    const ws = new WebSocket('ws://localhost:3004/ws');
+    const ws = new WebSocket(WS_CONFIG.COMMUNICATION);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setMessages((prev) => [ ...prev, data ]);
@@ -30,7 +31,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
 
   const sendMessage = (to: string, content: string) => {
     // Example: send message via WebSocket
-    const ws = new WebSocket('ws://localhost:3004/ws');
+    const ws = new WebSocket(WS_CONFIG.COMMUNICATION);
     ws.onopen = () => {
       ws.send(JSON.stringify({ to, content }));
       ws.close();

@@ -10,6 +10,8 @@
 
 **Need to debug?** → Run `node test-production-issues.js YOUR_TOKEN` for full diagnostic.
 
+**Mobile location search?** → GPS/geolocation already supported. Auto-detects on page load, manual button available.
+
 ---
 
 ## Architecture Overview
@@ -113,6 +115,41 @@ Services import via: `import { logger, createHttpMetrics } from 'shared'`
 **Routing**: React Router with `ProtectedRoute` wrapper requiring `token` from `useAuth()`
 
 **Feature structure**: `src/features/[domain]/` (auth, profile, matching, messaging, etc.)
+
+## Location & Mobile GPS Features
+
+**Location Detection**: Integrated into search page with auto-detect on page load and manual "Use My Location" button.
+
+**Supported Cities**: **100+ Indian cities only** (US/Canadian cities removed)
+- Tier 1: Delhi, Mumbai, Bangalore, Chennai, Kolkata, Hyderabad, Pune
+- Tier 2: Ahmedabad, Jaipur, Surat, Lucknow, Kanpur, Nagpur, Indore, etc.
+- State capitals & major cities across India
+- Alternative names supported (Bengaluru/Bangalore, Trivandrum/Thiruvananthapuram, etc.)
+- Default fallback: **Jaipur** (if city not found)
+
+**Capabilities**:
+- Auto-detects user location on first visit (non-intrusive)
+- Browser Geolocation API (`navigator.geolocation`) with configurable accuracy
+- Reverse geocoding (coordinates → city name) via OpenStreetMap Nominatim
+- Manual detection button with high-accuracy GPS
+- Supports coordinate input and Indian city names (`"Delhi"`, `"Mumbai"`, `"Bangalore"`)
+- Works on mobile devices using GPS/cell tower triangulation
+- Smart caching (5 min auto, 1 min manual)
+- Cell tower triangulation automatic fallback (when GPS unavailable)
+
+**Backend Support**: `backend/services/matching-service/src/utils/location.ts`
+- Accepts coordinate pairs or city names
+- 100+ predefined Indian cities (Tier 1, Tier 2, state capitals)
+- Alternative city names supported (Bengaluru/Bangalore, Trivandrum/Thiruvananthapuram, Gurugram/Gurgaon)
+- Haversine distance calculation for radius searches
+- Geocoding for major cities (fallback to Jaipur for unknown locations)
+- **Note**: US and Canadian cities removed (Indian market only)
+
+**Implementation**: `EnhancedMatchSearchPage.tsx`
+- Auto-detect useEffect runs on mount
+- Manual button for re-detection
+- Graceful fallback to manual entry
+- Toast notifications for status
 
 ## Environment Variables
 

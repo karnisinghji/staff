@@ -2,6 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styles from './HomePage.module.css';
 
+// Import images (Vite will handle these correctly)
+import fort1Image from '/images/fort1.png';
+import fort2Image from '/images/fort2.png';
+
 export const HomePage: React.FC = () => (
 
 
@@ -23,8 +27,8 @@ export const HomePage: React.FC = () => (
 
     {/* Right: Images */}
     <div className={styles.rightSection}>
-  <img src="/staff/images/fort1.png" alt="Fort 1" className={styles.fortImage} />
-  <img src="/staff/images/fort2.png" alt="Fort 2" className={styles.fortImage} />
+  <img src={fort1Image} alt="Fort 1" className={styles.fortImage} />
+  <img src={fort2Image} alt="Fort 2" className={styles.fortImage} />
     </div>
   </div>
 );

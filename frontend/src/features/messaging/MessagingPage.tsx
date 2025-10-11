@@ -4,7 +4,7 @@ import { MessageInput } from './MessageInput';
 
 export const MessagingPage = () => (
   <MessageProvider>
-    <div style={{ minHeight: '100vh', background: '#f5f7fa', paddingBottom: '2rem' }}>
+    <div className="page-wrapper responsive-container" style={{ minHeight: '100vh', background: '#f5f7fa' }}>
       <MessageList />
       <MessageInput />
     </div>

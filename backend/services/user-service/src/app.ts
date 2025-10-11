@@ -2,11 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import { applyStandardSecurity, createReadinessRegistry, runReadiness, startTracing } from './shared';
 import morgan from 'morgan';
-import userRoutes from './routes/userRoutes';
+import createUserRoutes from './routes/userRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import { logger } from './utils/logger';
 import { DomainError } from './hexagon/domain/errors/DomainErrors';
 import { userMetricsBundle } from './observability/metrics';
+import { getHexContainer } from './hexagon/bootstrap/container';
 
 // Shared metrics placeholders (resolved at build time)
 let exposeMetricsEndpoint: any = null;
@@ -33,6 +34,21 @@ export function buildApp(): express.Express {
     const serviceName = 'user-service';
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
 
+    // CORS must be applied FIRST for preflight requests
+    app.use(cors({
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000',
+            'https://comeondost.netlify.app',
+            ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
+        ],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
+    }));
+
     // Security middleware (shared) + custom headers
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
     // Custom security headers (retained)
@@ -47,17 +63,6 @@ export function buildApp(): express.Express {
         }
         next();
     });
-    app.use(cors({
-        origin: [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000',
-            'https://karnisinghji.github.io',
-            'https://comeondost.netlify.app',
-            ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
-        ],
-        credentials: true
-    }));
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
 
@@ -112,7 +117,8 @@ export function buildApp(): express.Express {
     });
 
     // Routes - mount with /api/users prefix to match frontend expectations
-    app.use('/api/users', userRoutes);
+    const container = getHexContainer();
+    app.use('/api/users', createUserRoutes(container));
     app.use('/', invitationRoutes);
 
     // 404 handler

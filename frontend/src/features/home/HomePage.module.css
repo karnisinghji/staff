@@ -29,6 +29,24 @@
 .buttonRow {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.buttonRow button {
+  padding: 0.85rem 2.2rem;
+  font-size: 1.08rem;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.buttonRow button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .rightSection {
@@ -62,7 +80,7 @@
 @media (max-width: 900px) {
   .homeRoot {
     flex-direction: column;
-    padding: 2rem 0.5rem;
+    padding: 2rem 1rem;
   }
   .leftSection {
     margin-right: 0;
@@ -74,18 +92,49 @@
   .rightSection {
     max-width: 100%;
   }
+  .buttonRow {
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
   .homeRoot {
-    padding: 0.5rem 0.2rem;
+    padding: 1rem 0.5rem;
   }
   .leftSection, .rightSection {
-    padding: 1.2rem 0.5rem;
+    padding: 1.5rem 1rem;
     border-radius: 12px;
   }
+  .leftSection h1 {
+    font-size: 1.8rem !important;
+  }
+  .leftSection p {
+    font-size: 1rem !important;
+  }
+  .buttonRow {
+    flex-direction: column;
+    width: 100%;
+  }
+  .buttonRow button {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+  }
   .fortImage {
-    max-width: 98vw;
+    max-width: 100%;
     border-radius: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .homeRoot {
+    padding: 0.5rem 0.25rem;
+  }
+  .leftSection, .rightSection {
+    padding: 1rem 0.75rem;
+  }
+  .leftSection h1 {
+    font-size: 1.5rem !important;
   }
 }

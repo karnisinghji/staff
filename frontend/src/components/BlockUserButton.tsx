@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_CONFIG } from '../config/api';
 
 interface BlockUserProps {
   userId: string;
@@ -25,7 +26,7 @@ export const BlockUserButton: React.FC<BlockUserProps> = ({
 
     setLoading(true);
     try {
-      const response = await fetch('/api/matching/block-user', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/block-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ export const BlockUserButton: React.FC<BlockUserProps> = ({
   const handleUnblock = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/matching/unblock-user', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/unblock-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

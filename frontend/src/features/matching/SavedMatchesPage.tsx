@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ContractorRequirementsList } from './ContractorRequirementsList';
 import { CardSkeleton, SkeletonStyles } from '../common/Skeleton';
+import { API_CONFIG } from '../../config/api';
 
-// Use Vite proxy to avoid CORS issues
-const API_URL = '/api/matching/my-team';
+// Use production API URL
+const API_URL = `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`;
 
 interface TeamMember {
   team_member_record_id: string;

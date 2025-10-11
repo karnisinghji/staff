@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { CardSkeleton, SkeletonStyles } from '../common/Skeleton';
 import { ContactOptionsModal } from '../common/ContactOptionsModal';
-
-// Use Vite proxy to avoid CORS issues
-const API_URL = '/api/matching';
+import { API_CONFIG } from '../../config/api';
 
 export interface ContractorRequirement {
   id: number;
@@ -39,7 +37,7 @@ export const ContractorRequirementsList: React.FC<Props> = ({ showContactButton 
     if (!token) return;
     setLoading(true);
     setError('');
-    fetch(`${API_URL}/contractor-requirements`, {
+    fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -66,7 +64,7 @@ export const ContractorRequirementsList: React.FC<Props> = ({ showContactButton 
     
     setSendingMessage(true);
     try {
-      const response = await fetch(`${API_URL}/contact-contractor`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contact-contractor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

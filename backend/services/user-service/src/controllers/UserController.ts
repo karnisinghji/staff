@@ -13,9 +13,29 @@ export class UserController {
 
     // Get list of skill types
     getSkills = async (_req: Request, res: Response): Promise<void> => {
-        const skills = await this.hex.listSkills.execute();
-        recordSkillsList();
-        res.json({ success: true, data: skills });
+        try {
+            // Add a timeout wrapper (10 seconds is reasonable for database queries)
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('Query timeout')), 10000);
+            });
+
+            const skills = await Promise.race([
+                this.hex.listSkills.execute(),
+                timeoutPromise
+            ]);
+
+            recordSkillsList();
+            res.json({ success: true, data: skills });
+        } catch (error) {
+            // Fallback to hardcoded skills list if database query fails
+            const fallbackSkills = [
+                'carpenter', 'electrician', 'laborer', 'mason',
+                'painter', 'plumber', 'welder', 'other'
+            ];
+            logger.warn('Skills query failed, using fallback list:', error);
+            recordSkillsList();
+            res.json({ success: true, data: fallbackSkills });
+        }
     };
 
     // Forgot password handler

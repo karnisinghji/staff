@@ -11,6 +11,7 @@ import {
   Plus
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface Invitation {
   id: string;
@@ -59,7 +60,7 @@ const InvitationSystem: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch('/api/invitations', {
+      const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/invitations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -86,7 +87,7 @@ const InvitationSystem: React.FC = () => {
     }
     setCreateLoading(true);
     try {
-      const response = await fetch('/api/invitations', {
+      const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/invitations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

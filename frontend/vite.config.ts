@@ -5,7 +5,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
 
   // Use root path for Netlify deployment
-  // GitHub Pages uses /staff/ subdirectory (but we're migrating away from it)
   const base = '/';
 
   return {

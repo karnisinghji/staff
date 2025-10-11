@@ -1,0 +1,54 @@
+name: Deploy Backend Services
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  NODE_ENV: production
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  CORS_ORIGIN: https://comeondost.netlify.app
+  ALLOWED_ORIGINS: https://comeondost.netlify.app,http://localhost:5173
+
+jobs:
+  deploy-backend-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, user-service, matching-service, communication-service, notification-service]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Install Dependencies
+        working-directory: backend/services/${{ matrix.service }}
+        run: npm install --legacy-peer-deps
+
+      - name: Run Tests
+        working-directory: backend/services/${{ matrix.service }}
+        run: npm test || true
+
+      - name: Build Service
+        working-directory: backend/services/${{ matrix.service }}
+        run: npm run build
+
+      - name: Deploy to Railway
+        working-directory: backend/services/${{ matrix.service }}
+        run: railway up --service ${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

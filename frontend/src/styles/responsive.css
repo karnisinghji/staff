@@ -1,0 +1,632 @@
+/* 
+ * Responsive Design Utilities
+ * Mobile-first approach with breakpoints for all devices
+ */
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+/*
+  - Mobile S: 320px - 480px
+  - Mobile M: 481px - 768px
+  - Tablet: 769px - 1024px
+  - Desktop: 1025px+
+*/
+
+/* ============================================
+   RESPONSIVE CONTAINERS
+   ============================================ */
+.responsive-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .responsive-container {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-container {
+    padding: 0 0.5rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE LAYOUT UTILITIES
+   ============================================ */
+.responsive-flex {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Stack on mobile */
+@media (max-width: 768px) {
+  .stack-mobile {
+    flex-direction: column;
+  }
+  
+  .stack-mobile > * {
+    width: 100% !important;
+  }
+}
+
+/* Full width on mobile */
+.full-width-mobile {
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .full-width-mobile {
+    width: 100% !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE FORM ELEMENTS
+   ============================================ */
+.responsive-input,
+.responsive-textarea,
+.responsive-select {
+  width: 100%;
+  font-size: 16px; /* Prevents iOS zoom */
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.responsive-input:focus,
+.responsive-textarea:focus,
+.responsive-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+  .responsive-input,
+  .responsive-textarea,
+  .responsive-select {
+    font-size: 16px; /* Keep 16px minimum for iOS */
+    padding: 0.85rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE BUTTONS
+   ============================================ */
+.responsive-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 44px; /* Touch-friendly */
+}
+
+.responsive-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.responsive-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .responsive-button {
+    padding: 0.85rem 1.25rem;
+    min-height: 48px; /* Larger on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-button-full {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   RESPONSIVE CARDS
+   ============================================ */
+.responsive-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s;
+}
+
+.responsive-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .responsive-card {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-card {
+    padding: 0.75rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE IMAGES
+   ============================================ */
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.responsive-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .responsive-avatar {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-avatar {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE TYPOGRAPHY
+   ============================================ */
+.responsive-heading-1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.responsive-heading-2 {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.responsive-heading-3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .responsive-heading-1 {
+    font-size: 2rem;
+  }
+  
+  .responsive-heading-2 {
+    font-size: 1.75rem;
+  }
+  
+  .responsive-heading-3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-heading-1 {
+    font-size: 1.75rem;
+  }
+  
+  .responsive-heading-2 {
+    font-size: 1.5rem;
+  }
+  
+  .responsive-heading-3 {
+    font-size: 1.15rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE SPACING
+   ============================================ */
+.responsive-section {
+  padding: 3rem 1rem;
+}
+
+@media (max-width: 768px) {
+  .responsive-section {
+    padding: 2rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-section {
+    padding: 1.5rem 0.5rem;
+  }
+}
+
+/* Margins */
+.mb-responsive {
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .mb-responsive {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mb-responsive {
+    margin-bottom: 1rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE GRID SYSTEMS
+   ============================================ */
+.grid-2-cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.grid-3-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.grid-4-cols {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .grid-4-cols {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-3-cols,
+  .grid-4-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-2-cols,
+  .grid-3-cols,
+  .grid-4-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   RESPONSIVE VISIBILITY
+   ============================================ */
+.hide-mobile {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+.hide-tablet {
+  display: block;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+.hide-desktop {
+  display: block;
+}
+
+@media (min-width: 1025px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE MODALS
+   ============================================ */
+.responsive-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .responsive-modal {
+    width: 95%;
+    padding: 1.5rem;
+    border-radius: 8px;
+    max-height: 95vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-modal {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 1rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE TABLES
+   ============================================ */
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .responsive-table th,
+  .responsive-table td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile table - stack rows */
+.responsive-table-stack {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .responsive-table-stack thead {
+    display: none;
+  }
+  
+  .responsive-table-stack tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem;
+  }
+  
+  .responsive-table-stack td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border: none;
+  }
+  
+  .responsive-table-stack td:before {
+    content: attr(data-label);
+    font-weight: 600;
+    margin-right: 1rem;
+  }
+}
+
+/* ============================================
+   RESPONSIVE NAVIGATION
+   ============================================ */
+.responsive-nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .responsive-nav {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  
+  .responsive-nav a,
+  .responsive-nav button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ============================================
+   RESPONSIVE FLEXBOX UTILITIES
+   ============================================ */
+.flex-responsive {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-responsive-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.flex-responsive-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .flex-responsive-wrap {
+    flex-wrap: wrap;
+  }
+  
+  .flex-responsive-column-mobile {
+    flex-direction: column;
+  }
+}
+
+/* ============================================
+   TOUCH-FRIENDLY ELEMENTS
+   ============================================ */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE OVERFLOW
+   ============================================ */
+.scroll-horizontal-mobile {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .scroll-horizontal-mobile {
+    scrollbar-width: thin;
+  }
+  
+  .scroll-horizontal-mobile::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .scroll-horizontal-mobile::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE PAGE WRAPPER
+   ============================================ */
+.page-wrapper {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+@media (max-width: 768px) {
+  .page-wrapper {
+    padding: 1.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-wrapper {
+    padding: 1rem 0.5rem;
+  }
+}
+
+/* ============================================
+   FORM LAYOUTS
+   ============================================ */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .form-group {
+    margin-bottom: 1rem;
+  }
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

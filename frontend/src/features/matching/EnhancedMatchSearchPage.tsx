@@ -15,6 +15,7 @@ interface FilterChipProps {
 
 const FilterChip: React.FC<FilterChipProps> = ({ label, isActive, onClick, color = theme.colors.primary[500] }) => (
   <button
+    className="responsive-button touch-target"
     onClick={onClick}
     style={{
       padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
@@ -60,12 +61,7 @@ interface SearchResultCardProps {
 }
 
 const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, onTeamRequest, isLoading = false }) => (
-  <div style={{
-    backgroundColor: 'white',
-    borderRadius: theme.borderRadius.lg,
-    border: `1px solid ${theme.colors.neutral[200]}`,
-    boxShadow: theme.shadows.sm,
-    padding: theme.spacing.lg,
+  <div className="responsive-card" style={{
     transition: 'all 0.2s ease-in-out',
   }}
   onMouseEnter={(e) => {
@@ -405,6 +401,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('relevance');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   // Skills fetched from backend database
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
@@ -466,6 +463,64 @@ export const EnhancedMatchSearchPage: React.FC = () => {
       fetchSkills();
     }
   }, [token]);
+
+  // Auto-detect user's location on component mount if location is empty
+  useEffect(() => {
+    const detectUserLocation = async () => {
+      // Only auto-detect if location is empty and user hasn't searched yet
+      if (location || searched || !navigator.geolocation) {
+        return;
+      }
+
+      setDetectingLocation(true);
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+              enableHighAccuracy: false, // Use faster, less accurate method for initial load
+              timeout: 5000,
+              maximumAge: 300000 // Cache for 5 minutes
+            }
+          );
+        });
+
+        const { latitude, longitude } = position.coords;
+        
+        // Try to get city name from coordinates using reverse geocoding
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const address = data.address || {};
+            const cityName = address.city || address.town || address.village || 
+                           `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            setLocation(cityName);
+            console.log(`📍 Auto-detected location: ${cityName}`);
+          } else {
+            // Fallback to coordinates if geocoding fails
+            setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
+        } catch (geocodeError) {
+          // If reverse geocoding fails, use coordinates
+          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        }
+        
+      } catch (error: any) {
+        // Silently fail - user can manually enter location
+        console.log('Auto-location detection skipped:', error.code === 1 ? 'Permission denied' : error.message);
+      } finally {
+        setDetectingLocation(false);
+      }
+    };
+
+    detectUserLocation();
+  }, [token]); // Only run once when component mounts and token is available
 
   const handleSearch = async (pageNum = 1) => {
     if (!token) return;
@@ -601,10 +656,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   const hasActiveFilters = skillType || experienceLevel || urgency || activeFilters.length > 0;
 
   return (
-    <div style={{
-      maxWidth: '1400px',
-      margin: '0 auto',
-      padding: theme.spacing.xl,
+    <div className="responsive-container page-wrapper" style={{
       backgroundColor: theme.colors.neutral[50],
       minHeight: '100vh',
     }}>
@@ -613,16 +665,13 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         textAlign: 'center',
         marginBottom: theme.spacing.xl,
       }}>
-        <h1 style={{
-          fontSize: theme.typography.fontSize['4xl'],
-          fontWeight: theme.typography.fontWeight.bold,
+        <h1 className="responsive-heading-1" style={{
           color: theme.colors.neutral[900],
           marginBottom: theme.spacing.sm,
         }}>
           Find Your Perfect Team Match
         </h1>
-        <p style={{
-          fontSize: theme.typography.fontSize.lg,
+        <p className="responsive-heading-3" style={{
           color: theme.colors.neutral[600],
         }}>
           Discover talented contractors and workers for your projects
@@ -630,15 +679,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
       </div>
 
       {/* Search Form */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.xl,
-        boxShadow: theme.shadows.sm,
-        border: `1px solid ${theme.colors.neutral[200]}`,
+      <div className="responsive-card" style={{
         marginBottom: theme.spacing.xl,
       }}>
-        <div style={{
+        <div className="responsive-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: theme.spacing.lg,
@@ -687,21 +731,103 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               color: theme.colors.neutral[700],
               marginBottom: theme.spacing.xs,
             }}>
-              Location
+              Location {detectingLocation && <span style={{ color: theme.colors.primary[600] }}>(Detecting...)</span>}
             </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Enter city, state, or zip code"
-              style={{
-                width: '100%',
-                padding: theme.spacing.sm,
-                border: `1px solid ${theme.colors.neutral[300]}`,
-                borderRadius: theme.borderRadius.md,
-                fontSize: theme.typography.fontSize.sm,
-              }}
-            />
+            <div style={{ display: 'flex', gap: theme.spacing.xs }}>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder={detectingLocation ? "Detecting your location..." : "Enter city name (e.g., Delhi, Mumbai, Bangalore)"}
+                disabled={detectingLocation}
+                style={{
+                  flex: 1,
+                  padding: theme.spacing.sm,
+                  border: `1px solid ${theme.colors.neutral[300]}`,
+                  borderRadius: theme.borderRadius.md,
+                  fontSize: theme.typography.fontSize.sm,
+                  backgroundColor: detectingLocation ? theme.colors.neutral[100] : 'white',
+                }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!navigator.geolocation) {
+                    showError('GPS not supported', 'Your browser does not support location detection');
+                    return;
+                  }
+                  
+                  setDetectingLocation(true);
+                  
+                  try {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                      navigator.geolocation.getCurrentPosition(
+                        resolve,
+                        reject,
+                        {
+                          enableHighAccuracy: true,
+                          timeout: 10000,
+                          maximumAge: 60000
+                        }
+                      );
+                    });
+
+                    const { latitude, longitude } = position.coords;
+                    
+                    // Try reverse geocoding
+                    try {
+                      const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+                      );
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        const address = data.address || {};
+                        const cityName = address.city || address.town || address.village || 
+                                       `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                        setLocation(cityName);
+                        success('Location detected', `Using: ${cityName}`);
+                      } else {
+                        setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                        success('Location detected', 'Using GPS coordinates');
+                      }
+                    } catch {
+                      setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                      success('Location detected', 'Using GPS coordinates');
+                    }
+                  } catch (error: any) {
+                    let errorMessage = 'Unable to detect location';
+                    if (error.code === 1) {
+                      errorMessage = 'Location access denied. Please enable location permissions.';
+                    } else if (error.code === 2) {
+                      errorMessage = 'Location unavailable. Check GPS settings.';
+                    } else if (error.code === 3) {
+                      errorMessage = 'Location request timed out. Try again.';
+                    }
+                    showError('Detection failed', errorMessage);
+                  } finally {
+                    setDetectingLocation(false);
+                  }
+                }}
+                disabled={detectingLocation}
+                style={{
+                  padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                  border: `1px solid ${theme.colors.primary[500]}`,
+                  borderRadius: theme.borderRadius.md,
+                  backgroundColor: detectingLocation ? theme.colors.neutral[200] : theme.colors.primary[50],
+                  color: theme.colors.primary[700],
+                  fontSize: theme.typography.fontSize.sm,
+                  fontWeight: theme.typography.fontWeight.medium,
+                  cursor: detectingLocation ? 'wait' : 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: theme.spacing.xs,
+                }}
+              >
+                📍 {detectingLocation ? 'Detecting...' : 'Use My Location'}
+              </button>
+            </div>
           </div>
 
           {/* Max Distance */}
@@ -718,7 +844,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
             <input
               type="range"
               min="5"
-              max="200"
+              max="50"
               value={maxDistance}
               onChange={(e) => setMaxDistance(Number(e.target.value))}
               style={{
@@ -884,9 +1010,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
       {/* Loading State */}
       {loading && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+        <div className="grid-3-cols" style={{
           gap: theme.spacing.lg,
         }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -947,9 +1071,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            <div className="grid-3-cols" style={{
               gap: theme.spacing.lg,
             }}>
               {results.map((match, index) => (

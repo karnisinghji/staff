@@ -295,7 +295,7 @@ export const RegisterPage: React.FC = () => {
               <span>OR</span>
             </div>
             
-            <button type="button" className="social-btn google-btn" onClick={() => window.location.href = 'http://localhost:3001/api/auth/google'}>
+            <button type="button" className="social-btn google-btn" onClick={() => window.location.href = `${API_CONFIG.AUTH_SERVICE}/google`}>
               <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
                 <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
@@ -305,14 +305,14 @@ export const RegisterPage: React.FC = () => {
               Continue with Google
             </button>
             
-            <button type="button" className="social-btn facebook-btn" onClick={() => window.location.href = 'http://localhost:3001/api/auth/facebook'}>
+            <button type="button" className="social-btn facebook-btn" onClick={() => window.location.href = `${API_CONFIG.AUTH_SERVICE}/facebook`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
               Continue with Facebook
             </button>
             
-            <button type="button" className="social-btn twitter-btn" onClick={() => window.location.href = 'http://localhost:3001/api/auth/twitter'}>
+            <button type="button" className="social-btn twitter-btn" onClick={() => window.location.href = `${API_CONFIG.AUTH_SERVICE}/twitter`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>

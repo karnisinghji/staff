@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface BlockedUser {
   block_id: number;
@@ -25,7 +26,7 @@ export const BlockedUsersPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/matching/blocked-users', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/blocked-users`, {
         credentials: 'include',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -51,7 +52,7 @@ export const BlockedUsersPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/matching/unblock-user', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/unblock-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

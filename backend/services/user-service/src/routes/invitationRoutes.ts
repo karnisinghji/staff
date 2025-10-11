@@ -18,13 +18,19 @@ function getInvitationController(): InvitationController {
         const dbConfig = process.env.DATABASE_URL ? {
             connectionString: process.env.DATABASE_URL,
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 10000,
         } : {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '5432'),
             database: process.env.DB_NAME || 'contractor_worker_platform',
             user: process.env.DB_USER || 'postgres',
             password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
-            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+            max: 20,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 10000,
         };
         pool = new Pool(dbConfig);
 

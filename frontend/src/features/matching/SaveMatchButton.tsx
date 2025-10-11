@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface SaveMatchButtonProps {
   matchId: string;
@@ -14,7 +15,7 @@ export const SaveMatchButton: React.FC<SaveMatchButtonProps> = ({ matchId }) => 
     setError('');
     try {
       const res = await fetch(
-  `${import.meta.env.VITE_API_URL || 'http://localhost:3003'}/api/matching/save-match`,
+  `${API_CONFIG.MATCHING_SERVICE}/api/matching/save-match`,
         {
           method: 'POST',
           headers: {

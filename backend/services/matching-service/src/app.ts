@@ -23,6 +23,19 @@ try {
 export function buildApp(): express.Express {
     const app = express();
 
+    // CORS must be applied BEFORE security middleware for preflight requests
+    app.use(cors({
+        origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+            'http://localhost:3000',
+            'http://localhost:5173',
+            'https://comeondost.netlify.app'
+        ],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
+    }));
+
     // More permissive rate limiting for development
     const isDevelopment = process.env.NODE_ENV === 'development';
     const rateLimitConfig = isDevelopment
@@ -30,18 +43,6 @@ export function buildApp(): express.Express {
         : { windowMs: 15 * 60 * 1000, limit: 100 }; // 100 requests per 15 minutes in prod
 
     applyStandardSecurity(app, { rateLimit: rateLimitConfig, trustProxy: true });
-    app.use(cors({
-        origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'https://karnisinghji.github.io',
-            'https://comeondost.netlify.app'
-        ],
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        optionsSuccessStatus: 200
-    }));
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true }));
 

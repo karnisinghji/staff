@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, Plus, Copy, MessageCircle } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { API_CONFIG } from '../../config/api';
 
 interface InviteQuickActionProps {
   onInviteCreated?: () => void;
@@ -24,7 +25,7 @@ const InviteQuickAction: React.FC<InviteQuickActionProps> = ({ onInviteCreated }
     }
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/invitations', {
+      const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/invitations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

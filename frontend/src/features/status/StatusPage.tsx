@@ -210,10 +210,8 @@ const StatusPage: React.FC = () => {
   }
 
   return (
-    <div style={{ 
+    <div className="responsive-container page-wrapper" style={{ 
       maxWidth: '600px', 
-      margin: '2rem auto', 
-      padding: '2rem',
       background: '#fff',
       borderRadius: '16px',
       boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
@@ -226,6 +224,7 @@ const StatusPage: React.FC = () => {
           display: inline-block;
           width: 80px;
           height: 40px;
+          min-height: 44px; /* Touch-friendly */
         }
         
         .toggle-switch input {
@@ -301,14 +300,12 @@ const StatusPage: React.FC = () => {
           </p>
         </div>
         <button 
+          className="responsive-button touch-target"
           onClick={() => queryClient.invalidateQueries({ queryKey: ['profile'] })}
           style={{
-            padding: '0.5rem 1rem',
             background: '#2196F3',
             color: 'white',
             border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
             fontSize: '14px'
           }}
         >
