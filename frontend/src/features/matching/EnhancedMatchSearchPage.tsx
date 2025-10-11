@@ -4,6 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
 import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
 import { API_CONFIG } from '../../config/api';
+import { reverseGeocode, formatLocation } from '../../utils/location';
 
 interface FilterChipProps {
   label: string;
@@ -185,7 +186,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
         </svg>
-        {match.location || 'Location not specified'}
+        {formatLocation(match.location)}
       </div>
             {match.distanceKm && (
         <span style={{
@@ -489,27 +490,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
         const { latitude, longitude } = position.coords;
         
-        // Try to get city name from coordinates using reverse geocoding
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            const address = data.address || {};
-            const cityName = address.city || address.town || address.village || 
-                           `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-            setLocation(cityName);
-            console.log(`📍 Auto-detected location: ${cityName}`);
-          } else {
-            // Fallback to coordinates if geocoding fails
-            setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-          }
-        } catch (geocodeError) {
-          // If reverse geocoding fails, use coordinates
-          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        }
+        // Use enhanced reverse geocoding with fallback to nearest city
+        const cityName = await reverseGeocode(latitude, longitude);
+        setLocation(cityName);
+        console.log(`📍 Auto-detected location: ${cityName}`);
         
       } catch (error: any) {
         // Silently fail - user can manually enter location

@@ -7,9 +7,12 @@ import { NavBar } from './features/common/NavBar';
 import { ToastContainer } from './components/ToastContainer';
 import { GlobalAnimations } from './components/AnimationComponents';
 
-// Lazy load heavy components for better initial load
-const LoginPage = lazy(() => import('./features/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('./features/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
+// Critical pages loaded immediately (no lazy loading for better UX)
+import { LoginPage } from './features/auth/LoginPage';
+import { RegisterPage } from './features/auth/RegisterPage';
+import EnhancedDashboardPage from './features/dashboard/EnhancedDashboardPage';
+
+// Lazy load non-critical pages
 const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage'));
 const OAuthCallback = lazy(() => import('./features/auth/OAuthCallback').then(m => ({ default: m.OAuthCallback })));
@@ -17,7 +20,6 @@ const EnhancedMatchSearchPage = lazy(() => import('./features/matching/EnhancedM
 const MyTeamPage = lazy(() => import('./features/matching/SavedMatchesPage').then(m => ({ default: m.MyTeamPage })));
 const MessagingPage = lazy(() => import('./features/messaging/MessagingPage').then(m => ({ default: m.MessagingPage })));
 const HomePage = lazy(() => import('./features/home/HomePage').then(m => ({ default: m.HomePage })));
-const EnhancedDashboardPage = lazy(() => import('./features/dashboard/EnhancedDashboardPage'));
 const EnhancedProfilePage = lazy(() => import('./features/profile/EnhancedProfilePage'));
 const StatusPage = lazy(() => import('./features/status/StatusPage'));
 
