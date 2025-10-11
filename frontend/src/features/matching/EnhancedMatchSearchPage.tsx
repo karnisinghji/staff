@@ -470,19 +470,26 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   const handleSearch = async (pageNum = 1) => {
     if (!token) return;
 
+    // Validate required fields before making request
+    if (!location || !maxDistance || maxDistance <= 0) {
+      showError('Missing required fields', 'Please provide location and maximum distance');
+      return;
+    }
+
     setLoading(true);
     setPage(pageNum);
 
     try {
       // Determine endpoint based on user role
       const isContractor = user?.role === 'contractor';
-      const endpoint = isContractor ? 'find-workers' : 'find-contractors';
+      const endpoint = isContractor ? 'api/matching/find-workers' : 'api/matching/find-contractors';
       
       // Prepare search body for POST request
+      // location and maxDistance are REQUIRED by backend validation
       const searchBody = {
+        location: location.trim(), // Required
+        maxDistance: Math.max(1, maxDistance), // Required, ensure positive
         skillType: skillType || undefined,
-        location: location || undefined,
-        maxDistance: maxDistance > 0 ? maxDistance : undefined,
         limit: 12,
         // Map frontend params to backend expected format
         ...(experienceLevel && { experienceLevel }),
@@ -531,26 +538,35 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     setActionLoading(`team-${match.id}`);
     
     try {
-  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests`, {
+      // Fixed: Use correct endpoint and field names per backend validation schema
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/send-team-request`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          recipient_id: match.id,
+          receiverId: match.id, // Changed from recipient_id to match backend schema
           message: `Hi ${match.name || 'there'}, I'd like to invite you to join my team. Your skills in ${skillType} would be a great fit for our project.`,
+          matchContext: {
+            skill: skillType,
+            distance: match.distanceKm ? `${Math.round(match.distanceKm)} km` : undefined,
+            matchScore: match.score,
+            searchType: user?.role === 'contractor' ? 'worker' : 'contractor'
+          }
         }),
       });
 
       if (response.ok) {
+        await response.json(); // Consume response body
         success('Team request sent', `Invitation sent to ${match.name || 'worker'}`);
       } else {
-        throw new Error('Failed to send team request');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send team request');
       }
     } catch (err) {
       console.error('Team request error:', err);
-      showError('Failed to send request', 'Please try again');
+      showError('Failed to send request', err instanceof Error ? err.message : 'Please try again');
     } finally {
       setActionLoading(null);
     }

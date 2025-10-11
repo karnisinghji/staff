@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+// import { WS_CONFIG } from '../../config/api'; // Disabled until backend WebSocket implemented
 
 interface Notification {
   id: string;
@@ -18,8 +19,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    // Example WebSocket connection for real-time notifications
-    const ws = new WebSocket('ws://localhost:3005/ws');
+    // TODO: Re-enable when backend WebSocket is implemented
+    // Temporarily disabled to prevent console errors (backend returns 426 Upgrade Required)
+    // See: backend/services/notification-service/src/app.ts - WebSocket placeholder route
+    
+    /* DISABLED - Backend WebSocket not implemented
+    const ws = new WebSocket(WS_CONFIG.NOTIFICATION);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setNotifications((prev) => [
@@ -28,6 +33,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       ]);
     };
     return () => ws.close();
+    */
+    
+    // Log once to indicate notifications are in polling mode
+    console.log('WebSocket notifications disabled - backend implementation pending');
   }, []);
 
   const addNotification = (message: string, type: Notification['type'] = 'info') => {
