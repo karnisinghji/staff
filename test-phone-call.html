@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Call Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .phone-display {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>📞 Phone Call Functionality Test</h1>
+        <p>This page tests if the phone call functionality works correctly.</p>
+        
+        <div class="phone-display">
+            <strong>Test Phone Number:</strong> +1-555-0201
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <button onclick="testCall()">📞 Test Direct Call</button>
+        <button onclick="testTelLink()">🔗 Test Tel Link</button>
+        <button onclick="showDebugInfo()">🛠️ Show Debug Info</button>
+    </div>
+
+    <div class="test-card">
+        <h2>How to Test:</h2>
+        <ol>
+            <li>Click "Test Direct Call" - should open your phone app</li>
+            <li>Check if the phone number "+1-555-0201" appears</li>
+            <li>If it works, the call functionality is working correctly!</li>
+        </ol>
+    </div>
+
+    <div class="test-card">
+        <h2>Debug Information:</h2>
+        <div id="debugInfo">
+            <p>Click "Show Debug Info" to see technical details.</p>
+        </div>
+    </div>
+
+    <script>
+        // Mock worker data like from the API
+        const mockWorker = {
+            id: "550e8400-e29b-41d4-a716-446655440004",
+            name: "Mike Johnson",
+            phone: "+1-555-0201",
+            email: "mike.carpenter@email.com"
+        };
+
+        function testCall() {
+            const phone = mockWorker.phone;
+            const statusDiv = document.getElementById('status');
+            
+            if (phone) {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `✅ Opening phone app with number: ${phone}`;
+                
+                // This is the actual call functionality
+                window.open(`tel:${phone}`, '_self');
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ No phone number found';
+            }
+        }
+
+        function testTelLink() {
+            const phone = mockWorker.phone;
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.className = 'status success';
+            statusDiv.innerHTML = `🔗 Tel link: <a href="tel:${phone}">${phone}</a>`;
+        }
+
+        function showDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = `
+                <h3>Mock Worker Data:</h3>
+                <pre>${JSON.stringify(mockWorker, null, 2)}</pre>
+                
+                <h3>User Agent:</h3>
+                <p>${navigator.userAgent}</p>
+                
+                <h3>Tel Link Support:</h3>
+                <p>Most modern browsers and mobile devices support tel: links</p>
+                
+                <h3>Expected Behavior:</h3>
+                <ul>
+                    <li>On mobile: Opens default phone app</li>
+                    <li>On desktop: May open Skype, FaceTime, or ask which app to use</li>
+                    <li>Some browsers may show a permission dialog first</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
