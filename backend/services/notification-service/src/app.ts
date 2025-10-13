@@ -3,7 +3,21 @@ import cors from 'cors';
 import { applyStandardSecurity, validate } from './shared';
 import { z } from 'zod';
 import morgan from 'morgan';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { buildNotificationModule } from './hexagon';
+
+// Helper to get version from package.json
+function getServiceVersion(): string {
+    try {
+        const pkgPath = join(__dirname, '..', 'package.json');
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+        return pkg.version || '1.0.0';
+    } catch {
+        return '1.0.0';
+    }
+}
+
 let buildHealthPayload: any;
 try {
     ({ buildHealthPayload } = require('./shared/health'));
@@ -11,7 +25,7 @@ try {
     buildHealthPayload = (service: string, version?: string, domain?: any) => ({
         status: 'ok',
         service,
-        version: version || (process as any).env.npm_package_version || 'unknown',
+        version: version || getServiceVersion(),
         uptimeSeconds: Math.round(process.uptime()),
         timestamp: new Date().toISOString(),
         ...(domain ? { domain } : {})
@@ -67,12 +81,20 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     app.locals.version = version;
 
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
+
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [
+        'https://karnisinghji.github.io',
+        'https://comeondost.web.app',
+        'https://comeondost.firebaseapp.com',
+        'https://comeondost.netlify.app',
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ];
     app.use(cors({
-        origin: [
-            'https://comeondost.netlify.app',
-            'http://localhost:5173',
-            'http://localhost:5174'
-        ]
+        origin: allowedOrigins,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
     }));
     app.use(express.json());
     app.use(morgan('dev'));
