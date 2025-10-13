@@ -291,9 +291,6 @@ export const RegisterPage: React.FC = () => {
             </select>
             <button type="submit">Register</button>
             
-            {/* OAuth temporarily disabled - needs environment configuration */}
-            {/* Uncomment when GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in Railway */}
-            {/* 
             <div className="divider">
               <span>OR</span>
             </div>
@@ -307,7 +304,6 @@ export const RegisterPage: React.FC = () => {
               </svg>
               Continue with Google
             </button>
-            */}
             
             <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
               Already have an account? <a href="/login" style={{ color: '#3b82f6', textDecoration: 'none' }}>Login here</a>

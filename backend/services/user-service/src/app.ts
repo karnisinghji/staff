@@ -35,13 +35,15 @@ export function buildApp(): express.Express {
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
 
     // CORS must be applied FIRST for preflight requests
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [];
     app.use(cors({
         origin: [
             'http://localhost:5173',
             'http://localhost:5174',
             'http://localhost:3000',
-            'https://comeondost.netlify.app',
-            ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
+            'https://comeondost.web.app',
+            'https://comeondost.firebaseapp.com',
+            ...allowedOrigins
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

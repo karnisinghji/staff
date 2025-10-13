@@ -8,3 +8,4 @@ export * from './validation';
 export * from './tracing';
 export * from './readiness';
 export * from './resilience';
+export * from './version';

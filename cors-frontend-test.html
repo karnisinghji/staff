@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API CORS Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4a69bd;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #1e3799;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #4a69bd;
+            border-radius: 4px;
+        }
+        .error {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+        .success {
+            border-left-color: #2ecc71;
+            background: #d5f5e3;
+        }
+        code {
+            font-family: Monaco, monospace;
+            background: #f1f2f6;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>API CORS Test</h1>
+    <p>This tool tests if the backend services are properly configured for CORS when accessed from <code id="origin"></code></p>
+    
+    <h2>Service Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Endpoint</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Auth Service</td>
+                <td><code>/health</code></td>
+                <td id="auth-status">Not tested</td>
+            </tr>
+            <tr>
+                <td>User Service</td>
+                <td><code>/health</code></td>
+                <td id="user-status">Not tested</td>
+            </tr>
+            <tr>
+                <td>Matching Service</td>
+                <td><code>/health</code></td>
+                <td id="matching-status">Not tested</td>
+            </tr>
+            <tr>
+                <td>Communication Service</td>
+                <td><code>/health</code></td>
+                <td id="communication-status">Not tested</td>
+            </tr>
+            <tr>
+                <td>Notification Service</td>
+                <td><code>/health</code></td>
+                <td id="notification-status">Not tested</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <button id="test-all">Test All Services</button>
+    <button id="test-auth">Test Auth Service</button>
+    <button id="test-user">Test User Service</button>
+    <button id="test-matching">Test Matching Service</button>
+    <button id="test-communication">Test Communication Service</button>
+    <button id="test-notification">Test Notification Service</button>
+    
+    <h2>Test Results</h2>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('origin').textContent = window.location.origin;
+
+        const SERVICES = {
+            'auth': 'https://auth-service-production-d5c8.up.railway.app',
+            'user': 'https://user-service-production-f141.up.railway.app',
+            'matching': 'https://matching-service-production.up.railway.app',
+            'communication': 'https://communication-service-production-c165.up.railway.app',
+            'notification': 'https://notification-service-production-8738.up.railway.app'
+        };
+
+        async function testService(name, url) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = `<h3>Testing ${name}</h3>`;
+            document.getElementById('results').prepend(resultDiv);
+            
+            try {
+                const startTime = new Date();
+                const response = await fetch(`${url}/health`, {
+                    method: 'GET',
+                    credentials: 'omit'
+                });
+                
+                const endTime = new Date();
+                const duration = endTime - startTime;
+                
+                let responseText = '';
+                try {
+                    const data = await response.json();
+                    responseText = JSON.stringify(data, null, 2);
+                } catch (e) {
+                    responseText = await response.text();
+                }
+                
+                if (response.ok) {
+                    resultDiv.classList.add('success');
+                    resultDiv.innerHTML += `
+                        <p>✅ CORS is correctly configured!</p>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Response Time:</strong> ${duration}ms</p>
+                        <p><strong>Response:</strong></p>
+                        <pre><code>${responseText}</code></pre>
+                    `;
+                    document.getElementById(`${name.toLowerCase()}-status`).innerHTML = '✅ Working';
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.innerHTML += `
+                        <p>⚠️ Service responded with error, but CORS is working</p>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Response Time:</strong> ${duration}ms</p>
+                        <p><strong>Response:</strong></p>
+                        <pre><code>${responseText}</code></pre>
+                    `;
+                    document.getElementById(`${name.toLowerCase()}-status`).innerHTML = '⚠️ Error';
+                }
+                
+            } catch (error) {
+                resultDiv.classList.add('error');
+                resultDiv.innerHTML += `
+                    <p>❌ CORS Error: ${error.message}</p>
+                    <p>This likely means the service is not properly configured for CORS with origin: <code>${window.location.origin}</code></p>
+                `;
+                document.getElementById(`${name.toLowerCase()}-status`).innerHTML = '❌ CORS Error';
+            }
+        }
+
+        document.getElementById('test-all').addEventListener('click', async () => {
+            document.getElementById('results').innerHTML = '';
+            for (const [name, url] of Object.entries(SERVICES)) {
+                await testService(name.charAt(0).toUpperCase() + name.slice(1), url);
+                // Small delay to not overwhelm services
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        });
+
+        document.getElementById('test-auth').addEventListener('click', () => 
+            testService('Auth', SERVICES.auth));
+        document.getElementById('test-user').addEventListener('click', () => 
+            testService('User', SERVICES.user));
+        document.getElementById('test-matching').addEventListener('click', () => 
+            testService('Matching', SERVICES.matching));
+        document.getElementById('test-communication').addEventListener('click', () => 
+            testService('Communication', SERVICES.communication));
+        document.getElementById('test-notification').addEventListener('click', () => 
+            testService('Notification', SERVICES.notification));
+    </script>
+</body>
+</html>

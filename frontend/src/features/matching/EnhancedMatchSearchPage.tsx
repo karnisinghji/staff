@@ -6,54 +6,6 @@ import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents'
 import { API_CONFIG } from '../../config/api';
 import { reverseGeocode, formatLocation } from '../../utils/location';
 
-interface FilterChipProps {
-  label: string;
-  value: string;
-  isActive: boolean;
-  onClick: () => void;
-  color?: string;
-}
-
-const FilterChip: React.FC<FilterChipProps> = ({ label, isActive, onClick, color = theme.colors.primary[500] }) => (
-  <button
-    className="responsive-button touch-target"
-    onClick={onClick}
-    style={{
-      padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-      borderRadius: theme.borderRadius.full,
-      border: `2px solid ${isActive ? color : theme.colors.neutral[300]}`,
-      backgroundColor: isActive ? color : 'white',
-      color: isActive ? 'white' : theme.colors.neutral[700],
-      fontSize: theme.typography.fontSize.sm,
-      fontWeight: theme.typography.fontWeight.medium,
-      cursor: 'pointer',
-      transition: 'all 0.2s ease-in-out',
-      display: 'flex',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    }}
-    onMouseEnter={(e) => {
-      if (!isActive) {
-        e.currentTarget.style.borderColor = color;
-        e.currentTarget.style.backgroundColor = `${color}10`;
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!isActive) {
-        e.currentTarget.style.borderColor = theme.colors.neutral[300];
-        e.currentTarget.style.backgroundColor = 'white';
-      }
-    }}
-  >
-    {label}
-    {isActive && (
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-      </svg>
-    )}
-  </button>
-);
-
 interface SearchResultCardProps {
   match: any;
   onContact: () => void;
@@ -387,8 +339,6 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   const [skillType, setSkillType] = useState('');
   const [location, setLocation] = useState('');
   const [maxDistance, setMaxDistance] = useState<number>(50);
-  const [experienceLevel, setExperienceLevel] = useState('');
-  const [urgency, setUrgency] = useState('');
   
   // Results state
   const [results, setResults] = useState<any[]>([]);
@@ -407,18 +357,6 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   // Skills fetched from backend database
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(true);
-
-  const experienceOptions = [
-    { value: 'beginner', label: 'Beginner (0-2 years)' },
-    { value: 'intermediate', label: 'Intermediate (2-5 years)' },
-    { value: 'expert', label: 'Expert (5+ years)' }
-  ];
-
-  const urgencyOptions = [
-    { value: 'low', label: 'Low Priority' },
-    { value: 'medium', label: 'Medium Priority' },
-    { value: 'high', label: 'High Priority' }
-  ];
 
   const sortOptions = [
     { value: 'relevance', label: 'Best Match' },
@@ -530,9 +468,6 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         maxDistance: Math.max(1, maxDistance), // Required, ensure positive
         skillType: skillType || undefined,
         limit: 12,
-        // Map frontend params to backend expected format
-        ...(experienceLevel && { experienceLevel }),
-        ...(urgency && { urgency }),
         ...(pageNum > 1 && { offset: (pageNum - 1) * 12 })
       };
 
@@ -632,12 +567,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
   const clearAllFilters = () => {
     setSkillType('');
-    setExperienceLevel('');
-    setUrgency('');
     setActiveFilters([]);
   };
 
-  const hasActiveFilters = skillType || experienceLevel || urgency || activeFilters.length > 0;
+  const hasActiveFilters = skillType || activeFilters.length > 0;
 
   return (
     <div className="responsive-container page-wrapper" style={{
@@ -840,60 +773,6 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                 cursor: 'pointer',
               }}
             />
-          </div>
-        </div>
-
-        {/* Filter Chips */}
-        <div style={{ marginBottom: theme.spacing.lg }}>
-          <div style={{
-            fontSize: theme.typography.fontSize.sm,
-            fontWeight: theme.typography.fontWeight.medium,
-            color: theme.colors.neutral[700],
-            marginBottom: theme.spacing.sm,
-          }}>
-            Experience Level
-          </div>
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: theme.spacing.sm,
-            marginBottom: theme.spacing.md,
-          }}>
-            {experienceOptions.map(option => (
-              <FilterChip
-                key={option.value}
-                label={option.label}
-                value={option.value}
-                isActive={experienceLevel === option.value}
-                onClick={() => setExperienceLevel(experienceLevel === option.value ? '' : option.value)}
-                color={theme.colors.success[500]}
-              />
-            ))}
-          </div>
-
-          <div style={{
-            fontSize: theme.typography.fontSize.sm,
-            fontWeight: theme.typography.fontWeight.medium,
-            color: theme.colors.neutral[700],
-            marginBottom: theme.spacing.sm,
-          }}>
-            Project Urgency
-          </div>
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: theme.spacing.sm,
-          }}>
-            {urgencyOptions.map(option => (
-              <FilterChip
-                key={option.value}
-                label={option.label}
-                value={option.value}
-                isActive={urgency === option.value}
-                onClick={() => setUrgency(urgency === option.value ? '' : option.value)}
-                color={theme.colors.warning[500]}
-              />
-            ))}
           </div>
         </div>
 

@@ -24,12 +24,15 @@ export function buildApp(): express.Express {
     const app = express();
 
     // CORS must be applied BEFORE security middleware for preflight requests
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://comeondost.web.app',
+        'https://comeondost.firebaseapp.com'
+    ];
+
     app.use(cors({
-        origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'https://comeondost.netlify.app'
-        ],
+        origin: allowedOrigins,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

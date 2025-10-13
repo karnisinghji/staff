@@ -1,0 +1,203 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║     🧪 TESTING OPTION B - GITHUB ACTIONS CI/CD SETUP               ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+This guide will walk you through setting up GitHub Actions for
+automatic deployment to Railway.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1: Get Railway API Token
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open Railway dashboard: https://railway.app/account/tokens
+
+2. Click "Create Token"
+   - Name: "GitHub Actions CI/CD"
+   - Scope: Full access (default)
+
+3. Copy the token (starts with something like: rlwy_...)
+   ⚠️ SAVE THIS - you won't see it again!
+
+4. Keep it safe (you'll need it in Step 2)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2: Add GitHub Secrets
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open GitHub repo settings:
+   https://github.com/karnisinghji/staff/settings/secrets/actions
+
+2. Click "New repository secret" and add these 3 secrets:
+
+   SECRET 1: RAILWAY_TOKEN
+   ─────────────────────────────────────────────────────────────
+   Name: RAILWAY_TOKEN
+   Value: <paste the token from Step 1>
+   Click: Add secret
+
+   SECRET 2: DATABASE_URL
+   ─────────────────────────────────────────────────────────────
+   Name: DATABASE_URL
+   Value: postgresql://neondb_owner:npg_AwN7nqtQOs8P@ep-proud-dew-adi1wdgd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+   Click: Add secret
+
+   SECRET 3: JWT_SECRET
+   ─────────────────────────────────────────────────────────────
+   Name: JWT_SECRET
+   Value: platform-super-secret
+   Click: Add secret
+
+3. Verify all 3 secrets are added:
+   - RAILWAY_TOKEN ✓
+   - DATABASE_URL ✓
+   - JWT_SECRET ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3: Update Workflow Files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The fixed workflow file has been created:
+✓ .github/workflows/deploy-backend-fixed.yml
+
+This file:
+- Builds shared library first ✓
+- Handles NPM workspaces correctly ✓
+- Uses Firebase CORS URLs ✓
+- Links to Railway projects properly ✓
+- Verifies deployments ✓
+
+You'll commit this file in Step 4.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4: Test Deployment
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ready to test? Run these commands:
+
+# 1. Stage the new workflow file
+git add .github/workflows/deploy-backend-fixed.yml
+
+# 2. Commit
+git commit -m "ci: add fixed GitHub Actions workflow for Railway deployment"
+
+# 3. Push to trigger workflow
+git push origin main
+
+# 4. Watch the workflow run
+Open: https://github.com/karnisinghji/staff/actions
+
+You should see:
+- New workflow run starting
+- "Deploy Backend Services to Railway"
+- Multiple jobs running in parallel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 5: Monitor Deployment
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Watch GitHub Actions:
+1. Click on the workflow run
+2. Expand each job to see logs
+3. Look for:
+   ✓ build-shared: Building shared library
+   ✓ deploy-services (auth-service): Deploying...
+   ✓ deploy-services (user-service): Deploying...
+   ✓ deploy-services (matching-service): Deploying...
+   ✓ deploy-services (communication-service): Deploying...
+   ✓ deploy-services (notification-service): Deploying...
+
+Expected Time: 15-20 minutes for all services
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6: Verify Services
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After workflow completes, test services:
+
+# Run the test script
+./test-all-services.sh
+
+Or manually:
+curl https://auth-service-production-d5c8.up.railway.app/health
+curl https://user-service-production-f141.up.railway.app/health
+curl https://matching-service-production.up.railway.app/health
+curl https://communication-service-production-c165.up.railway.app/health
+curl https://notification-service-production-8738.up.railway.app/health
+
+Check:
+✓ All return 200 OK
+✓ Version numbers shown (not "unknown")
+✓ Services restarted recently (low uptime)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If workflow fails:
+
+1. Check GitHub Actions logs for errors
+2. Common issues:
+   
+   Error: "Invalid RAILWAY_TOKEN"
+   Fix: Regenerate token in Railway, update GitHub secret
+
+   Error: "railway: command not found"
+   Fix: Workflow installs it, but check npm install step
+
+   Error: "Could not link to project"
+   Fix: Check project names match exactly
+
+   Error: "Build failed"
+   Fix: Check TypeScript compilation errors in logs
+
+3. View detailed logs:
+   - Click on failed step in GitHub Actions
+   - Expand logs
+   - Look for error messages
+
+4. Test locally first:
+   cd backend/services/auth-service
+   npm run build
+   If build fails locally, fix before pushing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUCCESS CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Option B is working when:
+
+✅ GitHub Actions workflow completes successfully
+✅ All 5 services show green checkmarks in Railway
+✅ Health endpoints return 200 OK
+✅ Version numbers display correctly
+✅ CORS headers include comeondost.web.app
+✅ Frontend works at https://comeondost.web.app
+✅ No CORS errors in browser console
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After successful test:
+
+1. Future deployments will be automatic!
+   Just: git push origin main
+
+2. Monitor deployments:
+   https://github.com/karnisinghji/staff/actions
+
+3. Optional improvements:
+   - Add linting step
+   - Add unit tests
+   - Add integration tests
+   - Add Slack notifications
+   - Add deployment approvals
+
+4. Consider Option A if this feels too complex!
+
+═══════════════════════════════════════════════════════════════════════
+
+Ready? Start with Step 1: Get Railway API Token!
+

@@ -1,0 +1,71 @@
+═══════════════════════════════════════════════════════════════════════
+  RAILWAY SERVICES - MANUAL UPDATE VIA WEB CONSOLE
+═══════════════════════════════════════════════════════════════════════
+
+🌐 Open: https://railway.app/dashboard
+
+📋 Variable to add to each service:
+   Key:   CORS_ORIGINS
+   Value: https://comeondost.web.app,http://localhost:5173
+
+───────────────────────────────────────────────────────────────────────
+
+SERVICE 1: matching-service-production
+
+1. Click on "matching-service-production" card
+2. Click "Variables" tab (left sidebar)
+3. Click "+ New Variable" button
+4. Enter:
+   • Name: CORS_ORIGINS
+   • Value: https://comeondost.web.app,http://localhost:5173
+5. Click "Add" button
+6. Service will automatically redeploy (takes ~2 mins)
+
+───────────────────────────────────────────────────────────────────────
+
+SERVICE 2: communication-service-production-c165
+
+1. Click on "communication-service-production-c165" card
+2. Click "Variables" tab (left sidebar)
+3. Click "+ New Variable" button
+4. Enter:
+   • Name: CORS_ORIGINS
+   • Value: https://comeondost.web.app,http://localhost:5173
+5. Click "Add" button
+6. Service will automatically redeploy (takes ~2 mins)
+
+───────────────────────────────────────────────────────────────────────
+
+SERVICE 3: notification-service-production-8738
+
+1. Click on "notification-service-production-8738" card
+2. Click "Variables" tab (left sidebar)
+3. Click "+ New Variable" button
+4. Enter:
+   • Name: CORS_ORIGINS
+   • Value: https://comeondost.web.app,http://localhost:5173
+5. Click "Add" button
+6. Service will automatically redeploy (takes ~2 mins)
+
+───────────────────────────────────────────────────────────────────────
+
+⏱️ TOTAL TIME: ~10 minutes (including redeployment)
+
+✅ AFTER ALL THREE ARE DONE:
+
+Check deployment status:
+• Go to each service
+• Click "Deployments" tab
+• Wait for "Active" status (green dot)
+
+───────────────────────────────────────────────────────────────────────
+
+🔍 VERIFY:
+
+curl -I https://matching-service-production.up.railway.app/health
+curl -I https://communication-service-production-c165.up.railway.app/health
+curl -I https://notification-service-production-8738.up.railway.app/health
+
+All should return: HTTP/2 200
+
+═══════════════════════════════════════════════════════════════════════

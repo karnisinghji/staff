@@ -154,7 +154,15 @@ export function coordinatesToCityName(location: string): string {
 export function formatLocation(location: string | undefined | null): string {
     if (!location) return 'Location not specified';
 
-    // Try to convert coordinates to city name
+    // Check if it's already a city name (contains letters, not just numbers and comma/dot/space)
+    const hasLetters = /[a-zA-Z]/.test(location);
+
+    if (hasLetters) {
+        // It's already a city name, return as-is
+        return location;
+    }
+
+    // It's coordinates, try to convert to city name
     const formatted = coordinatesToCityName(location);
     return formatted || 'Location not specified';
 }

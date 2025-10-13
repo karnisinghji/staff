@@ -2,8 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 // Security handled via shared helper
 import { applyStandardSecurity, buildHealthPayload as sharedBuildHealthPayload, createReadinessRegistry, runReadiness, startTracing } from './shared';
+
+// Helper to get version from package.json
+function getServiceVersion(): string {
+    try {
+        const pkgPath = join(__dirname, '..', 'package.json');
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+        return pkg.version || '1.0.0';
+    } catch {
+        return '1.0.0';
+    }
+}
 // Health payload helper: prefer shared implementation via stable relative path (runtime-safe) with fallback.
 let buildHealthPayload: any;
 try {
@@ -148,7 +161,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
 
     // Health simple endpoint (reflect metrics & version placeholders later if needed)
     app.get('/health', (_req, res) => {
-        res.json(buildHealthPayload(serviceName, (process as any).env.npm_package_version));
+        res.json(buildHealthPayload(serviceName, getServiceVersion()));
     });
 
     // Root route for basic service verification
@@ -156,7 +169,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
         res.json({
             service: serviceName,
             status: 'running',
-            version: '1.3.0-fixed',
+            version: getServiceVersion(),
             timestamp: new Date().toISOString()
         });
     });
