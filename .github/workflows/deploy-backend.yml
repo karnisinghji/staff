@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
       - '.github/workflows/deploy-backend-fixed.yml'
 
 env:
