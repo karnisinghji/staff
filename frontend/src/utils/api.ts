@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create axios instance with timeout
 export const apiClient = axios.create({
-    timeout: 10000, // 10 second timeout
+    timeout: 5000, // 5 second timeout
     headers: {
         'Content-Type': 'application/json',
     },

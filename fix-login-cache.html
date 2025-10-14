@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache and Re-login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(120deg, #e3f2fd 0%, #f7f9fc 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(25,118,210,0.10);
+        }
+        h1 {
+            color: #1976d2;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #115293;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        ul {
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Login Issue</h1>
+        
+        <div class="info">
+            <strong>What's the problem?</strong><br>
+            Your browser has cached an old user session without the updated role information. This causes the frontend to call the wrong API endpoint.
+        </div>
+
+        <h2>Current Session Info:</h2>
+        <div id="currentSession" class="code"></div>
+
+        <h2>Solution:</h2>
+        <p>Click the button below to clear your session and force a fresh login:</p>
+        
+        <button onclick="clearAndRedirect()">Clear Session & Go to Login</button>
+
+        <div id="status"></div>
+
+        <h2>Manual Steps (if needed):</h2>
+        <ol>
+            <li>Open Developer Console (F12)</li>
+            <li>Go to "Application" or "Storage" tab</li>
+            <li>Find "Local Storage" → https://comeondost.web.app</li>
+            <li>Delete both "token" and "user" items</li>
+            <li>Refresh the page</li>
+            <li>Login again with: <code>john.smith@email.com</code> / <code>password123</code></li>
+        </ol>
+
+        <h2>What happens after re-login:</h2>
+        <ul>
+            <li>✅ You'll get a fresh user object with the <code>role</code> field</li>
+            <li>✅ Frontend will correctly detect you're a contractor</li>
+            <li>✅ Search will call the right endpoint: <code>/api/matching/find-workers</code></li>
+            <li>✅ You'll be able to see all available workers</li>
+        </ul>
+    </div>
+
+    <script>
+        // Display current session info
+        function displayCurrentSession() {
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            
+            const sessionDiv = document.getElementById('currentSession');
+            
+            if (!token || !user) {
+                sessionDiv.innerHTML = '<span style="color: orange;">No session found - you need to login</span>';
+            } else {
+                sessionDiv.innerHTML = `
+                    <strong>Token:</strong> ${token.substring(0, 30)}...<br>
+                    <strong>User:</strong> ${JSON.stringify(user, null, 2)}<br>
+                    <strong>Has 'role' field?</strong> ${user.role ? '✅ Yes (' + user.role + ')' : '❌ No (this is the problem!)'}
+                `;
+            }
+        }
+
+        // Clear session and redirect
+        function clearAndRedirect() {
+            try {
+                // Clear localStorage
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                
+                // Show success message
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML = '<div class="success">✅ Session cleared successfully! Redirecting to login...</div>';
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = 'https://comeondost.web.app/login';
+                }, 2000);
+            } catch (error) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML = '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Display current session on load
+        displayCurrentSession();
+
+        // Auto-clear if no role field exists
+        window.addEventListener('load', () => {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (!user.role) {
+                    document.getElementById('status').innerHTML = 
+                        '<div class="info">⚠️ Detected old session without role field. Auto-clearing recommended.</div>';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -6,18 +6,20 @@ import { logger } from './logger';
 const dbConfig = process.env.DATABASE_URL ? {
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    max: 10,                        // Reduced for Neon.tech serverless
+    idleTimeoutMillis: 30000,       // 30s - Neon.tech recommended
+    connectionTimeoutMillis: 10000, // 10s - Better for cold starts
+    statement_timeout: 30000,       // 30s query timeout
 } : {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     database: process.env.DB_NAME || 'contractor_worker_platform',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
-    max: 20,
+    max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
+    statement_timeout: 30000,
 };
 
 export const pool = new Pool(dbConfig);

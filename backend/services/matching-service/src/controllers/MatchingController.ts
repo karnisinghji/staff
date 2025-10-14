@@ -12,8 +12,30 @@ export class MatchingController {
     // Hex module now the sole execution path (legacy service removed)
     private hex = buildMatchingModule();
 
+    // Pagination constants
+    private static readonly DEFAULT_PAGE_SIZE = 50;
+    private static readonly MAX_PAGE_SIZE = 100;
+    private static readonly MIN_PAGE = 1;
+
     constructor() {
         // Legacy MatchingService instance creation removed
+    }
+
+    // Helper: Filter out self-referencing team requests
+    private filterSelfRequests(rows: any[], currentUserId: string): any[] {
+        return rows.filter(r =>
+            r.sender_id !== currentUserId &&
+            r.sender_id !== r.receiver_id
+        );
+    }
+
+    // Helper: Filter out self and invalid team members
+    private filterSelfTeamMembers(rows: any[], currentUserId: string): any[] {
+        return rows.filter(r =>
+            r.team_member_id !== currentUserId &&
+            r.user_id !== r.team_member_id &&
+            r.team_member_id != null
+        );
     }
 
     // Find matches for a contractor (find workers)
@@ -30,10 +52,10 @@ export class MatchingController {
 
             const { skillType, location, maxDistance, budgetRange, urgency, experienceLevel } = req.body;
 
-            if (!skillType || !location || !maxDistance) {
+            if (!location || !maxDistance) {
                 res.status(400).json({
                     success: false,
-                    message: 'skillType, location, and maxDistance are required'
+                    message: 'location and maxDistance are required'
                 });
                 return;
             }
@@ -79,7 +101,7 @@ export class MatchingController {
             // Hex path (legacy removed)
             const hexCriteria = {
                 requesterId: req.user?.id || 'anonymous',
-                skills: [skillType],
+                skills: skillType ? [skillType] : [],
                 location: locationCoords,
                 maxDistanceKm: criteria.maxDistance,
                 page: criteria.page,
@@ -104,7 +126,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error finding worker matches',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -180,7 +204,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error finding contractor matches',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -204,7 +230,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving match preferences',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -268,7 +296,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error updating match preferences',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -303,7 +333,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error saving match',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -329,7 +361,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving saved matches',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -393,7 +427,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving matching statistics',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -408,6 +444,19 @@ export class MatchingController {
 
             const { receiverId, message, matchContext } = req.body;
             const senderId = req.user.id;
+
+            // Validate receiverId format (UUID)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!receiverId || !uuidRegex.test(receiverId)) {
+                res.status(400).json({ success: false, message: 'Invalid receiver ID format' });
+                return;
+            }
+
+            // Validate message length
+            if (message && message.length > 1000) {
+                res.status(400).json({ success: false, message: 'Message too long (max 1000 characters)' });
+                return;
+            }
 
             // Check if user is trying to send request to themselves
             if (senderId === receiverId) {
@@ -473,7 +522,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error sending team request',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -486,10 +537,18 @@ export class MatchingController {
                 return;
             }
 
+            // Pagination support
+            const page = Math.max(MatchingController.MIN_PAGE, parseInt(req.query.page as string) || MatchingController.MIN_PAGE);
+            const limit = Math.min(MatchingController.MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.limit as string) || MatchingController.DEFAULT_PAGE_SIZE));
+            const offset = (page - 1) * limit;
+
+            logger.info(`Fetching received team requests for user: ${req.user.id} (page: ${page}, limit: ${limit})`);
+
             const result = await pool.query(`
                 SELECT 
                     tr.id,
                     tr.sender_id,
+                    tr.receiver_id,
                     tr.message,
                     tr.match_context,
                     tr.status,
@@ -510,16 +569,45 @@ export class MatchingController {
                     (ub.blocker_id = tr.sender_id AND ub.blocked_id = $1)
                 )
                 WHERE tr.receiver_id = $1 
+                AND tr.sender_id != $1
+                AND tr.sender_id IS NOT NULL
+                AND tr.receiver_id IS NOT NULL
                 AND tr.status = 'pending'
                 AND tr.expires_at > CURRENT_TIMESTAMP
                 AND ub.id IS NULL
                 ORDER BY tr.created_at DESC
-            `, [req.user.id]);
+                LIMIT $2 OFFSET $3
+            `, [req.user.id, limit, offset]);
+
+            logger.info(`Raw query returned ${result.rows.length} requests for user ${req.user.id}`);
+            logger.info(`Request details:`, JSON.stringify(result.rows.map(r => ({
+                request_id: r.id,
+                sender: r.sender_id,
+                receiver: r.receiver_id,
+                sender_name: r.sender_name,
+                are_equal: r.sender_id === r.receiver_id,
+                sender_equals_user: r.sender_id === req.user?.id,
+                receiver_equals_user: r.receiver_id === req.user?.id
+            })), null, 2));
+
+            // Extra safety: filter out any requests where sender equals current user
+            const currentUserId = req.user.id;
+            const filteredRows = this.filterSelfRequests(result.rows, currentUserId);
+
+            logger.info(`After filtering: ${filteredRows.length} requests remain`);
 
             res.json({
                 success: true,
-                message: `Found ${result.rows.length} pending team requests`,
-                data: { requests: result.rows }
+                message: `Found ${filteredRows.length} pending team requests`,
+                data: {
+                    requests: filteredRows,
+                    pagination: {
+                        page,
+                        limit,
+                        total: filteredRows.length,
+                        hasMore: filteredRows.length === limit
+                    }
+                }
             });
 
         } catch (error) {
@@ -527,7 +615,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving team requests',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -575,7 +665,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving sent team requests',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -632,19 +724,43 @@ export class MatchingController {
                     const senderRole = await pool.query('SELECT role FROM users WHERE id = $1', [request.sender_id]);
                     const receiverRole = await pool.query('SELECT role FROM users WHERE id = $1', [request.receiver_id]);
 
-                    let relationshipType = 'teammate';
+                    let senderRelationType = 'teammate';
+                    let receiverRelationType = 'teammate';
+
                     if (senderRole.rows[0]?.role === 'worker' && receiverRole.rows[0]?.role === 'contractor') {
-                        relationshipType = 'preferred_contractor';
+                        senderRelationType = 'preferred_contractor';
+                        receiverRelationType = 'preferred_worker';
                     } else if (senderRole.rows[0]?.role === 'contractor' && receiverRole.rows[0]?.role === 'worker') {
-                        relationshipType = 'preferred_worker';
+                        senderRelationType = 'preferred_worker';
+                        receiverRelationType = 'preferred_contractor';
                     }
 
-                    // Create the team member relationship (trigger will create bidirectional)
-                    await pool.query(`
-                        INSERT INTO team_members (user_id, team_member_id, relationship_type, formed_from_request_id)
-                        VALUES ($1, $2, $3, $4)
-                        ON CONFLICT (user_id, team_member_id) DO NOTHING
-                    `, [request.receiver_id, request.sender_id, relationshipType, requestId]);
+                    // Check if relationship already exists before inserting
+                    const existingReceiver = await pool.query(
+                        'SELECT id FROM team_members WHERE user_id = $1 AND team_member_id = $2',
+                        [request.receiver_id, request.sender_id]
+                    );
+
+                    if (existingReceiver.rows.length === 0) {
+                        // Receiver sees sender in their team
+                        await pool.query(`
+                            INSERT INTO team_members (user_id, team_member_id, relationship_type, formed_from_request_id)
+                            VALUES ($1, $2, $3, $4)
+                        `, [request.receiver_id, request.sender_id, receiverRelationType, requestId]);
+                    }
+
+                    const existingSender = await pool.query(
+                        'SELECT id FROM team_members WHERE user_id = $1 AND team_member_id = $2',
+                        [request.sender_id, request.receiver_id]
+                    );
+
+                    if (existingSender.rows.length === 0) {
+                        // Sender sees receiver in their team
+                        await pool.query(`
+                            INSERT INTO team_members (user_id, team_member_id, relationship_type, formed_from_request_id)
+                            VALUES ($1, $2, $3, $4)
+                        `, [request.sender_id, request.receiver_id, senderRelationType, requestId]);
+                    }
                 }
 
                 await pool.query('COMMIT');
@@ -656,7 +772,11 @@ export class MatchingController {
                 });
 
             } catch (error) {
-                await pool.query('ROLLBACK');
+                try {
+                    await pool.query('ROLLBACK');
+                } catch (rollbackError) {
+                    logger.error('Error rolling back transaction in updateTeamRequest:', rollbackError);
+                }
                 throw error;
             }
 
@@ -665,7 +785,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error updating team request',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -678,9 +800,17 @@ export class MatchingController {
                 return;
             }
 
+            // Pagination support
+            const page = Math.max(MatchingController.MIN_PAGE, parseInt(req.query.page as string) || MatchingController.MIN_PAGE);
+            const limit = Math.min(MatchingController.MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.limit as string) || MatchingController.DEFAULT_PAGE_SIZE));
+            const offset = (page - 1) * limit;
+
+            logger.info(`Fetching team members for user: ${req.user.id} (page: ${page}, limit: ${limit})`);
+
             const result = await pool.query(`
                 SELECT 
                     tm.id as team_member_record_id,
+                    tm.user_id,
                     tm.team_member_id,
                     tm.relationship_type,
                     tm.created_at as team_since,
@@ -717,14 +847,57 @@ export class MatchingController {
                     (ub.blocker_id = $1 AND ub.blocked_id = tm.team_member_id) OR 
                     (ub.blocker_id = tm.team_member_id AND ub.blocked_id = $1)
                 )
-                WHERE tm.user_id = $1 AND ub.id IS NULL
+                WHERE tm.user_id = $1 
+                    AND tm.team_member_id != $1
+                    AND tm.team_member_id IS NOT NULL
+                    AND ub.id IS NULL
                 ORDER BY tm.created_at DESC
+                LIMIT $2 OFFSET $3
+            `, [req.user.id, limit, offset]);
+
+            logger.info(`Raw query returned ${result.rows.length} team members for user ${req.user.id}`);
+            logger.info(`Team member details:`, JSON.stringify(result.rows.map(r => ({
+                record_id: r.team_member_record_id,
+                user_id: r.user_id,
+                team_member_id: r.team_member_id,
+                name: r.name,
+                is_self: r.team_member_id === req.user?.id,
+                user_equals_member: r.user_id === r.team_member_id
+            })), null, 2));
+
+            // Get total count for pagination
+            const countResult = await pool.query(`
+                SELECT COUNT(*) as total
+                FROM team_members tm
+                LEFT JOIN user_blocks ub ON (
+                    (ub.blocker_id = $1 AND ub.blocked_id = tm.team_member_id)
+                    OR (ub.blocker_id = tm.team_member_id AND ub.blocked_id = $1)
+                )
+                WHERE tm.user_id = $1 
+                    AND tm.team_member_id != $1
+                    AND tm.team_member_id IS NOT NULL
+                    AND ub.id IS NULL
             `, [req.user.id]);
+            const total = parseInt(countResult.rows[0].total);
+
+            // Extra safety: filter out yourself and any invalid entries
+            const currentUserId = req.user.id;
+            const filteredRows = this.filterSelfTeamMembers(result.rows, currentUserId);
+
+            logger.info(`After filtering: ${filteredRows.length} team members remain`);
 
             res.json({
                 success: true,
-                message: `Found ${result.rows.length} team members`,
-                data: { teamMembers: result.rows }
+                message: `Found ${filteredRows.length} team members`,
+                data: {
+                    teamMembers: filteredRows,
+                    pagination: {
+                        page,
+                        limit,
+                        total,
+                        hasMore: page * limit < total
+                    }
+                }
             });
 
         } catch (error) {
@@ -732,7 +905,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving team members',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -779,7 +954,11 @@ export class MatchingController {
                 });
 
             } catch (error) {
-                await pool.query('ROLLBACK');
+                try {
+                    await pool.query('ROLLBACK');
+                } catch (rollbackError) {
+                    logger.error('Error rolling back transaction in removeTeamMember:', rollbackError);
+                }
                 throw error;
             }
 
@@ -788,7 +967,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error removing team member',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -843,7 +1024,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error blocking user',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -888,7 +1071,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error unblocking user',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -927,7 +1112,9 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving blocked users',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };
@@ -960,7 +1147,52 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error checking block status',
-                error: error instanceof Error ? error.message : 'Unknown error'
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
+            });
+        }
+    };
+
+    // Contact a contractor (send team request/message)
+    contactContractor = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { contractorId, message } = req.body;
+
+            if (!contractorId) {
+                res.status(400).json({ success: false, message: 'contractorId is required' });
+                return;
+            }
+
+            // Create a team request as the contact mechanism
+            const result = await pool.query(
+                `INSERT INTO team_requests (sender_id, receiver_id, message, status, created_at)
+                 VALUES ($1, $2, $3, 'pending', NOW())
+                 RETURNING id, sender_id, receiver_id, message, status, created_at`,
+                [req.user.id, contractorId, message || 'Contact request']
+            );
+
+            logger.info(`Contact request sent from user ${req.user.id} to contractor ${contractorId}`);
+
+            res.json({
+                success: true,
+                message: 'Contact request sent successfully',
+                data: { teamRequest: result.rows[0] }
+            });
+
+        } catch (error) {
+            logger.error('Error sending contact request:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error sending contact request',
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
             });
         }
     };

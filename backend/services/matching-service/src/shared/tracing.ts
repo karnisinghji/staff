@@ -9,6 +9,8 @@
 // so that services compile even if those optional dependencies are not installed yet.
 // All dynamic requires are inside startTracing and guarded by TRACING_ENABLED.
 
+import { logger } from '../utils/logger';
+
 interface TracingOptions {
     serviceName?: string;
     disableAutoInstrumentation?: boolean;
@@ -59,11 +61,9 @@ export async function startTracing(opts: TracingOptions = {}): Promise<void> {
             await sdk.shutdown().catch(() => { });
             started = false;
         };
-        // eslint-disable-next-line no-console
-        console.log(`[tracing] OpenTelemetry tracing started for ${serviceName}`);
+        logger.info(`[tracing] OpenTelemetry tracing started for ${serviceName}`);
     } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn('[tracing] Failed to start tracing (dependencies installed?):', (err as any)?.message);
+        logger.warn('[tracing] Failed to start tracing (dependencies installed?):', (err as any)?.message);
     }
 }
 
@@ -71,8 +71,7 @@ export async function stopTracing(): Promise<void> {
     if (shutdownFn) {
         await shutdownFn();
         shutdownFn = null;
-        // eslint-disable-next-line no-console
-        console.log('[tracing] Tracing stopped');
+        logger.info('[tracing] Tracing stopped');
     }
 }
 

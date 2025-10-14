@@ -179,6 +179,17 @@ router.get('/api/matching/block-status/:userId',
     matchingController.checkBlockStatus
 );
 
+// Contact contractor (creates team request)
+const contactContractorBody = z.object({
+    contractorId: z.string().uuid(),
+    message: z.string().max(1000).optional()
+});
+router.post('/api/matching/contact-contractor',
+    authenticateToken,
+    validate({ schema: contactContractorBody }),
+    matchingController.contactContractor
+);
+
 // Contractor requirements
 const contractorRequirementBody = z.object({
     requiredWorkers: z.number().int().min(1),

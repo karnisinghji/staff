@@ -8,7 +8,7 @@ import { logger } from '../../../utils/logger';
 // Temporary environment-driven limits
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-const MIN_SCORE = 0; // Temporarily lowered to debug search results
+const MIN_SCORE = parseInt(process.env.MIN_MATCH_SCORE || '0'); // Configurable minimum match score
 
 export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
     // FIRST SLICE: Only implement findWorkers. Others throw until migrated.
@@ -31,21 +31,38 @@ export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
             }
 
             const skill = (criteria.skills && criteria.skills[0]) || null;
-            if (!skill) {
-                logger.warn('FindWorkers: No skills provided in criteria');
-                return [];
-            }
 
-            const query = `
-                SELECT u.id as worker_id, u.name as worker_name, u.location, u.email, u.phone,
-                       wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
-                       wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
-                FROM users u
-                INNER JOIN worker_profiles wp ON u.id = wp.id
-                WHERE u.role = 'worker' AND u.is_active = true AND wp.skill_type = $1 AND wp.availability_status = 'available'
-                ORDER BY wp.rating DESC, wp.total_jobs DESC
-            `;
-            const dbRes = await pool.query(query, [skill]);
+            let query: string;
+            let queryParams: string[] = [];
+
+            if (skill) {
+                // Search with skill filter if provided
+                query = `
+                    SELECT u.id as worker_id, u.name as worker_name, u.location, u.email, u.phone,
+                        wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
+                        wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
+                    FROM users u
+                    INNER JOIN worker_profiles wp ON u.id = wp.id
+                    WHERE u.role = 'worker' AND u.is_active = true AND wp.skill_type = $1
+                    ORDER BY wp.rating DESC, wp.total_jobs DESC
+                    LIMIT 50
+                `;
+                queryParams = [skill];
+                logger.info(`FindWorkers: Searching for workers with skill "${skill}"`);
+            } else {
+                // Search without skill filter
+                query = `
+                    SELECT u.id as worker_id, u.name as worker_name, u.location, u.email, u.phone,
+                        wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
+                        wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
+                    FROM users u
+                    INNER JOIN worker_profiles wp ON u.id = wp.id
+                    WHERE u.role = 'worker' AND u.is_active = true
+                    ORDER BY wp.rating DESC, wp.total_jobs DESC
+                    LIMIT 50
+                `;
+                logger.info(`FindWorkers: Searching for all workers (no skill filter)`);
+            } const dbRes = await pool.query(query, queryParams);
             const workers = dbRes.rows || [];
 
             logger.info(`FindWorkers: Found ${workers.length} workers with skill "${skill}" in database`);
@@ -131,7 +148,7 @@ export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
                        cp.company_name, cp.need_worker_status, cp.rating, cp.total_projects
                 FROM users u
                 INNER JOIN contractor_profiles cp ON u.id = cp.user_id
-                WHERE u.role = 'contractor' AND u.is_active = true AND cp.need_worker_status = true
+                WHERE u.role = 'contractor' AND u.is_active = true
                 ORDER BY cp.rating DESC, cp.total_projects DESC
                 LIMIT $1
             `;

@@ -1,5 +1,30 @@
 import { LocationCoordinates } from '../types';
 
+import { logger } from './logger';
+
+// Hindi to English city name mappings
+const hindiToEnglishCityNames: Record<string, string> = {
+    // Rajasthan cities
+    'गोविन्दगढ': 'govindgarh',
+    'गोविंदगढ़': 'govindgarh',
+    'जयपुर': 'jaipur',
+    'जोधपुर': 'jodhpur',
+    'उदयपुर': 'udaipur',
+    'बीकानेर': 'bikaner',
+    'अजमेर': 'ajmer',
+    'कोटा': 'kota',
+    'चोमू': 'chomu',
+    // Other major cities
+    'दिल्ली': 'delhi',
+    'मुंबई': 'mumbai',
+    'बेंगलुरु': 'bangalore',
+    'चेन्नई': 'chennai',
+    'कोलकाता': 'kolkata',
+    'हैदराबाद': 'hyderabad',
+    'पुणे': 'pune',
+    'अहमदाबाद': 'ahmedabad',
+};
+
 // Geocoding for major Indian cities
 const cityCoordinates: Record<string, LocationCoordinates> = {
     // Tier 1 Cities (Metro Cities)
@@ -85,6 +110,9 @@ const cityCoordinates: Record<string, LocationCoordinates> = {
     'guntur': { latitude: 16.3067, longitude: 80.4365 },
     'durgapur': { latitude: 23.5204, longitude: 87.3119 },
     'siliguri': { latitude: 26.7271, longitude: 88.3953 },
+    'govindgarh': { latitude: 27.2440, longitude: 75.6584 }, // Govindgarh near Jaipur/Chomu
+    'chomu': { latitude: 27.1524, longitude: 75.7196 },
+    'chomu tehsil': { latitude: 27.1524, longitude: 75.7196 },
     'jammu': { latitude: 32.7266, longitude: 74.8570 },
     'udaipur': { latitude: 24.5854, longitude: 73.7125 },
     'bikaner': { latitude: 28.0229, longitude: 73.3119 },
@@ -97,23 +125,142 @@ const cityCoordinates: Record<string, LocationCoordinates> = {
     'shimla': { latitude: 31.1048, longitude: 77.1734 },
 };
 
-export const geocodeLocation = async (location: string): Promise<LocationCoordinates | null> => {
-    const normalizedLocation = location.toLowerCase().trim();
+// Cache for geocoded locations to avoid repeated API calls
+const geocodeCache = new Map<string, LocationCoordinates | null>();
+const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const cacheTimestamps = new Map<string, number>();
 
-    // Check if it's in our predefined list
+// Rate limiting for Nominatim API (max 1 request per second as per their usage policy)
+let lastNominatimCall = 0;
+const NOMINATIM_DELAY_MS = 1000;
+
+async function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export const geocodeLocation = async (location: string): Promise<LocationCoordinates | null> => {
+    if (!location || typeof location !== 'string') {
+        console.warn(`Invalid location format: ${location} (${typeof location})`);
+        return null;
+    }
+
+    // Handle comma-separated coordinates (lat,lng format)
+    if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(location)) {
+        try {
+            const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
+            if (!isNaN(lat) && !isNaN(lng)) {
+                logger.debug(`Using provided coordinates: ${lat}, ${lng}`);
+                return { latitude: lat, longitude: lng };
+            }
+        } catch (e) {
+            logger.warn(`Failed to parse coordinates: ${location}`, { error: e });
+        }
+    }
+
+    let normalizedLocation = location.toLowerCase().trim();
+
+    // Extract city name from strings like "Govindgarh, Rajasthan, India" or "गोविन्दगढ, Rajasthan, India"
+    let cityMatch = normalizedLocation.split(',')[0].trim();
+
+    // Check if city name is in Hindi and translate it
+    for (const [hindiName, englishName] of Object.entries(hindiToEnglishCityNames)) {
+        if (cityMatch === hindiName.toLowerCase() || normalizedLocation.includes(hindiName.toLowerCase())) {
+            logger.debug(`Translating Hindi city name "${hindiName}" to "${englishName}"`);
+            cityMatch = englishName;
+            normalizedLocation = englishName;
+            break;
+        }
+    }
+
+    // Check if it's in our predefined Indian cities list FIRST (before cache)
     if (cityCoordinates[normalizedLocation]) {
+        logger.debug(`Found exact match in Indian cities: ${normalizedLocation}`);
         return cityCoordinates[normalizedLocation];
     }
 
-    // Check for partial matches
+    // Check with extracted city name
+    if (cityMatch !== normalizedLocation && cityCoordinates[cityMatch]) {
+        logger.debug(`Found exact match for extracted city "${cityMatch}" from "${location}"`);
+        return cityCoordinates[cityMatch];
+    }
+
+    // Check for partial matches in Indian cities
     for (const [city, coords] of Object.entries(cityCoordinates)) {
-        if (city.includes(normalizedLocation) || normalizedLocation.includes(city)) {
+        if (city.includes(normalizedLocation) || normalizedLocation.includes(city) ||
+            city.includes(cityMatch) || cityMatch.includes(city)) {
+            logger.debug(`Found partial match in Indian cities for ${normalizedLocation}: using ${city}`);
             return coords;
         }
     }
 
-    // Default to Jaipur, India if no match found
-    return { latitude: 26.9124, longitude: 75.7873 };
+    // Now check cache (only for non-Indian cities)
+    const cacheKey = normalizedLocation;
+    const cachedTime = cacheTimestamps.get(cacheKey);
+    if (cachedTime && (Date.now() - cachedTime < CACHE_EXPIRY_MS)) {
+        const cached = geocodeCache.get(cacheKey);
+        if (cached !== undefined) {
+            logger.debug(`Using cached coordinates for: ${location}`);
+            return cached;
+        }
+    }
+
+    // Use OpenStreetMap Nominatim API for unknown locations
+    try {
+        logger.debug(`Geocoding "${location}" using Nominatim API...`);
+
+        // Rate limiting: wait at least 1 second between API calls
+        const now = Date.now();
+        const timeSinceLastCall = now - lastNominatimCall;
+        if (timeSinceLastCall < NOMINATIM_DELAY_MS) {
+            const waitTime = NOMINATIM_DELAY_MS - timeSinceLastCall;
+            logger.debug(`Rate limiting: waiting ${waitTime}ms before Nominatim API call`);
+            await sleep(waitTime);
+        }
+        lastNominatimCall = Date.now();
+
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+            {
+                headers: {
+                    'User-Agent': 'ComeOnDost-Matching-Service/1.0'
+                }
+            }
+        );
+
+        if (!response.ok) {
+            console.warn(`Nominatim API error: ${response.status} ${response.statusText}`);
+            geocodeCache.set(cacheKey, null);
+            cacheTimestamps.set(cacheKey, Date.now());
+            return null;
+        }
+
+        const data = await response.json() as any[];
+
+        if (data && Array.isArray(data) && data.length > 0 && data[0].lat && data[0].lon) {
+            const coords = {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon)
+            };
+            logger.info(`Nominatim geocoded "${location}" to: ${coords.latitude}, ${coords.longitude}`, {
+                displayName: data[0].display_name || location
+            });
+
+            // Cache the result
+            geocodeCache.set(cacheKey, coords);
+            cacheTimestamps.set(cacheKey, Date.now());
+
+            return coords;
+        } else {
+            console.warn(`Nominatim found no results for: ${location}`);
+            geocodeCache.set(cacheKey, null);
+            cacheTimestamps.set(cacheKey, Date.now());
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error geocoding "${location}" with Nominatim:`, error);
+        // Don't cache errors, allow retry next time
+        return null;
+    }
 };
 
 export const calculateDistance = (

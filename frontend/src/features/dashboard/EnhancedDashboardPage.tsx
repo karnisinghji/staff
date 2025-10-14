@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
@@ -7,6 +8,7 @@ import { API_CONFIG } from '../../config/api';
 
 interface TeamRequest {
   id: number;
+  sender_id: string;
   sender_name: string;
   sender_company?: string;
   message: string;
@@ -15,15 +17,24 @@ interface TeamRequest {
     skill?: string;
     distance?: number;
     score?: number;
+    matchScore?: number;
   };
 }
 
 interface TeamMember {
   id: number;
+  team_member_id: string;
   name: string;
+  email?: string;
+  role?: string;
   company?: string;
   relationship_type: string;
   created_at: string;
+  rating?: number;
+  profile_info?: string;
+  location?: string;
+  total_work?: number;
+  is_available?: boolean;
 }
 
 interface DashboardStats {
@@ -250,8 +261,9 @@ const ActivityFeedItem: React.FC<{
 };
 
 const EnhancedDashboardPage: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { error: showError, success: showSuccess } = useToast();
+  const navigate = useNavigate();
   const [pendingRequests, setPendingRequests] = useState<TeamRequest[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -288,7 +300,11 @@ const EnhancedDashboardPage: React.FC = () => {
       if (requestsResponse.ok) {
         const requestsResult = await requestsResponse.json();
         if (requestsResult.success && requestsResult.data && requestsResult.data.requests) {
-          setPendingRequests(requestsResult.data.requests);
+          // Filter out any requests where the current user is the sender (safety check)
+          const filteredRequests = requestsResult.data.requests.filter(
+            (request: TeamRequest) => user?.id && request.sender_id !== user.id
+          );
+          setPendingRequests(filteredRequests);
         } else {
           setPendingRequests([]);
         }
@@ -297,7 +313,11 @@ const EnhancedDashboardPage: React.FC = () => {
       if (teamResponse.ok) {
         const teamResult = await teamResponse.json();
         if (teamResult.success && teamResult.data && teamResult.data.teamMembers) {
-          setTeamMembers(teamResult.data.teamMembers);
+          // Filter out yourself from team members (safety check)
+          const filteredTeam = teamResult.data.teamMembers.filter(
+            (member: TeamMember) => user?.id && member.team_member_id !== user.id
+          );
+          setTeamMembers(filteredTeam);
         } else {
           setTeamMembers([]);
         }
@@ -634,20 +654,37 @@ const EnhancedDashboardPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div style={{
-                    fontSize: theme.typography.fontSize.sm,
-                    color: theme.colors.neutral[700],
-                    marginBottom: theme.spacing.md,
-                    padding: theme.spacing.sm,
-                    backgroundColor: theme.colors.neutral[50],
-                    borderRadius: theme.borderRadius.sm,
-                    borderLeft: `3px solid ${theme.colors.primary[500]}`,
-                  }}>
-                    {request.message}
-                  </div>
+                  
+                  {request.message && request.message.trim() && (
+                    <div style={{
+                      fontSize: theme.typography.fontSize.sm,
+                      color: theme.colors.neutral[700],
+                      marginBottom: theme.spacing.md,
+                      padding: theme.spacing.sm,
+                      backgroundColor: theme.colors.neutral[50],
+                      borderRadius: theme.borderRadius.sm,
+                      borderLeft: `3px solid ${theme.colors.primary[500]}`,
+                    }}>
+                      💬 {request.message}
+                    </div>
+                  )}
+                  
+                  {request.match_context && (
+                    <div style={{
+                      fontSize: theme.typography.fontSize.xs,
+                      color: theme.colors.neutral[600],
+                      marginBottom: theme.spacing.md,
+                    }}>
+                      {request.match_context.skill && `Skill: ${request.match_context.skill}`}
+                      {request.match_context.distance && ` • ${request.match_context.distance}`}
+                      {request.match_context.matchScore && ` • Match: ${request.match_context.matchScore}%`}
+                    </div>
+                  )}
+                  
                   <div style={{
                     display: 'flex',
                     gap: theme.spacing.sm,
+                    flexWrap: 'wrap',
                   }}>
                     <LoadingButton
                       isLoading={actionLoading === request.id}
@@ -665,6 +702,35 @@ const EnhancedDashboardPage: React.FC = () => {
                     >
                       Decline
                     </LoadingButton>
+                    {request.message && request.message.trim() && (
+                      <button
+                        onClick={() => navigate(`/messages?userId=${request.sender_id}&userName=${encodeURIComponent(request.sender_name)}`)}
+                        style={{
+                          padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                          border: `1px solid ${theme.colors.primary[300]}`,
+                          borderRadius: theme.borderRadius.md,
+                          backgroundColor: 'white',
+                          color: theme.colors.primary[600],
+                          fontSize: theme.typography.fontSize.sm,
+                          fontWeight: theme.typography.fontWeight.medium,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: theme.spacing.xs,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = theme.colors.primary[50];
+                          e.currentTarget.style.borderColor = theme.colors.primary[500];
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderColor = theme.colors.primary[300];
+                        }}
+                      >
+                        💬 Reply
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

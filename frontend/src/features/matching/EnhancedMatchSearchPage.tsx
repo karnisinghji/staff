@@ -338,6 +338,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   // Search state
   const [skillType, setSkillType] = useState('');
   const [location, setLocation] = useState('');
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null); // Store GPS coordinates
   const [maxDistance, setMaxDistance] = useState<number>(50);
   
   // Results state
@@ -419,19 +420,54 @@ export const EnhancedMatchSearchPage: React.FC = () => {
             resolve,
             reject,
             {
-              enableHighAccuracy: false, // Use faster, less accurate method for initial load
-              timeout: 5000,
-              maximumAge: 300000 // Cache for 5 minutes
+              enableHighAccuracy: true, // Use high accuracy like Profile page
+              timeout: 10000,
+              maximumAge: 60000 // Cache for 1 minute
             }
           );
         });
 
         const { latitude, longitude } = position.coords;
         
-        // Use enhanced reverse geocoding with fallback to nearest city
-        const cityName = await reverseGeocode(latitude, longitude);
-        setLocation(cityName);
-        console.log(`📍 Auto-detected location: ${cityName}`);
+        // Store the GPS coordinates for accurate search
+        setLocationCoords({ lat: latitude, lng: longitude });
+        
+        // Use Nominatim reverse geocoding with zoom=18 for exact address (same as Profile page)
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'ComeOnDost/1.0'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const addressComponents = data.address || {};
+            
+            // Get city name (same priority as Profile page)
+            const cityName = addressComponents.city || 
+              addressComponents.town || 
+              addressComponents.village || 
+              addressComponents.state_district || 
+              addressComponents.state || '';
+            
+            const stateName = addressComponents.state || '';
+            const locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+            
+            setLocation(locationString || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            console.log(`📍 Auto-detected location: ${locationString} (${latitude}, ${longitude})`);
+          } else {
+            // Fallback to coordinates
+            setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
+        } catch (geocodeError) {
+          // Fallback to coordinates if geocoding fails
+          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        }
+        
         
       } catch (error: any) {
         // Silently fail - user can manually enter location
@@ -458,18 +494,38 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
     try {
       // Determine endpoint based on user role
-      const isContractor = user?.role === 'contractor';
+      // Fallback: if user.role is missing, decode it from JWT token
+      let userRole = user?.role;
+      
+      if (!userRole && token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userRole = payload.roles?.[0] || payload.role;
+          console.log('Decoded role from token:', userRole);
+        } catch (e) {
+          console.error('Failed to decode token:', e);
+        }
+      }
+      
+      const isContractor = userRole === 'contractor';
       const endpoint = isContractor ? 'api/matching/find-workers' : 'api/matching/find-contractors';
       
+      console.log('User role:', userRole, '| Contractor?', isContractor, '| Endpoint:', endpoint);
+      
       // Prepare search body for POST request
-      // location and maxDistance are REQUIRED by backend validation
+      // If we have GPS coordinates, send them directly for maximum accuracy
+      // Otherwise, send location name and let backend geocode it
       const searchBody = {
-        location: location.trim(), // Required
+        location: locationCoords 
+          ? `${locationCoords.lat}, ${locationCoords.lng}` // Send GPS coordinates directly
+          : location.trim(), // Fallback to city name
         maxDistance: Math.max(1, maxDistance), // Required, ensure positive
         skillType: skillType || undefined,
         limit: 12,
         ...(pageNum > 1 && { offset: (pageNum - 1) * 12 })
       };
+      
+      console.log('🔍 Searching with:', searchBody);
 
   const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/${endpoint}`, {
         method: 'POST',
@@ -654,7 +710,14 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               <input
                 type="text"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  // Clear GPS coordinates when user manually types a location
+                  if (locationCoords) {
+                    setLocationCoords(null);
+                    console.log('📍 Cleared GPS coordinates (manual input)');
+                  }
+                }}
                 placeholder={detectingLocation ? "Detecting your location..." : "Enter city name (e.g., Delhi, Mumbai, Bangalore)"}
                 disabled={detectingLocation}
                 style={{
@@ -684,44 +747,69 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                         {
                           enableHighAccuracy: true,
                           timeout: 10000,
-                          maximumAge: 60000
+                          maximumAge: 60000 // Cache for 1 minute
                         }
                       );
                     });
 
                     const { latitude, longitude } = position.coords;
                     
-                    // Try reverse geocoding
+                    // Store the GPS coordinates for accurate search
+                    setLocationCoords({ lat: latitude, lng: longitude });
+                    
+                    // Use Nominatim reverse geocoding with zoom=18 for exact address (same as Profile page)
                     try {
                       const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+                        {
+                          headers: {
+                            'User-Agent': 'ComeOnDost/1.0'
+                          }
+                        }
                       );
                       
                       if (response.ok) {
                         const data = await response.json();
-                        const address = data.address || {};
-                        const cityName = address.city || address.town || address.village || 
-                                       `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-                        setLocation(cityName);
-                        success('Location detected', `Using: ${cityName}`);
+                        const addressComponents = data.address || {};
+                        
+                        // Get city name (same priority as Profile page)
+                        const cityName = addressComponents.city || 
+                          addressComponents.town || 
+                          addressComponents.village || 
+                          addressComponents.state_district || 
+                          addressComponents.state || '';
+                        
+                        const stateName = addressComponents.state || '';
+                        const locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+                        
+                        setLocation(locationString || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                        success('Location detected', `Using: ${locationString || 'coordinates'}`);
+                        console.log(`📍 Manual location detected: ${locationString} (${latitude}, ${longitude})`);
                       } else {
+                        // Fallback to coordinates
                         setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                        success('Location detected', 'Using GPS coordinates');
+                        success('Location detected', `Using coordinates`);
                       }
-                    } catch {
+                    } catch (geocodeError) {
+                      // Fallback to coordinates if geocoding fails
                       setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                      success('Location detected', 'Using GPS coordinates');
+                      success('Location detected', 'Using coordinates (address lookup failed)');
                     }
                   } catch (error: any) {
                     let errorMessage = 'Unable to detect location';
+                    let errorTitle = 'Detection failed';
+                    
                     if (error.code === 1) {
-                      errorMessage = 'Location access denied. Please enable location permissions.';
+                      errorTitle = 'Permission denied';
+                      errorMessage = 'To enable location: Click the lock/info icon (🔒) in your browser address bar → Site settings → Location → Allow';
                     } else if (error.code === 2) {
-                      errorMessage = 'Location unavailable. Check GPS settings.';
+                      errorTitle = 'Location unavailable';
+                      errorMessage = 'Please check that GPS is enabled on your device and try again.';
                     } else if (error.code === 3) {
-                      errorMessage = 'Location request timed out. Try again.';
+                      errorTitle = 'Request timed out';
+                      errorMessage = 'Location detection took too long. Please check your GPS signal and try again.';
                     }
-                    showError('Detection failed', errorMessage);
+                    showError(errorTitle, errorMessage);
                   } finally {
                     setDetectingLocation(false);
                   }

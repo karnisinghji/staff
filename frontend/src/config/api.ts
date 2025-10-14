@@ -28,11 +28,11 @@ export const API_CONFIG = {
 // WebSocket URLs for real-time features
 export const WS_CONFIG = {
     COMMUNICATION: isProduction
-        ? import.meta.env.VITE_WS_COMMUNICATION_URL || 'wss://communication-service-production-c165.up.railway.app/ws'
+        ? 'wss://communication-service-production-c165.up.railway.app/ws'
         : 'ws://localhost:3004/ws',
 
     NOTIFICATION: isProduction
-        ? import.meta.env.VITE_WS_NOTIFICATION_URL || 'wss://notification-service-production-8738.up.railway.app/ws'
+        ? 'wss://notification-service-production-8738.up.railway.app/ws'
         : 'ws://localhost:3005/ws'
 };
 

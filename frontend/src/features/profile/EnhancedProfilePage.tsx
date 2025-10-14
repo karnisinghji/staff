@@ -592,7 +592,7 @@ const EnhancedProfilePage: React.FC = () => {
         await mutation.mutateAsync({ userPayload, workerPayload, contractorPayload });
       }
     },
-    delay: 3000, // 3 second delay for auto-save
+    delay: 1500, // 1.5 second delay for auto-save
     enabled: false // TEMPORARILY DISABLED - Auto-save disabled to prevent interference with manual saves
   });
   */

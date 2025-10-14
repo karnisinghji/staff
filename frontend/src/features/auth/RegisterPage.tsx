@@ -52,9 +52,9 @@ export const RegisterPage: React.FC = () => {
         setShowSuccessBar(true);
         toast.success('Registration successful! Redirecting to login...', {
           position: 'top-right',
-          autoClose: 3000
+          autoClose: 1500
         });
-        setTimeout(() => setShowSuccessBar(false), 3000);
+        setTimeout(() => setShowSuccessBar(false), 1500);
       } else {
         // Handle specific error codes
         const errorCode = data.error?.code;

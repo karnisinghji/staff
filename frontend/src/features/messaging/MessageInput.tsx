@@ -1,10 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMessages } from './MessageContext';
 
 export const MessageInput = () => {
   const { sendMessage } = useMessages();
+  const [searchParams] = useSearchParams();
   const [to, setTo] = useState('');
   const [content, setContent] = useState('');
+
+  // Pre-populate recipient from URL parameters
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    const userName = searchParams.get('userName');
+    
+    if (userId && userName) {
+      // Set the recipient field with user name (for display)
+      setTo(userName);
+    } else if (userId) {
+      // Fallback to userId if userName not provided
+      setTo(userId);
+    }
+  }, [searchParams]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();

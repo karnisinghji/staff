@@ -18,13 +18,13 @@ export const OAuthCallback: React.FC = () => {
 
       if (errorParam) {
         setError(`OAuth authentication failed: ${errorParam}`);
-        setTimeout(() => navigate('/register'), 3000);
+        setTimeout(() => navigate('/register'), 1500);
         return;
       }
 
       if (!accessToken || !refreshToken || !userId) {
         setError('Missing authentication tokens. Please try again.');
-        setTimeout(() => navigate('/register'), 3000);
+        setTimeout(() => navigate('/register'), 1500);
         return;
       }
 
@@ -43,7 +43,7 @@ export const OAuthCallback: React.FC = () => {
       } catch (err) {
         console.error('OAuth callback error:', err);
         setError('Failed to complete authentication. Please try again.');
-        setTimeout(() => navigate('/register'), 3000);
+        setTimeout(() => navigate('/register'), 1500);
       }
     };
 

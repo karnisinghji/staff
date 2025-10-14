@@ -260,7 +260,8 @@ export function createAuthRoutes(c: AuthHexContainer) {
             }
 
             // Hash the new password
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
+            const hashedPassword = await bcrypt.hash(newPassword, bcryptRounds);
 
             // Update user password
             await pool.query(
