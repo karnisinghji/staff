@@ -42,11 +42,12 @@ export async function getContractorRequirements(pool: Pool, contractorId?: strin
         SELECT cr.*, u.name as contractor_name, u.email as contractor_email, u.phone as contractor_phone
         FROM contractor_requirements cr
         LEFT JOIN users u ON cr.contractor_id = u.id
+        WHERE cr.last_submitted_at >= NOW() - INTERVAL '24 hours'
     `;
 
     const result = contractorId
-        ? await pool.query(baseQuery + 'WHERE cr.contractor_id = $1 ORDER BY cr.created_at DESC', [contractorId])
-        : await pool.query(baseQuery + 'ORDER BY cr.created_at DESC');
+        ? await pool.query(baseQuery + ' AND cr.contractor_id = $1 ORDER BY cr.created_at DESC', [contractorId])
+        : await pool.query(baseQuery + ' ORDER BY cr.created_at DESC');
     return result.rows;
 }
 
