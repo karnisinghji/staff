@@ -42,7 +42,7 @@ export async function getContractorRequirements(pool: Pool, contractorId?: strin
         SELECT cr.*, u.name as contractor_name, u.email as contractor_email, u.phone as contractor_phone
         FROM contractor_requirements cr
         LEFT JOIN users u ON cr.contractor_id = u.id
-        WHERE cr.last_submitted_at >= NOW() - INTERVAL '24 hours'
+        WHERE cr.created_at >= NOW() - INTERVAL '24 hours'
     `;
 
     const result = contractorId
@@ -56,7 +56,7 @@ export async function getLatestContractorRequirement(pool: Pool, contractorId: s
     const result = await pool.query(
         `SELECT * FROM contractor_requirements 
          WHERE contractor_id = $1 
-         ORDER BY last_submitted_at DESC 
+         ORDER BY created_at DESC 
          LIMIT 1`,
         [contractorId]
     );
@@ -67,11 +67,11 @@ export async function getLatestContractorRequirement(pool: Pool, contractorId: s
 export async function canContractorSubmit(pool: Pool, contractorId: string): Promise<{ canSubmit: boolean; nextSubmitAt?: Date; hoursRemaining?: number }> {
     const latest = await getLatestContractorRequirement(pool, contractorId);
 
-    if (!latest || !latest.last_submitted_at) {
+    if (!latest || !latest.created_at) {
         return { canSubmit: true };
     }
 
-    const lastSubmittedAt = new Date(latest.last_submitted_at);
+    const lastSubmittedAt = new Date(latest.created_at);
     const now = new Date();
     const hoursSinceLastSubmit = (now.getTime() - lastSubmittedAt.getTime()) / (1000 * 60 * 60);
 
