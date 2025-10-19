@@ -1,9 +1,35 @@
 # Password Reset Email Functionality - Implementation Guide
 
+## � NEEDS ACTION - October 19, 2025
+**Code Fixed**: Function parameter mismatch in `/backend/services/auth-service/src/http/routes.ts`
+- **Issue**: `sendPasswordResetEmail` was called with `(user.email, user.name, resetUrl)` instead of `(user.email, resetToken, resetUrl)`
+- **Fix**: Corrected to pass `resetToken` as second parameter
+- **Deployed**: Yes ✅
+
+**⚠️ REQUIRED**: Set Gmail API credentials in Railway dashboard (emails won't send without these):
+
+### Railway Environment Variables Setup (CRITICAL)
+1. Go to: https://railway.app/project/bb05dc64-069a-4e31-9783-111970652866
+2. Click on `auth-service`
+3. Go to "Variables" tab
+4. Click "New Variable" and add each of these:
+
+```
+GMAIL_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+GMAIL_CLIENT_SECRET=your-google-oauth-client-secret
+GMAIL_REFRESH_TOKEN=your-google-oauth-refresh-token
+GMAIL_USER=your-email@gmail.com
+```
+
+5. Click "Deploy" to restart the service with new variables
+
+**Current Status**: ❌ Gmail credentials missing (see error logs above)
+**Once Added**: ✅ Password reset emails will work
+
 ## Overview
 Full email-based password reset functionality has been implemented with the following features:
 - Secure token generation
-- Email sending via SMTP (Nodemailer)
+- Email sending via Gmail REST API (googleapis)
 - Token validation and expiry (1 hour)
 - Complete frontend UI for password reset
 - Secure password hashing with bcrypt
@@ -13,10 +39,11 @@ Full email-based password reset functionality has been implemented with the foll
 ### 1. Backend Components
 
 #### Email Service (`/backend/services/auth-service/src/services/emailService.ts`)
-- Nodemailer SMTP configuration
+- Gmail REST API configuration (googleapis library)
+- OAuth2 authentication with refresh token
 - Styled HTML email templates
 - `sendPasswordResetEmail()` method
-- Environment variable configuration for SMTP
+- Environment variable configuration for Gmail API credentials
 
 #### Database Migration (`/backend/database/migrations/005_add_password_reset_tokens.sql`)
 - `password_reset_tokens` table with:

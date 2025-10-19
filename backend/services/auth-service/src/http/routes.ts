@@ -130,21 +130,28 @@ export function createAuthRoutes(c: AuthHexContainer) {
                 );
 
                 // Construct reset URL (frontend reset password page)
-                const resetUrl = `http://localhost:5174/reset-password/${resetToken}`;
+                const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+                const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
                 // Send password reset email
-                await emailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
+                await emailService.sendPasswordResetEmail(user.email, resetToken, resetUrl);
 
                 console.log(`[auth-service] Password reset email sent to: ${email}`);
+
+                // Return success with email
+                return res.json({
+                    success: true,
+                    message: `Password reset link has been sent to ${email}`
+                });
             } else {
                 console.log(`[auth-service] Password reset requested for non-existent email: ${email}`);
-            }
 
-            // Always return success to prevent email enumeration
-            res.json({
-                success: true,
-                message: 'If an account exists for this email, a reset link has been sent.'
-            });
+                // Return user not found
+                return res.status(404).json({
+                    success: false,
+                    message: 'No account found with this email address'
+                });
+            }
         } catch (e: any) {
             console.error('[auth-service] Forgot password error:', e);
             res.status(500).json({
@@ -219,10 +226,10 @@ export function createAuthRoutes(c: AuthHexContainer) {
                 });
             }
 
-            if (newPassword.length < 6) {
+            if (newPassword.length < 8) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Password must be at least 6 characters long'
+                    message: 'Password must be at least 8 characters long'
                 });
             }
 

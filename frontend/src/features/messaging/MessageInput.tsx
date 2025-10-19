@@ -3,30 +3,35 @@ import { useSearchParams } from 'react-router-dom';
 import { useMessages } from './MessageContext';
 
 export const MessageInput = () => {
-  const { sendMessage } = useMessages();
+  const { sendMessage, loading } = useMessages();
   const [searchParams] = useSearchParams();
-  const [to, setTo] = useState('');
-  const [content, setContent] = useState('');
+  const [toUserId, setToUserId] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   // Pre-populate recipient from URL parameters
   useEffect(() => {
     const userId = searchParams.get('userId');
-    const userName = searchParams.get('userName');
-    
-    if (userId && userName) {
-      // Set the recipient field with user name (for display)
-      setTo(userName);
-    } else if (userId) {
-      // Fallback to userId if userName not provided
-      setTo(userId);
+    if (userId) {
+      setToUserId(userId);
     }
   }, [searchParams]);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (to && content) {
-      sendMessage(to, content);
-      setContent('');
+    if (!toUserId || !body) return;
+    
+    setSending(true);
+    setSendError('');
+    
+    try {
+      await sendMessage(toUserId, body);
+      setBody(''); // Clear message after sending
+    } catch (err: any) {
+      setSendError(err.message || 'Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -73,24 +78,57 @@ export const MessageInput = () => {
           }
         }
       `}</style>
+      {sendError && (
+        <div style={{
+          maxWidth: '500px',
+          margin: '0 auto 1rem auto',
+          padding: '0.75rem',
+          background: '#ffebee',
+          color: '#c62828',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          textAlign: 'center'
+        }}>
+          {sendError}
+        </div>
+      )}
+      
       <form className="msg-input-form" onSubmit={handleSend}>
         <input
           type="text"
-          placeholder="Recipient"
-          value={to}
-          onChange={e => setTo(e.target.value)}
+          placeholder="Recipient User ID"
+          value={toUserId}
+          onChange={e => setToUserId(e.target.value)}
           required
-          style={{ flex: 1 }}
+          disabled={sending}
+          style={{ 
+            flex: 1,
+            opacity: sending ? 0.6 : 1
+          }}
         />
         <input
           type="text"
-          placeholder="Message"
-          value={content}
-          onChange={e => setContent(e.target.value)}
+          placeholder="Type your message..."
+          value={body}
+          onChange={e => setBody(e.target.value)}
           required
-          style={{ flex: 2 }}
+          disabled={sending}
+          style={{ 
+            flex: 2,
+            opacity: sending ? 0.6 : 1
+          }}
         />
-        <button type="submit">Send</button>
+        <button 
+          type="submit"
+          disabled={sending || !toUserId || !body}
+          style={{
+            opacity: (sending || !toUserId || !body) ? 0.6 : 1,
+            cursor: (sending || !toUserId || !body) ? 'not-allowed' : 'pointer',
+            background: (sending || !toUserId || !body) ? '#999' : '#43a047'
+          }}
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
       </form>
     </>
   );

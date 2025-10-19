@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { pool } from '../utils/db';
-import { insertContractorRequirement, getContractorRequirements } from '../models/ContractorRequirement';
+import { insertContractorRequirement, getContractorRequirements, canContractorSubmit } from '../models/ContractorRequirement';
 
 export class ContractorRequirementController {
     // POST /api/matching/contractor-requirements
@@ -11,6 +11,19 @@ export class ContractorRequirementController {
                 res.status(401).json({ success: false, message: 'Unauthorized' });
                 return;
             }
+
+            // Check 24-hour cooldown
+            const submitCheck = await canContractorSubmit(pool, contractorId);
+            if (!submitCheck.canSubmit) {
+                res.status(429).json({
+                    success: false,
+                    message: 'You can only submit once every 24 hours',
+                    nextSubmitAt: submitCheck.nextSubmitAt,
+                    hoursRemaining: submitCheck.hoursRemaining
+                });
+                return;
+            }
+
             const { requiredWorkers, skills, location, notes } = req.body;
             if (!requiredWorkers || requiredWorkers < 1) {
                 res.status(400).json({ success: false, message: 'requiredWorkers is required and must be >= 1' });
@@ -39,6 +52,29 @@ export class ContractorRequirementController {
             return;
         } catch (err) {
             res.status(500).json({ success: false, message: 'Failed to fetch requirements', error: (err as Error).message });
+            return;
+        }
+    }
+
+    // GET /api/matching/contractor-requirements/can-submit
+    async checkCanSubmit(req: Request, res: Response) {
+        try {
+            const contractorId = req.user?.id;
+            if (!contractorId) {
+                res.status(401).json({ success: false, message: 'Unauthorized' });
+                return;
+            }
+
+            const submitCheck = await canContractorSubmit(pool, contractorId);
+            res.json({
+                success: true,
+                canSubmit: submitCheck.canSubmit,
+                nextSubmitAt: submitCheck.nextSubmitAt,
+                hoursRemaining: submitCheck.hoursRemaining
+            });
+            return;
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Failed to check submission status', error: (err as Error).message });
             return;
         }
     }

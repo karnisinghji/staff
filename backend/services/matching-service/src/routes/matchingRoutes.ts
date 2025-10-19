@@ -212,4 +212,11 @@ router.get('/api/matching/contractor-requirements',
     (req, res) => contractorRequirementController.listRequirements(req, res)
 );
 
+// Contractor checks if they can submit (24-hour cooldown check)
+router.get('/api/matching/contractor-requirements/can-submit',
+    authenticateToken,
+    requireRole(['contractor']),
+    (req, res) => contractorRequirementController.checkCanSubmit(req, res)
+);
+
 export default router;

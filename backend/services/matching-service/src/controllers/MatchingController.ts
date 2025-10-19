@@ -486,6 +486,7 @@ export class MatchingController {
                 [senderId, receiverId]
             );
 
+            let result;
             if (existingRequest.rows.length > 0) {
                 const existing = existingRequest.rows[0];
                 if (existing.status === 'pending') {
@@ -494,22 +495,26 @@ export class MatchingController {
                 } else if (existing.status === 'accepted') {
                     res.status(400).json({ success: false, message: 'Already team members' });
                     return;
+                } else {
+                    // Status is 'rejected' or 'cancelled' - update to pending
+                    result = await pool.query(`
+                        UPDATE team_requests 
+                        SET message = $3, match_context = $4, status = 'pending', 
+                            created_at = CURRENT_TIMESTAMP, 
+                            expires_at = CURRENT_TIMESTAMP + INTERVAL '30 days',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $5
+                        RETURNING id, created_at
+                    `, [senderId, receiverId, message || null, JSON.stringify(matchContext || {}), existing.id]);
                 }
+            } else {
+                // No existing request - create new one
+                result = await pool.query(`
+                    INSERT INTO team_requests (sender_id, receiver_id, message, match_context, status)
+                    VALUES ($1, $2, $3, $4, 'pending')
+                    RETURNING id, created_at
+                `, [senderId, receiverId, message || null, JSON.stringify(matchContext || {})]);
             }
-
-            // Insert or update team request
-            const result = await pool.query(`
-                INSERT INTO team_requests (sender_id, receiver_id, message, match_context, status)
-                VALUES ($1, $2, $3, $4, 'pending')
-                ON CONFLICT (sender_id, receiver_id) 
-                DO UPDATE SET 
-                    message = EXCLUDED.message,
-                    match_context = EXCLUDED.match_context,
-                    status = 'pending',
-                    created_at = CURRENT_TIMESTAMP,
-                    expires_at = CURRENT_TIMESTAMP + INTERVAL '30 days'
-                RETURNING id, created_at
-            `, [senderId, receiverId, message || null, JSON.stringify(matchContext || {})]);
 
             res.json({
                 success: true,

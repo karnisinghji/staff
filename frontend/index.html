@@ -10,7 +10,15 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <!-- Build: 2025-10-10T12:45:00Z - Force CDN refresh -->
+    <!-- Build: 2025-10-19T15:30:00Z - Ultra Compact Reset Page -->
+    <script>
+      // Force cache clear on load
+      if (window.performance && performance.navigation.type !== 1) {
+        if ('caches' in window) {
+          caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+        }
+      }
+    </script>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -1,15 +1,5 @@
-import nodemailer from 'nodemailer';
-import { createTransport } from 'nodemailer';
-
-export interface EmailConfig {
-    host: string;
-    port: number;
-    secure: boolean;
-    auth: {
-        user: string;
-        pass: string;
-    };
-}
+import { google } from 'googleapis';
+import 'dotenv/config';
 
 export interface EmailOptions {
     to: string;
@@ -19,71 +9,64 @@ export interface EmailOptions {
 }
 
 class EmailService {
-    private transporter: nodemailer.Transporter | null = null;
-    private isConfigured: boolean = false;
+    private gmailUser = process.env.GMAIL_USER;
+    private gmailClientId = process.env.GMAIL_CLIENT_ID;
+    private gmailClientSecret = process.env.GMAIL_CLIENT_SECRET;
+    private gmailRefreshToken = process.env.GMAIL_REFRESH_TOKEN;
+
+    private oauth2 = new google.auth.OAuth2(
+        this.gmailClientId,
+        this.gmailClientSecret,
+        'http://localhost'
+    );
 
     constructor() {
-        this.initialize();
+        // Debug logging to see what's loaded
+        console.log('[EmailService] Initializing with credentials:');
+        console.log(`  GMAIL_USER: ${this.gmailUser ? 'SET' : 'MISSING'}`);
+        console.log(`  GMAIL_CLIENT_ID: ${this.gmailClientId ? 'SET' : 'MISSING'}`);
+        console.log(`  GMAIL_CLIENT_SECRET: ${this.gmailClientSecret ? 'SET' : 'MISSING'}`);
+        console.log(`  GMAIL_REFRESH_TOKEN: ${this.gmailRefreshToken ? 'SET' : 'MISSING'}`);
+
+        if (this.gmailRefreshToken) {
+            this.oauth2.setCredentials({ refresh_token: this.gmailRefreshToken });
+        }
     }
 
-    private initialize() {
-        const host = process.env.SMTP_HOST;
-        const port = process.env.SMTP_PORT;
-        const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASS;
-
-        if (!host || !port || !user || !pass) {
-            console.warn('[EmailService] SMTP configuration missing. Email sending disabled.');
-            console.warn('[EmailService] Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in .env');
-            this.isConfigured = false;
-            return;
-        }
-
-        try {
-            this.transporter = createTransport({
-                host,
-                port: parseInt(port),
-                secure: parseInt(port) === 465, // true for 465, false for other ports
-                auth: {
-                    user,
-                    pass
-                }
-            });
-
-            this.isConfigured = true;
-            console.log('[EmailService] ✅ Email service configured successfully');
-        } catch (error) {
-            console.error('[EmailService] Failed to initialize:', error);
-            this.isConfigured = false;
-        }
+    private b64url(s: string) {
+        return Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
     async sendEmail(options: EmailOptions): Promise<boolean> {
-        if (!this.isConfigured || !this.transporter) {
-            console.warn('[EmailService] Cannot send email - service not configured');
+        if (!this.gmailUser || !this.gmailClientId || !this.gmailClientSecret || !this.gmailRefreshToken) {
+            console.warn('[EmailService] Gmail API credentials missing. Email sending disabled.');
             return false;
         }
-
         try {
-            const info = await this.transporter.sendMail({
-                from: `"${process.env.EMAIL_FROM_NAME || 'Contractor Worker Platform'}" <${process.env.SMTP_USER}>`,
-                to: options.to,
-                subject: options.subject,
-                text: options.text || '',
-                html: options.html
+            const gmail = google.gmail({ version: 'v1', auth: this.oauth2 });
+            const raw = [
+                `From: ${this.gmailUser}`,
+                `To: ${options.to}`,
+                `Subject: ${options.subject}`,
+                'MIME-Version: 1.0',
+                'Content-Type: text/html; charset=UTF-8',
+                '',
+                options.html,
+            ].join('\r\n');
+            await gmail.users.messages.send({
+                userId: 'me',
+                requestBody: { raw: this.b64url(raw) },
             });
-
-            console.log('[EmailService] ✅ Email sent successfully:', info.messageId);
+            console.log('[EmailService] ✅ Email sent via Gmail REST API');
             return true;
         } catch (error) {
-            console.error('[EmailService] ❌ Failed to send email:', error);
+            console.error('[EmailService] ❌ Failed to send email via Gmail REST API:', error);
             return false;
         }
     }
 
     async sendPasswordResetEmail(email: string, resetToken: string, resetUrl: string): Promise<boolean> {
         const subject = 'Password Reset Request';
-
         const html = `
 <!DOCTYPE html>
 <html>
@@ -105,20 +88,15 @@ class EmailService {
         </div>
         <div class="content">
             <p>Hello,</p>
-            
             <p>We received a request to reset your password for your <strong>Contractor Worker Platform</strong> account.</p>
-            
             <p>Click the button below to reset your password:</p>
-            
             <div style="text-align: center;">
                 <a href="${resetUrl}" class="button">Reset Password</a>
             </div>
-            
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 ${resetUrl}
             </p>
-            
             <div class="warning">
                 <strong>⚠️ Security Notice:</strong>
                 <ul>
@@ -127,9 +105,7 @@ class EmailService {
                     <li>Your password won't change until you access the link above</li>
                 </ul>
             </div>
-            
             <p>If you have any questions or concerns, please contact our support team.</p>
-            
             <p>Best regards,<br>
             <strong>Contractor Worker Platform Team</strong></p>
         </div>
@@ -141,33 +117,12 @@ class EmailService {
 </body>
 </html>
         `;
-
-        const text = `
-Password Reset Request
-
-Hello,
-
-We received a request to reset your password for your Contractor Worker Platform account.
-
-Reset your password by visiting this link:
-${resetUrl}
-
-⚠️ Security Notice:
-- This link will expire in 1 hour
-- If you didn't request this, please ignore this email
-- Your password won't change until you access the link above
-
-Best regards,
-Contractor Worker Platform Team
-        `;
-
-        return await this.sendEmail({ to: email, subject, html, text });
+        return await this.sendEmail({ to: email, subject, html });
     }
 
     isEnabled(): boolean {
-        return this.isConfigured;
+        return !!(this.gmailUser && this.gmailClientId && this.gmailClientSecret && this.gmailRefreshToken);
     }
 }
 
-// Export singleton instance
 export const emailService = new EmailService();

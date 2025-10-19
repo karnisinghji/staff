@@ -9,6 +9,7 @@ export interface ContractorRequirement {
     location?: string;
     notes?: string;
     createdAt?: Date;
+    lastSubmittedAt?: Date;
 }
 
 // SQL for table creation (migration)
@@ -20,15 +21,16 @@ CREATE TABLE IF NOT EXISTS contractor_requirements (
   skills TEXT[],
   location TEXT,
   notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_submitted_at TIMESTAMP DEFAULT NOW()
 );
 `;
 
 // Insert a new requirement
 export async function insertContractorRequirement(pool: Pool, req: ContractorRequirement) {
     const result = await pool.query(
-        `INSERT INTO contractor_requirements (contractor_id, required_workers, skills, location, notes)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        `INSERT INTO contractor_requirements (contractor_id, required_workers, skills, location, notes, last_submitted_at)
+     VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
         [req.contractorId, req.requiredWorkers, req.skills, req.location, req.notes]
     );
     return result.rows[0];
@@ -47,3 +49,42 @@ export async function getContractorRequirements(pool: Pool, contractorId?: strin
         : await pool.query(baseQuery + 'ORDER BY cr.created_at DESC');
     return result.rows;
 }
+
+// Get the most recent requirement for a specific contractor
+export async function getLatestContractorRequirement(pool: Pool, contractorId: string) {
+    const result = await pool.query(
+        `SELECT * FROM contractor_requirements 
+         WHERE contractor_id = $1 
+         ORDER BY last_submitted_at DESC 
+         LIMIT 1`,
+        [contractorId]
+    );
+    return result.rows[0] || null;
+}
+
+// Check if contractor can submit (24 hours cooldown)
+export async function canContractorSubmit(pool: Pool, contractorId: string): Promise<{ canSubmit: boolean; nextSubmitAt?: Date; hoursRemaining?: number }> {
+    const latest = await getLatestContractorRequirement(pool, contractorId);
+
+    if (!latest || !latest.last_submitted_at) {
+        return { canSubmit: true };
+    }
+
+    const lastSubmittedAt = new Date(latest.last_submitted_at);
+    const now = new Date();
+    const hoursSinceLastSubmit = (now.getTime() - lastSubmittedAt.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceLastSubmit >= 24) {
+        return { canSubmit: true };
+    }
+
+    const nextSubmitAt = new Date(lastSubmittedAt.getTime() + 24 * 60 * 60 * 1000);
+    const hoursRemaining = Math.ceil(24 - hoursSinceLastSubmit);
+
+    return {
+        canSubmit: false,
+        nextSubmitAt,
+        hoursRemaining
+    };
+}
+

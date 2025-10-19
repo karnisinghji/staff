@@ -34,6 +34,9 @@ const StatusPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [canSubmit, setCanSubmit] = useState(true);
+  const [nextSubmitTime, setNextSubmitTime] = useState<Date | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState('');
 
   // Fetch current profile to get availability status
   const { data: profileData, isLoading } = useQuery({
@@ -88,6 +91,68 @@ const StatusPage: React.FC = () => {
   }, [profileData]);
 
   // Profile data loaded - state updated
+
+  // Fetch contractor submission status on mount
+  useEffect(() => {
+    const fetchSubmissionStatus = async () => {
+      if (!token || profileData?.user?.role !== 'contractor') return;
+      
+      try {
+        const res = await axios.get(
+          `${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements/can-submit`,
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        
+        if (res.data.success) {
+          setCanSubmit(res.data.canSubmit);
+          if (res.data.nextSubmitAt) {
+            setNextSubmitTime(new Date(res.data.nextSubmitAt));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch submission status:', err);
+      }
+    };
+    
+    fetchSubmissionStatus();
+  }, [token, profileData?.user?.role]);
+
+  // Countdown timer for contractor cooldown
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (!canSubmit && nextSubmitTime) {
+      const updateCooldownTimer = () => {
+        const now = new Date().getTime();
+        const nextTime = nextSubmitTime.getTime();
+        const difference = nextTime - now;
+
+        if (difference > 0) {
+          const hours = Math.floor(difference / (1000 * 60 * 60));
+          const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+          
+          setCooldownRemaining(`${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setCooldownRemaining('');
+          setCanSubmit(true);
+          setNextSubmitTime(null);
+        }
+      };
+
+      updateCooldownTimer();
+      interval = setInterval(updateCooldownTimer, 1000);
+    } else {
+      setCooldownRemaining('');
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [canSubmit, nextSubmitTime]);
 
   // Timer effect for countdown
   useEffect(() => {
@@ -166,10 +231,27 @@ const StatusPage: React.FC = () => {
         withCredentials: true,
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      setSuccessMsg('Requirement submitted successfully!');
+      setSuccessMsg('✅ Requirement submitted successfully! You can submit again in 24 hours.');
       setRequiredWorkers('');
-    } catch (err) {
-      setErrorMsg('Failed to submit requirement.');
+      
+      // Update cooldown state
+      setCanSubmit(false);
+      const nextTime = new Date();
+      nextTime.setHours(nextTime.getHours() + 24);
+      setNextSubmitTime(nextTime);
+      
+    } catch (err: any) {
+      if (err.response?.status === 429) {
+        // Cooldown period active
+        const data = err.response.data;
+        setErrorMsg(data.message || 'You can only submit once every 24 hours');
+        if (data.nextSubmitAt) {
+          setNextSubmitTime(new Date(data.nextSubmitAt));
+          setCanSubmit(false);
+        }
+      } else {
+        setErrorMsg('Failed to submit requirement.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -177,34 +259,103 @@ const StatusPage: React.FC = () => {
 
   if (userRole !== 'worker') {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Status Management</h2>
-        <p style={{ color: '#666', marginTop: '1rem' }}>
+      <div style={{ padding: '2rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Status Management</h2>
+        <p style={{ color: '#666', marginTop: '1rem', marginBottom: '2rem' }}>
           As a contractor, you can specify how many workers you require.
         </p>
+        
+        {!canSubmit && cooldownRemaining && (
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '1.5rem',
+            borderRadius: '12px',
+            marginBottom: '2rem',
+            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '0.5rem' }}>⏰</div>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '20px' }}>Next Submission Available In:</h3>
+            <div style={{ 
+              fontSize: '28px', 
+              fontWeight: 'bold',
+              fontFamily: 'monospace'
+            }}>
+              {cooldownRemaining}
+            </div>
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '14px', opacity: 0.9 }}>
+              You can submit a new worker requirement once every 24 hours
+            </p>
+          </div>
+        )}
+        
         <form onSubmit={handleRequirementSubmit} style={{ marginTop: '2rem' }}>
-          <label htmlFor="requiredWorkers" style={{ fontWeight: 500, fontSize: '16px' }}>
-            Number of workers required:
-          </label>
-          <input
-            id="requiredWorkers"
-            type="number"
-            min={1}
-            value={requiredWorkers}
-            onChange={e => setRequiredWorkers(e.target.value === '' ? '' : Number(e.target.value))}
-            style={{ marginLeft: '1rem', padding: '0.5rem', fontSize: '16px', width: '80px' }}
-            required
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting || requiredWorkers === ''}
-            style={{ marginLeft: '1rem', padding: '0.5rem 1.5rem', fontSize: '16px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <label htmlFor="requiredWorkers" style={{ fontWeight: 500, fontSize: '16px', width: '100%', textAlign: 'left' }}>
+              Number of workers required:
+            </label>
+            <input
+              id="requiredWorkers"
+              type="number"
+              min={1}
+              value={requiredWorkers}
+              onChange={e => setRequiredWorkers(e.target.value === '' ? '' : Number(e.target.value))}
+              style={{ 
+                padding: '0.75rem', 
+                fontSize: '16px', 
+                width: '100%',
+                maxWidth: '200px',
+                borderRadius: '8px',
+                border: '2px solid #ddd'
+              }}
+              required
+              disabled={!canSubmit}
+            />
+            <button
+              type="submit"
+              disabled={isSubmitting || requiredWorkers === '' || !canSubmit}
+              style={{ 
+                padding: '0.75rem 2rem', 
+                fontSize: '16px', 
+                background: canSubmit ? '#2196F3' : '#ccc', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px', 
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                opacity: canSubmit ? 1 : 0.6
+              }}
+            >
+              {isSubmitting ? 'Submitting...' : canSubmit ? 'Submit Requirement' : 'Cooldown Active'}
+            </button>
+          </div>
         </form>
-        {successMsg && <div style={{ color: 'green', marginTop: '1rem' }}>{successMsg}</div>}
-        {errorMsg && <div style={{ color: 'red', marginTop: '1rem' }}>{errorMsg}</div>}
+        
+        {successMsg && (
+          <div style={{ 
+            color: 'white', 
+            background: '#43a047',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginTop: '1.5rem',
+            fontWeight: 500
+          }}>
+            {successMsg}
+          </div>
+        )}
+        {errorMsg && (
+          <div style={{ 
+            color: 'white', 
+            background: '#e53935',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginTop: '1.5rem',
+            fontWeight: 500
+          }}>
+            {errorMsg}
+          </div>
+        )}
       </div>
     );
   }
