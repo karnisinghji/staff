@@ -82,7 +82,12 @@ export function createAuthRoutes(c: AuthHexContainer) {
             const out = await c.login.execute({ email: req.body.email, password: req.body.password });
             res.json(out);
         } catch (e: any) {
-            res.status(401).json({ error: 'Invalid credentials' });
+            // Return specific error for OAuth users trying to use password login
+            if (e.message === 'OAUTH_LOGIN_REQUIRED') {
+                res.status(401).json({ error: 'OAUTH_LOGIN_REQUIRED', message: 'This account uses OAuth. Please login with Google/Facebook/Twitter.' });
+            } else {
+                res.status(401).json({ error: 'Invalid credentials' });
+            }
         }
     });
     r.post('/refresh', async (req, res) => {

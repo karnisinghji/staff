@@ -8,7 +8,7 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
     async findByEmail(email: string): Promise<UserCredentials | null> {
         // Search by email or username (which can be email or phone)
         const query = `
-            SELECT id, email, username, name, password_hash, role::text as roles, created_at 
+            SELECT id, email, username, name, password_hash, role::text as roles, created_at, oauth_provider, oauth_id
             FROM users 
             WHERE (LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)) AND is_active = true
             LIMIT 1
@@ -26,7 +26,9 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
             email: row.email || row.username,
             passwordHash: row.password_hash,
             roles: [row.roles], // Convert single role to array format
-            createdAt: row.created_at
+            createdAt: row.created_at,
+            oauthProvider: row.oauth_provider || undefined,
+            oauthId: row.oauth_id || undefined
         };
     }
 

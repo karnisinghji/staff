@@ -40,7 +40,12 @@ export const LoginPage: React.FC = () => {
           setLoading(false);
         }
       } else if (data.error) {
-        setError(typeof data.error === 'string' ? data.error : 'Login failed. Please try again.');
+        // Check if user tried to login with OAuth account using password
+        if (data.error === 'OAUTH_LOGIN_REQUIRED') {
+          setError('This account was created with Google/Facebook/Twitter. Please use the social login buttons below.');
+        } else {
+          setError(typeof data.error === 'string' ? data.error : 'Login failed. Please try again.');
+        }
         setLoading(false);
       } else {
         setError('Login failed. Please try again.');
