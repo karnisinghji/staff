@@ -11,21 +11,21 @@ export class LoginUseCase {
     async execute(input: Input): Promise<Output> {
         const cred = await this.repo.findByEmail(input.email.toLowerCase());
         if (!cred) throw new Error('INVALID_CREDENTIALS');
-        
+
         // Check if this is an OAuth user (password_hash will be null/empty)
         if (cred.oauthProvider) {
             // OAuth users cannot login with password - they must use OAuth flow
             throw new Error('OAUTH_LOGIN_REQUIRED');
         }
-        
+
         // Regular email/password authentication
         if (!cred.passwordHash) {
             throw new Error('INVALID_CREDENTIALS');
         }
-        
+
         const ok = await this.hasher.compare(input.password, cred.passwordHash);
         if (!ok) throw new Error('INVALID_CREDENTIALS');
-        
+
         const accessToken = this.signer.signAccessToken({ sub: cred.id, roles: cred.roles }, '15m');
         const refreshToken = this.signer.signRefreshToken({ sub: cred.id }, '7d');
         // Include both roles array and single role for frontend compatibility
