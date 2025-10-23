@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { validateWeights } from '../utils/validation';
 import { geocodeLocation } from '../utils/location';
 import { pool } from '../utils/db';
+import { calculateTeamMemberDistance, formatDistance } from '../utils/distance';
 
 export class MatchingController {
     // Hex module now the sole execution path (legacy service removed)
@@ -108,15 +109,32 @@ export class MatchingController {
                 pageSize: criteria.limit
             } as any;
             const workers = await this.hex.useCases.findWorkers.execute(hexCriteria);
+
+            // Map worker fields to match frontend expectations
+            const mappedWorkers = workers.map((w: any) => ({
+                id: w.id,
+                name: w.name || `Worker ${w.id?.slice(-6)}`, // Repository returns 'name' not 'workerName'
+                location: w.location,
+                distanceKm: w.distanceKm,
+                score: w.score,
+                rating: w.rating,
+                totalJobs: w.totalJobs,
+                hourlyRate: w.hourlyRate,
+                experienceYears: w.experienceYears,
+                bio: w.bio,
+                isAvailable: w.isAvailable,
+                skills: w.skills || []
+            }));
+
             res.json({
                 success: true,
-                message: `Found ${workers.length} worker matches`,
+                message: `Found ${mappedWorkers.length} worker matches`,
                 data: {
-                    matches: workers,
+                    matches: mappedWorkers,
                     criteria,
-                    totalCount: workers.length,
+                    totalCount: mappedWorkers.length,
                     page: criteria.page || 1,
-                    limit: criteria.limit || workers.length,
+                    limit: criteria.limit || mappedWorkers.length,
                     totalPages: 1
                 }
             });
@@ -186,15 +204,31 @@ export class MatchingController {
                 pageSize: criteria.limit
             } as any;
             const contractors = await this.hex.useCases.findContractors.execute(hexCriteria);
+
+            // Map contractor fields to match frontend expectations
+            const mappedContractors = contractors.map((c: any) => ({
+                id: c.id,
+                name: c.contractorName || c.companyName || `Contractor ${c.id?.slice(-6)}`,
+                company: c.companyName,
+                location: c.location,
+                distanceKm: c.distanceKm,
+                score: c.score,
+                rating: c.rating,
+                totalProjects: c.totalProjects,
+                needWorkerStatus: c.needWorkerStatus,
+                email: c.email,
+                skills: c.skillsNeeded || []
+            }));
+
             res.json({
                 success: true,
-                message: `Found ${contractors.length} contractor matches`,
+                message: `Found ${mappedContractors.length} contractor matches`,
                 data: {
-                    matches: contractors,
+                    matches: mappedContractors,
                     criteria,
-                    totalCount: contractors.length,
+                    totalCount: mappedContractors.length,
                     page: criteria.page || 1,
-                    limit: criteria.limit || contractors.length,
+                    limit: criteria.limit || mappedContractors.length,
                     totalPages: 1
                 }
             });
@@ -464,6 +498,44 @@ export class MatchingController {
                 return;
             }
 
+            // ✅ FIX: Validate that sender and receiver have opposite roles
+            const senderRoleResult = await pool.query('SELECT role FROM users WHERE id = $1', [senderId]);
+            const receiverRoleResult = await pool.query('SELECT role FROM users WHERE id = $1', [receiverId]);
+
+            if (senderRoleResult.rows.length === 0) {
+                res.status(404).json({ success: false, message: 'Sender user not found' });
+                return;
+            }
+
+            if (receiverRoleResult.rows.length === 0) {
+                res.status(404).json({ success: false, message: 'Receiver user not found' });
+                return;
+            }
+
+            const senderRole = senderRoleResult.rows[0].role;
+            const receiverRole = receiverRoleResult.rows[0].role;
+
+            // Contractors can only send requests to workers, and vice versa
+            if (senderRole === receiverRole) {
+                if (senderRole === 'contractor') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Contractors can only send team requests to workers, not other contractors'
+                    });
+                } else if (senderRole === 'worker') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Workers can only send team requests to contractors, not other workers'
+                    });
+                } else {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Cannot send team request to users with the same role'
+                    });
+                }
+                return;
+            }
+
             // Check if either user has blocked the other
             const blockCheck = await pool.query(`
                 SELECT blocker_id FROM user_blocks 
@@ -729,13 +801,45 @@ export class MatchingController {
                     const senderRole = await pool.query('SELECT role FROM users WHERE id = $1', [request.sender_id]);
                     const receiverRole = await pool.query('SELECT role FROM users WHERE id = $1', [request.receiver_id]);
 
+                    // ✅ FIX: Additional validation to prevent same-role team members
+                    if (senderRole.rows.length === 0 || receiverRole.rows.length === 0) {
+                        await pool.query('ROLLBACK');
+                        res.status(404).json({ success: false, message: 'User not found' });
+                        return;
+                    }
+
+                    const senderRoleValue = senderRole.rows[0].role;
+                    const receiverRoleValue = receiverRole.rows[0].role;
+
+                    // Prevent contractors from teaming with contractors, workers with workers
+                    if (senderRoleValue === receiverRoleValue) {
+                        await pool.query('ROLLBACK');
+                        if (senderRoleValue === 'contractor') {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Cannot accept team request: Contractors can only team with workers'
+                            });
+                        } else if (senderRoleValue === 'worker') {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Cannot accept team request: Workers can only team with contractors'
+                            });
+                        } else {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Cannot accept team request: Users must have opposite roles'
+                            });
+                        }
+                        return;
+                    }
+
                     let senderRelationType = 'teammate';
                     let receiverRelationType = 'teammate';
 
-                    if (senderRole.rows[0]?.role === 'worker' && receiverRole.rows[0]?.role === 'contractor') {
+                    if (senderRoleValue === 'worker' && receiverRoleValue === 'contractor') {
                         senderRelationType = 'preferred_contractor';
                         receiverRelationType = 'preferred_worker';
-                    } else if (senderRole.rows[0]?.role === 'contractor' && receiverRole.rows[0]?.role === 'worker') {
+                    } else if (senderRoleValue === 'contractor' && receiverRoleValue === 'worker') {
                         senderRelationType = 'preferred_worker';
                         receiverRelationType = 'preferred_contractor';
                     }
@@ -822,8 +926,11 @@ export class MatchingController {
                     tm.notes,
                     u.name,
                     u.email,
+                    u.phone,
                     u.role,
                     u.location,
+                    u.latitude,
+                    u.longitude,
                     CASE 
                         WHEN u.role = 'contractor' THEN cp.company_name
                         WHEN u.role = 'worker' THEN wp.skill_type::text
@@ -891,17 +998,42 @@ export class MatchingController {
 
             logger.info(`After filtering: ${filteredRows.length} team members remain`);
 
+            // Get current user's coordinates for distance calculation
+            const userCoords = await pool.query(
+                'SELECT latitude, longitude FROM users WHERE id = $1',
+                [req.user.id]
+            );
+            const currentUserLocation = userCoords.rows[0] || null;
+
+            // Calculate distance for each team member
+            const teamMembersWithDistance = filteredRows.map((member: any) => {
+                const distance = calculateTeamMemberDistance(
+                    currentUserLocation,
+                    { latitude: member.latitude, longitude: member.longitude }
+                );
+
+                return {
+                    ...member,
+                    distance_km: distance,
+                    distance_formatted: distance ? formatDistance(distance) : null
+                };
+            });
+
             res.json({
                 success: true,
                 message: `Found ${filteredRows.length} team members`,
                 data: {
-                    teamMembers: filteredRows,
+                    teamMembers: teamMembersWithDistance,
                     pagination: {
                         page,
                         limit,
                         total,
                         hasMore: page * limit < total
-                    }
+                    },
+                    currentUserLocation: currentUserLocation ? {
+                        latitude: currentUserLocation.latitude,
+                        longitude: currentUserLocation.longitude
+                    } : null
                 }
             });
 
@@ -1195,6 +1327,70 @@ export class MatchingController {
             res.status(500).json({
                 success: false,
                 message: 'Error sending contact request',
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
+            });
+        }
+    };
+
+    // Update user location (for live tracking)
+    updateLocation = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { latitude, longitude, location } = req.body;
+
+            // Validate coordinates
+            if (latitude === undefined || longitude === undefined) {
+                res.status(400).json({ success: false, message: 'latitude and longitude are required' });
+                return;
+            }
+
+            if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+                res.status(400).json({ success: false, message: 'latitude and longitude must be numbers' });
+                return;
+            }
+
+            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                res.status(400).json({ success: false, message: 'Invalid coordinates range' });
+                return;
+            }
+
+            // Update user location
+            const result = await pool.query(
+                `UPDATE users 
+                 SET latitude = $1, longitude = $2, location = COALESCE($3, location), updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $4
+                 RETURNING id, latitude, longitude, location`,
+                [latitude, longitude, location, req.user.id]
+            );
+
+            if (result.rows.length === 0) {
+                res.status(404).json({ success: false, message: 'User not found' });
+                return;
+            }
+
+            logger.info(`Location updated for user ${req.user.id}: ${latitude}, ${longitude}`);
+
+            res.json({
+                success: true,
+                message: 'Location updated successfully',
+                data: {
+                    latitude: result.rows[0].latitude,
+                    longitude: result.rows[0].longitude,
+                    location: result.rows[0].location
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error updating location:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error updating location',
                 ...(process.env.NODE_ENV === 'development' && {
                     error: error instanceof Error ? error.message : 'Unknown error'
                 })

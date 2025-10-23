@@ -3,20 +3,34 @@ import { useSearchParams } from 'react-router-dom';
 import { useMessages } from './MessageContext';
 
 export const MessageInput = () => {
-  const { sendMessage, loading } = useMessages();
+  const { sendMessage, loading, messages } = useMessages();
   const [searchParams] = useSearchParams();
   const [toUserId, setToUserId] = useState('');
+  const [recipientName, setRecipientName] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
 
-  // Pre-populate recipient from URL parameters
+  // Pre-populate recipient from URL parameters and find their name
   useEffect(() => {
     const userId = searchParams.get('userId');
+    const userName = searchParams.get('userName');
+    
     if (userId) {
       setToUserId(userId);
+      
+      // Try to get name from URL parameter first
+      if (userName) {
+        setRecipientName(userName);
+      } else {
+        // Try to find the name from existing messages
+        const message = messages.find(m => m.fromUserId === userId || m.toUserId === userId);
+        if (message?.senderName) {
+          setRecipientName(message.senderName);
+        }
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +64,7 @@ export const MessageInput = () => {
           border: 1px solid #bbb;
           font-size: 1.1rem;
           background: #f7f9fc;
+          color: #000;
         }
         .msg-input-form button {
           padding: 1rem 2rem;
@@ -94,18 +109,36 @@ export const MessageInput = () => {
       )}
       
       <form className="msg-input-form" onSubmit={handleSend}>
-        <input
-          type="text"
-          placeholder="Recipient User ID"
-          value={toUserId}
-          onChange={e => setToUserId(e.target.value)}
-          required
-          disabled={sending}
-          style={{ 
+        {recipientName ? (
+          <div style={{
             flex: 1,
-            opacity: sending ? 0.6 : 1
-          }}
-        />
+            padding: '1rem',
+            borderRadius: '10px',
+            border: '2px solid #2196F3',
+            background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            color: '#1565c0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            To: {recipientName}
+          </div>
+        ) : (
+          <input
+            type="text"
+            placeholder="Recipient User ID"
+            value={toUserId}
+            onChange={e => setToUserId(e.target.value)}
+            required
+            disabled={sending}
+            style={{ 
+              flex: 1,
+              opacity: sending ? 0.6 : 1
+            }}
+          />
+        )}
         <input
           type="text"
           placeholder="Type your message..."

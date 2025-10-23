@@ -42,7 +42,7 @@ export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
                         wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
                         wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
                     FROM users u
-                    INNER JOIN worker_profiles wp ON u.id = wp.id
+                    INNER JOIN worker_profiles wp ON u.id = wp.user_id
                     WHERE u.role = 'worker' AND u.is_active = true AND wp.skill_type = $1
                     ORDER BY wp.rating DESC, wp.total_jobs DESC
                     LIMIT 50
@@ -56,17 +56,24 @@ export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
                         wp.skill_type, wp.experience_years, wp.hourly_rate, wp.rating,
                         wp.total_jobs, wp.availability_status, wp.is_available, wp.bio
                     FROM users u
-                    INNER JOIN worker_profiles wp ON u.id = wp.id
+                    INNER JOIN worker_profiles wp ON u.id = wp.user_id
                     WHERE u.role = 'worker' AND u.is_active = true
                     ORDER BY wp.rating DESC, wp.total_jobs DESC
                     LIMIT 50
                 `;
                 logger.info(`FindWorkers: Searching for all workers (no skill filter)`);
-            } const dbRes = await pool.query(query, queryParams);
+            }
+
+            const dbRes = await pool.query(query, queryParams);
             const workers = dbRes.rows || [];
 
             logger.info(`FindWorkers: Found ${workers.length} workers with skill "${skill}" in database`);
             logger.info(`FindWorkers: Search location is lat=${criteria.location.lat}, lng=${criteria.location.lng}`);
+
+            // Debug: Log worker names from database
+            workers.forEach((w: any, idx: number) => {
+                logger.info(`FindWorkers: Worker ${idx + 1}: id=${w.worker_id.slice(-6)}, name="${w.worker_name || 'NULL'}"`);
+            });
 
             // Convert search location to match calculateDistance format
             const searchLocation = { latitude: criteria.location.lat, longitude: criteria.location.lng };
@@ -147,7 +154,7 @@ export class PgMatchingRepositoryAdapter implements MatchingRepositoryPort {
                 SELECT u.id as contractor_id, u.name as contractor_name, u.location, u.email,
                        cp.company_name, cp.need_worker_status, cp.rating, cp.total_projects
                 FROM users u
-                INNER JOIN contractor_profiles cp ON u.id = cp.user_id
+                INNER JOIN contractor_profiles cp ON u.id = cp.id
                 WHERE u.role = 'contractor' AND u.is_active = true
                 ORDER BY cp.rating DESC, cp.total_projects DESC
                 LIMIT $1

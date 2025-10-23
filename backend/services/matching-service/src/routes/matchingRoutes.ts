@@ -14,6 +14,7 @@ try {
 }
 import { MatchingController } from '../controllers/MatchingController';
 import { ContractorRequirementController } from '../controllers/ContractorRequirementController';
+import { LocationHistoryController } from '../controllers/LocationHistoryController';
 import { validate } from '../shared';
 import { z } from 'zod';
 import { authenticateToken, requireRole } from '../middleware/auth';
@@ -21,6 +22,7 @@ import { authenticateToken, requireRole } from '../middleware/auth';
 const router = Router();
 const matchingController = new MatchingController();
 const contractorRequirementController = new ContractorRequirementController();
+const locationHistoryController = new LocationHistoryController();
 
 // Health check
 router.get('/health', (_req, res) => {
@@ -217,6 +219,46 @@ router.get('/api/matching/contractor-requirements/can-submit',
     authenticateToken,
     requireRole(['contractor']),
     (req, res) => contractorRequirementController.checkCanSubmit(req, res)
+);
+
+// Update user location for live tracking
+const updateLocationBody = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    location: z.string().optional()
+});
+router.put('/api/matching/location',
+    authenticateToken,
+    validate({ schema: updateLocationBody }),
+    matchingController.updateLocation
+);
+
+// Location History endpoints
+const saveLocationHistoryBody = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    accuracy: z.number().optional(),
+    source: z.enum(['manual', 'auto', 'background']).optional()
+});
+router.post('/api/matching/location/history',
+    authenticateToken,
+    validate({ schema: saveLocationHistoryBody }),
+    locationHistoryController.saveLocationHistory
+);
+
+router.get('/api/matching/location/history',
+    authenticateToken,
+    locationHistoryController.getLocationHistory
+);
+
+router.get('/api/matching/location/history/:teamMemberId',
+    authenticateToken,
+    locationHistoryController.getTeamMemberLocationHistory
+);
+
+router.delete('/api/matching/location/history',
+    authenticateToken,
+    locationHistoryController.cleanupOldHistory
 );
 
 export default router;

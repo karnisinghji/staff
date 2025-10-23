@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Map Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #map { height: 500px; width: 100%; border: 2px solid #1976d2; }
+        .info { background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .success { color: #4caf50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Team Map - Simple Test</h1>
+    
+    <div class="info">
+        <h3>Step 1: Login & Fetch Data</h3>
+        <button onclick="loginAndFetch()" style="padding: 10px 20px; font-size: 14px; cursor: pointer;">
+            🔐 Login & Load Map
+        </button>
+        <div id="status" style="margin-top: 10px;"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        let map = null;
+        const AUTH_URL = 'https://auth-service-production-d5c8.up.railway.app/api/auth/login';
+        const TEAM_URL = 'https://matching-service-production.up.railway.app/api/matching/my-team';
+
+        async function loginAndFetch() {
+            const status = document.getElementById('status');
+            status.innerHTML = '🔄 Logging in...';
+
+            try {
+                // Login
+                const loginRes = await fetch(AUTH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'hanny@info.com', password: 'password123' })
+                });
+
+                if (!loginRes.ok) throw new Error('Login failed');
+                const loginData = await loginRes.json();
+                const token = loginData.token;
+
+                status.innerHTML = '✅ Logged in! Fetching team...<br>';
+
+                // Fetch team
+                const teamRes = await fetch(TEAM_URL, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!teamRes.ok) throw new Error('Failed to fetch team');
+                const teamData = await teamRes.json();
+                const members = teamData.data?.teamMembers || teamData.teamMembers || [];
+
+                status.innerHTML += `✅ Fetched ${members.length} team members<br>`;
+
+                // Filter members with location
+                const withLocation = members.filter(m => {
+                    const lat = parseFloat(m.latitude);
+                    const lng = parseFloat(m.longitude);
+                    return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+                });
+
+                status.innerHTML += `✅ Found ${withLocation.length} with location data<br>`;
+
+                if (withLocation.length === 0) {
+                    status.innerHTML += '<span class="error">❌ No team members have location data!</span><br>';
+                    status.innerHTML += '<pre>' + JSON.stringify(members, null, 2) + '</pre>';
+                    return;
+                }
+
+                // Show member details
+                withLocation.forEach(m => {
+                    status.innerHTML += `<br><strong>${m.name}</strong>: (${m.latitude}, ${m.longitude})`;
+                });
+
+                // Initialize map
+                initMap(withLocation);
+
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error(error);
+            }
+        }
+
+        function initMap(members) {
+            const status = document.getElementById('status');
+            
+            try {
+                // Calculate center
+                const avgLat = members.reduce((sum, m) => sum + parseFloat(m.latitude), 0) / members.length;
+                const avgLng = members.reduce((sum, m) => sum + parseFloat(m.longitude), 0) / members.length;
+
+                status.innerHTML += `<br><br>🗺️ Creating map at [${avgLat.toFixed(6)}, ${avgLng.toFixed(6)}]...`;
+
+                // Create map
+                if (map) map.remove();
+                
+                map = L.map('map').setView([avgLat, avgLng], 15);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(map);
+
+                status.innerHTML += `<br>✅ Map tiles loaded!`;
+
+                // Add markers
+                members.forEach(member => {
+                    const lat = parseFloat(member.latitude);
+                    const lng = parseFloat(member.longitude);
+                    
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup(`
+                        <strong>${member.name}</strong><br>
+                        ${member.role}<br>
+                        ${member.location || 'No location'}<br>
+                        <a href="tel:${member.phone}">📞 ${member.phone}</a>
+                    `);
+                });
+
+                status.innerHTML += `<br>✅ Added ${members.length} marker(s)!`;
+                status.innerHTML += `<br><br><span class="success">🎉 Map successfully rendered!</span>`;
+
+            } catch (error) {
+                status.innerHTML += `<br><span class="error">❌ Map error: ${error.message}</span>`;
+                console.error('Map error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

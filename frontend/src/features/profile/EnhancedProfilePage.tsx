@@ -1054,6 +1054,7 @@ const EnhancedProfilePage: React.FC = () => {
           border: 2px solid #e2e8f0;
           border-radius: 8px;
           font-size: 1rem;
+          color: #000;
           transition: all 0.3s ease;
           background: #f7fafc;
         }

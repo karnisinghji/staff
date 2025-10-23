@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ContractorRequirementsList } from './ContractorRequirementsList';
 import { CardSkeleton, SkeletonStyles } from '../common/Skeleton';
+import { ContactOptionsModal } from '../common/ContactOptionsModal';
+import { LocationMapModal } from '../common/LocationMapModal';
+import { LocationHistoryViewer } from './LocationHistoryViewer';
+import { TeamMapView } from './TeamMapView';
 import { API_CONFIG } from '../../config/api';
+import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 
 // Use production API URL
 const API_URL = `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`;
@@ -15,20 +20,227 @@ interface TeamMember {
   notes?: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'worker' | 'contractor';
   location?: string;
+  latitude?: number | string | null; // API returns string or null
+  longitude?: number | string | null; // API returns string or null
+  distance_km?: number | null;
+  distance_formatted?: string | null;
   profile_info?: string;
   rating?: string;
   total_work?: number;
-  isAvailable?: boolean; // We'll need to add this from worker profiles
+  isAvailable?: boolean;
 }
 
 export const MyTeamPage: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [matches, setMatches] = useState<TeamMember[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'busy'>('all');
+  
+  // Get user role from JWT token or user object
+  const userRole = user?.role || user?.roles?.[0] || 'worker';
+  
+  // GPS location tracking
+  const { location: currentLocation, error: locationError, loading: locationLoading, getCurrentLocation } = useCurrentLocation();
+  const [locationUpdateStatus, setLocationUpdateStatus] = useState<'idle' | 'updating' | 'success' | 'error'>('idle');
+  const [locationUpdateMessage, setLocationUpdateMessage] = useState('');
+  const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(false);
+  const [autoTrackingTimeRemaining, setAutoTrackingTimeRemaining] = useState<number>(0); // in seconds
+  
+  // Modal states
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [showTeamMapView, setShowTeamMapView] = useState(false); // New: Full team map view
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Update location to backend
+  const updateLocationToBackend = async (lat: number, lng: number) => {
+    if (!token) return;
+    
+    setLocationUpdateStatus('updating');
+    setLocationUpdateMessage('Updating your location...');
+    
+    // Save to state immediately for map display
+    setCurrentUserLocation({ latitude: lat, longitude: lng });
+    
+    try {
+      // Save to location history (also updates current location)
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          latitude: lat, 
+          longitude: lng,
+          source: 'manual' // Indicates this was a manual update
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save location');
+      }
+      
+      setLocationUpdateStatus('success');
+      setLocationUpdateMessage('✅ Location saved to history');
+      
+      // Refresh team data to get updated distances
+      fetchMatches();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setLocationUpdateStatus('idle');
+        setLocationUpdateMessage('');
+      }, 3000);
+    } catch (err) {
+      console.error('Location update error:', err);
+      setLocationUpdateStatus('error');
+      setLocationUpdateMessage('❌ Failed to save location');
+      
+      setTimeout(() => {
+        setLocationUpdateStatus('idle');
+        setLocationUpdateMessage('');
+      }, 3000);
+    }
+  };
+
+  // Start auto-tracking for 24 hours (saves every 30 minutes)
+  const startAutoTracking = () => {
+    const AUTO_TRACK_DURATION = 24 * 60 * 60; // 24 hours in seconds
+    const AUTO_TRACK_INTERVAL = 30; // 30 minutes
+    
+    setAutoTrackingEnabled(true);
+    setAutoTrackingTimeRemaining(AUTO_TRACK_DURATION);
+    
+    // Store start time in localStorage
+    localStorage.setItem('autoTrackingStartTime', Date.now().toString());
+    localStorage.setItem('autoTrackingEnabled', 'true');
+    
+    setLocationUpdateMessage('✅ Location saved! Auto-tracking every 30 min for 24 hours');
+    setTimeout(() => setLocationUpdateMessage(''), 5000);
+  };
+
+  const stopAutoTracking = () => {
+    setAutoTrackingEnabled(false);
+    setAutoTrackingTimeRemaining(0);
+    localStorage.removeItem('autoTrackingStartTime');
+    localStorage.removeItem('autoTrackingEnabled');
+    
+    setLocationUpdateMessage('⏹️ Auto-tracking stopped. Location updates paused.');
+    setTimeout(() => setLocationUpdateMessage(''), 3000);
+  };
+
+  // Auto-detect location on mount
+  useEffect(() => {
+    if (currentLocation && !locationError) {
+      // Save to state for map display
+      setCurrentUserLocation({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      });
+      // Also update backend
+      updateLocationToBackend(currentLocation.latitude, currentLocation.longitude);
+    }
+  }, [currentLocation, locationError]);
+
+  // Restore auto-tracking state from localStorage
+  useEffect(() => {
+    const startTime = localStorage.getItem('autoTrackingStartTime');
+    const enabled = localStorage.getItem('autoTrackingEnabled');
+    
+    if (enabled === 'true' && startTime) {
+      const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+      const remainingSeconds = (24 * 60 * 60) - elapsedSeconds;
+      
+      if (remainingSeconds > 0) {
+        setAutoTrackingEnabled(true);
+        setAutoTrackingTimeRemaining(remainingSeconds);
+      } else {
+        // Auto-tracking period expired
+        stopAutoTracking();
+      }
+    }
+  }, []);
+
+  // Auto-tracking interval effect (saves every 30 minutes)
+  useEffect(() => {
+    if (!autoTrackingEnabled || !token) return;
+    
+    const AUTO_TRACK_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+    
+    // Set interval to auto-save location
+    const intervalId = setInterval(async () => {
+      try {
+        // Get fresh location with high accuracy
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,  // Use GPS for maximum precision
+            timeout: 15000,             // 15 seconds to get accurate fix
+            maximumAge: 0               // Always fresh location
+          });
+        });
+        
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        
+        console.log(`🔄 Auto-tracking location: ${lat}, ${lng} (±${Math.round(accuracy)}m)`);
+        
+        // Save to history with 'auto' source
+        await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            latitude: lat, 
+            longitude: lng,
+            source: 'auto' // Mark as auto-save
+          })
+        });
+        
+        console.log('Auto-tracking: Location saved at', new Date().toLocaleTimeString());
+        
+        // Update time remaining
+        const startTime = parseInt(localStorage.getItem('autoTrackingStartTime') || '0');
+        const elapsedMinutes = Math.floor((Date.now() - startTime) / (1000 * 60));
+        const remainingMinutes = (24 * 60) - elapsedMinutes;
+        
+        setAutoTrackingTimeRemaining(remainingMinutes);
+        
+        // Stop if 24 hours elapsed
+        if (remainingMinutes <= 0) {
+          stopAutoTracking();
+        }
+      } catch (error) {
+        console.error('Auto-tracking error:', error);
+      }
+    }, AUTO_TRACK_INTERVAL);
+    
+    // Countdown timer (updates every second for display)
+    const countdownId = setInterval(() => {
+      const startTime = parseInt(localStorage.getItem('autoTrackingStartTime') || '0');
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const remainingSeconds = (24 * 60 * 60) - elapsedSeconds;
+      
+      setAutoTrackingTimeRemaining(remainingSeconds);
+      
+      if (remainingSeconds <= 0) {
+        stopAutoTracking();
+      }
+    }, 1000); // Update every second
+    
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(countdownId);
+    };
+  }, [autoTrackingEnabled, token]);
 
   const fetchMatches = async () => {
     setError('');
@@ -58,34 +270,47 @@ export const MyTeamPage: React.FC = () => {
       const data = await res.json();
       console.log('MyTeamPage: Response data:', data);
       
-      if (data.success && Array.isArray(data.data)) {
+      // Store current user location if available
+      if (data.data && data.data.currentUserLocation) {
+        setCurrentUserLocation(data.data.currentUserLocation);
+      }
+      
+      // Debug: Log all team members with their coordinates
+      const allMembers = data.data?.teamMembers || data.data || data;
+      if (Array.isArray(allMembers)) {
+        console.log('📍 All team members coordinates:');
+        allMembers.forEach((member: any) => {
+          console.log(`  ${member.name}: lat=${member.latitude}, lng=${member.longitude}`);
+        });
+      }
+      
+      // Handle the correct response structure: data.data.teamMembers
+      if (data.success && data.data && Array.isArray(data.data.teamMembers)) {
+        setMatches(data.data.teamMembers);
+      } else if (data.data && Array.isArray(data.data.teamMembers)) {
+        setMatches(data.data.teamMembers);
+      } else if (data.success && Array.isArray(data.data)) {
+        // Legacy format: data.data is directly an array
         setMatches(data.data);
       } else if (data.data && Array.isArray(data.data)) {
         setMatches(data.data);
       } else if (Array.isArray(data)) {
         // Handle case where data is directly an array
         setMatches(data);
+      } else if (data.message && data.message.includes('No team members')) {
+        // Explicitly handle "No team members found" message
+        setMatches([]);
+      } else if (data.message && (
+        data.message.includes('error') ||
+        data.message.includes('failed') ||
+        data.message.includes('unauthorized')
+      )) {
+        // This is an actual error message
+        throw new Error(data.message);
       } else {
-        // Check if this is a success message about team members found
-        if (data.message && (
-          data.message.includes('Found') && data.message.includes('team member') ||
-          data.message.includes('No team members') ||
-          data.message.includes('empty')
-        )) {
-          // This is a success message, set empty array for now (data should be in data.data)
-          setMatches([]);
-        } else if (data.message && (
-          data.message.includes('error') ||
-          data.message.includes('failed') ||
-          data.message.includes('unauthorized')
-        )) {
-          // This is an actual error message
-          throw new Error(data.message);
-        } else {
-          // Fallback for unknown format - try to handle it gracefully
-          console.warn('MyTeamPage: Unknown response format:', data);
-          setMatches([]);
-        }
+        // Fallback for unknown format - try to handle it gracefully
+        console.warn('MyTeamPage: Unknown response format:', data);
+        setMatches([]);
       }
     } catch (err) {
       console.error('MyTeamPage: Network/Fetch Error:', err);
@@ -99,6 +324,34 @@ export const MyTeamPage: React.FC = () => {
   useEffect(() => {
     console.log('MyTeamPage: useEffect running, token exists:', !!token);
     fetchMatches();
+    
+    // Also try to load user's last saved location from backend
+    const fetchUserLocation = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history?limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.history && data.history.length > 0) {
+            const lastLocation = data.history[0];
+            setCurrentUserLocation({
+              latitude: lastLocation.latitude,
+              longitude: lastLocation.longitude
+            });
+          }
+        }
+      } catch (err) {
+        console.log('Could not fetch user location history:', err);
+      }
+    };
+    
+    fetchUserLocation();
   }, [token]);
 
   // Filter matches based on availability status
@@ -144,6 +397,28 @@ export const MyTeamPage: React.FC = () => {
       color: 'white',
       marginLeft: '0.5rem'
     }}>N/A</span>;
+  };
+
+  // Helper function to get distance badge
+  const getDistanceBadge = (distanceKm?: number | null, distanceFormatted?: string | null) => {
+    if (!distanceKm && !distanceFormatted) {
+      return null;
+    }
+    
+    return (
+      <span style={{ 
+        display: 'inline-block', 
+        padding: '0.2rem 0.6rem', 
+        borderRadius: '12px', 
+        fontSize: '0.85rem', 
+        fontWeight: '600', 
+        background: '#2196f3', 
+        color: 'white',
+        marginLeft: '0.5rem'
+      }}>
+        📍 {distanceFormatted || `${distanceKm?.toFixed(1)} km`}
+      </span>
+    );
   };
 
   return (
@@ -305,6 +580,124 @@ export const MyTeamPage: React.FC = () => {
             </div>
           )}
           
+          {/* Location update status */}
+          {locationUpdateMessage && (
+            <div style={{ 
+              background: locationUpdateStatus === 'success' ? '#e8f5e9' : locationUpdateStatus === 'error' ? '#ffebee' : '#e3f2fd',
+              color: locationUpdateStatus === 'success' ? '#2e7d32' : locationUpdateStatus === 'error' ? '#d32f2f' : '#1565c0',
+              padding: '0.75rem', 
+              borderRadius: '8px', 
+              textAlign: 'center',
+              fontSize: '0.9rem',
+              marginBottom: '1rem',
+              border: `1px solid ${locationUpdateStatus === 'success' ? '#c8e6c9' : locationUpdateStatus === 'error' ? '#ffcdd2' : '#bbdefb'}`
+            }}>
+              {locationUpdateMessage}
+            </div>
+          )}
+          
+          {/* Smart Location Button - Updates location AND starts auto-tracking */}
+          {!locationLoading && (
+            <button
+              onClick={() => {
+                if (autoTrackingEnabled) {
+                  // Stop auto-tracking
+                  stopAutoTracking();
+                } else {
+                  // Update location and start auto-tracking
+                  getCurrentLocation();
+                  startAutoTracking();
+                }
+              }}
+              style={{
+                background: autoTrackingEnabled ? '#d32f2f' : '#2196f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.75rem 1rem',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {autoTrackingEnabled ? (
+                <>
+                  📍 Active ({(() => {
+                    const hours = Math.floor(autoTrackingTimeRemaining / 3600);
+                    const minutes = Math.floor((autoTrackingTimeRemaining % 3600) / 60);
+                    const seconds = autoTrackingTimeRemaining % 60;
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()})
+                </>
+              ) : (
+                <>
+                  📍 Update My Location
+                </>
+              )}
+            </button>
+          )}
+          
+          {/* View All on Map Button */}
+          {(() => {
+            // Use same filter logic as TeamMapView for consistency
+            const membersWithLocation = matches.filter(m => {
+              const latStr = String(m.latitude || '');
+              const lngStr = String(m.longitude || '');
+              const hasLat = latStr && latStr !== 'null' && latStr !== 'undefined';
+              const hasLng = lngStr && lngStr !== 'null' && lngStr !== 'undefined';
+              const latNum = parseFloat(latStr);
+              const lngNum = parseFloat(lngStr);
+              const isValid = hasLat && hasLng && !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
+              
+              // Debug log
+              console.log(`Filter check for ${m.name}: lat="${latStr}" lng="${lngStr}" valid=${isValid}`);
+              
+              return isValid;
+            });
+            
+            // Debug: Show which members passed the filter
+            console.log('Members with valid location for map:', membersWithLocation.map(m => `${m.name} [${m.latitude}, ${m.longitude}]`));
+            
+            return membersWithLocation.length > 0 && (
+              <button
+                onClick={() => setShowTeamMapView(true)}
+                style={{
+                  background: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.75rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '1rem',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
+                }}
+              >
+                🗺️ View All on Map ({membersWithLocation.length} member{membersWithLocation.length !== 1 ? 's' : ''})
+              </button>
+            );
+          })()}
+          
+          {/* Location History Viewer - Shows your own history */}
+          <LocationHistoryViewer 
+            userName="Your"
+            userRole={userRole}
+          />
+          
           {/* Filter buttons */}
           <div className="filter-buttons">
             <button 
@@ -345,7 +738,7 @@ export const MyTeamPage: React.FC = () => {
             )}
             {!loading && filteredMatches.map((member, idx) => (
               <li key={member.team_member_record_id || idx}>
-                <div>
+                <div style={{ flex: 1 }}>
                   <strong>{member.name}</strong>
                   {member.profile_info && (
                     <> &mdash; {member.profile_info}</>
@@ -353,16 +746,180 @@ export const MyTeamPage: React.FC = () => {
                   <div style={{fontSize: '0.85em', color: '#666', marginTop: '4px'}}>
                     {member.role} • {member.location} • Rating: {member.rating || 'N/A'}
                   </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    {getAvailabilityBadge(member.isAvailable)}
+                    {getDistanceBadge(member.distance_km, member.distance_formatted)}
+                  </div>
                 </div>
-                {getAvailabilityBadge(member.isAvailable)}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {member.phone && (
+                    <button
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setShowContactModal(true);
+                      }}
+                      style={{
+                        background: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      📞 Contact
+                    </button>
+                  )}
+                  {member.latitude && member.longitude && currentUserLocation && (
+                    <button
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setShowMapModal(true);
+                      }}
+                      style={{
+                        background: '#2196f3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      🗺️ View on Map
+                    </button>
+                  )}
+                  {(!member.latitude || !member.longitude || String(member.latitude) === '0' || String(member.longitude) === '0') && (
+                    <div style={{
+                      background: '#fff3cd',
+                      color: '#856404',
+                      border: '1px solid #ffeeba',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontStyle: 'italic',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      📍 Location not set
+                    </div>
+                  )}
+                </div>
+                
+                {/* Location History for this team member */}
+                <div style={{ marginTop: '0.75rem' }}>
+                  <LocationHistoryViewer 
+                    userId={member.team_member_id}
+                    userName={member.name}
+                    userRole={member.role}
+                  />
+                </div>
               </li>
             ))}
           </ul>
 
-          {/* Contractor Requirements Section (visible to workers) */}
-          <ContractorRequirementsList showContactButton={true} />
+          {/* Contractor Requirements Section (visible to workers only) */}
+          {userRole === 'worker' && (
+            <ContractorRequirementsList showContactButton={true} />
+          )}
         </div>
       </div>
+      
+      {/* Contact Modal */}
+      {showContactModal && selectedMember && (
+        <ContactOptionsModal
+          isOpen={showContactModal}
+          onClose={() => {
+            setShowContactModal(false);
+            setSelectedMember(null);
+          }}
+          contactName={selectedMember.name}
+          contactEmail={selectedMember.email}
+          contactPhone={selectedMember.phone}
+          onCall={() => {
+            if (selectedMember.phone) {
+              window.location.href = `tel:${selectedMember.phone}`;
+            }
+          }}
+          onMessage={() => {
+            if (selectedMember.phone) {
+              window.location.href = `sms:${selectedMember.phone}`;
+            }
+          }}
+        />
+      )}
+      
+      {/* Map Modal */}
+      {showMapModal && selectedMember && currentUserLocation && (
+        <LocationMapModal
+          isOpen={showMapModal}
+          onClose={() => {
+            setShowMapModal(false);
+            setSelectedMember(null);
+          }}
+          workerName={selectedMember.name}
+          workerLocation={{
+            latitude: Number(selectedMember.latitude) || 0,
+            longitude: Number(selectedMember.longitude) || 0,
+            address: selectedMember.location
+          }}
+          contractorLocation={{
+            latitude: Number(currentUserLocation.latitude) || 0,
+            longitude: Number(currentUserLocation.longitude) || 0
+          }}
+          distance={selectedMember.distance_formatted || `${selectedMember.distance_km?.toFixed(1)} km` || 'N/A'}
+        />
+      )}
+      
+      {/* Team Map View - Full screen map with all team members */}
+      {showTeamMapView && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'white',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Close Button */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '1rem', 
+            right: '1rem', 
+            zIndex: 10001 
+          }}>
+            <button
+              onClick={() => setShowTeamMapView(false)}
+              style={{
+                background: 'white',
+                border: '2px solid #1976d2',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#1976d2',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+              }}
+            >
+              ×
+            </button>
+          </div>
+          
+          <TeamMapView />
+        </div>
+      )}
     </>
   );
 };

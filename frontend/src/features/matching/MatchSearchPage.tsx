@@ -445,6 +445,7 @@ export const MatchSearchPage: React.FC = () => {
           border: 1px solid #bbb;
           font-size: 1.1rem;
           background: #f7f9fc;
+          color: #000;
         }
         .search-form button {
           padding: 1rem;

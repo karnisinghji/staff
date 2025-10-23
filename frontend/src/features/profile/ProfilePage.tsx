@@ -374,6 +374,7 @@ const ProfilePage: React.FC = () => {
           border: 1.5px solid #b2b2b2;
           font-size: 1.13rem;
           background: #f7f9fc;
+          color: #000;
           box-shadow: 0 2px 8px rgba(67,160,71,0.06);
           margin-bottom: 0.5rem;
           transition: border 0.2s, box-shadow 0.2s;

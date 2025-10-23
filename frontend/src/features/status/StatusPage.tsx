@@ -28,6 +28,7 @@ const StatusPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isAvailable, setIsAvailable] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [nextRefreshIn, setNextRefreshIn] = useState<string>('');
   
   // Contractor requirement state (ALL hooks must be at top level)
   const [requiredWorkers, setRequiredWorkers] = useState<number | ''>('');
@@ -189,6 +190,28 @@ const StatusPage: React.FC = () => {
       if (interval) clearInterval(interval);
     };
   }, [isAvailable, profileData?.workerProfile?.availabilityExpiresAt, queryClient]);
+
+  // Auto-refresh timer (refresh profile every 30 seconds)
+  useEffect(() => {
+    const REFRESH_INTERVAL = 30; // seconds
+    let refreshTime = REFRESH_INTERVAL;
+    
+    const updateRefreshTimer = () => {
+      if (refreshTime > 0) {
+        setNextRefreshIn(`${refreshTime}s`);
+        refreshTime--;
+      } else {
+        // Auto-refresh profile
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        refreshTime = REFRESH_INTERVAL; // Reset timer
+      }
+    };
+
+    updateRefreshTimer(); // Initial call
+    const interval = setInterval(updateRefreshTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
 
   const handleToggle = () => {
     const newStatus = !isAvailable;
@@ -450,18 +473,20 @@ const StatusPage: React.FC = () => {
             Control your visibility in the "My Team" section
           </p>
         </div>
-        <button 
-          className="responsive-button touch-target"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['profile'] })}
-          style={{
-            background: '#2196F3',
-            color: 'white',
-            border: 'none',
-            fontSize: '14px'
-          }}
-        >
-          🔄 Refresh
-        </button>
+        <div style={{
+          background: '#f0f7ff',
+          border: '1px solid #2196F3',
+          borderRadius: '8px',
+          padding: '0.75rem 1rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '12px', color: '#666', marginBottom: '0.25rem' }}>
+            ⏰ Auto-refresh in:
+          </div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#2196F3' }}>
+            {nextRefreshIn}
+          </div>
+        </div>
       </div>
 
       {isLoading ? (

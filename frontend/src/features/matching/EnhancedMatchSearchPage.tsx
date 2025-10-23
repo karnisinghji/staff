@@ -11,9 +11,10 @@ interface SearchResultCardProps {
   onContact: () => void;
   onTeamRequest: () => void;
   isLoading?: boolean;
+  userRole?: string; // 'contractor' or 'worker'
 }
 
-const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, onTeamRequest, isLoading = false }) => (
+const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, onTeamRequest, isLoading = false, userRole }) => (
   <div className="responsive-card" style={{
     transition: 'all 0.2s ease-in-out',
   }}
@@ -44,7 +45,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
         fontWeight: theme.typography.fontWeight.bold,
         color: theme.colors.primary[600],
       }}>
-        {(match.name || match.id)?.charAt(0)?.toUpperCase() || '?'}
+        {(match.name || match.full_name || match.user_name || match.id)?.charAt(0)?.toUpperCase() || '?'}
       </div>
       <div style={{ flex: 1 }}>
         <div style={{
@@ -53,13 +54,13 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
           color: theme.colors.neutral[900],
           marginBottom: theme.spacing.xs,
         }}>
-          {match.name || `Worker ${match.id?.slice(-6) || 'Unknown'}`}
+          {match.name || match.full_name || match.user_name || `Worker ${match.id?.slice(-6) || 'Unknown'}`}
         </div>
         <div style={{
           fontSize: theme.typography.fontSize.sm,
           color: theme.colors.neutral[600],
         }}>
-          {match.company || 'Individual Contractor'}
+          {match.company || (userRole === 'contractor' ? 'Individual Worker' : 'Individual Contractor')}
         </div>
       </div>
             {match.score && (
@@ -74,7 +75,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
           fontSize: theme.typography.fontSize.xs,
           fontWeight: theme.typography.fontWeight.medium,
         }}>
-          {Math.round(match.score * 100)}% match
+          {Math.round(match.score)}% match
         </div>
       )}
     </div>
@@ -196,7 +197,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
       )}
     </div>
 
-    {/* Action Buttons */}
+    {/* Action Buttons - Role Specific */}
     <div style={{
       display: 'flex',
       gap: theme.spacing.sm,
@@ -208,7 +209,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
         size="sm"
         onClick={onContact}
       >
-        Contact
+        📞 Contact
       </LoadingButton>
       <LoadingButton
         isLoading={isLoading}
@@ -216,7 +217,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ match, onContact, o
         size="sm"
         onClick={onTeamRequest}
       >
-        Send Team Request
+        {userRole === 'worker' ? '✅ Request to Join' : '📤 Send Team Request'}
       </LoadingButton>
     </div>
   </div>
@@ -420,14 +421,15 @@ export const EnhancedMatchSearchPage: React.FC = () => {
             resolve,
             reject,
             {
-              enableHighAccuracy: true, // Use high accuracy like Profile page
-              timeout: 10000,
-              maximumAge: 60000 // Cache for 1 minute
+              enableHighAccuracy: true, // Use GPS chip for best accuracy
+              timeout: 15000, // Give GPS more time for accurate fix
+              maximumAge: 0 // Always get fresh reading, no cache
             }
           );
         });
 
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
+        console.log(`🔍 Manual location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (accuracy: ±${Math.round(accuracy)}m)`);
         
         // Store the GPS coordinates for accurate search
         setLocationCoords({ lat: latitude, lng: longitude });
@@ -538,6 +540,14 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Search results:', data);
+        
+        // Debug: Log first result to see its structure
+        if (data.data?.matches?.[0]) {
+          console.log('📋 First match fields:', Object.keys(data.data.matches[0]));
+          console.log('📋 First match data:', data.data.matches[0]);
+        }
+        
         if (data.success) {
           setResults(data.data.matches || []);
           setTotalPages(data.data.totalPages || 1);
@@ -568,6 +578,19 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     setActionLoading(`team-${match.id}`);
     
     try {
+      // Determine user role for message customization
+      const currentUserRole = user?.role || (token ? JSON.parse(atob(token.split('.')[1])).roles?.[0] : null);
+      const isContractor = currentUserRole === 'contractor';
+      
+      // Role-specific messages
+      const message = isContractor
+        ? `Hi ${match.name || 'there'}, I'd like to invite you to join my team. Your skills in ${skillType || 'your field'} would be a great fit for our project.`
+        : `Hi ${match.name || 'there'}, I'm interested in joining your team. I have experience in ${skillType || 'various skills'} and I'm available for work in ${location || 'your area'}.`;
+      
+      const successMessage = isContractor
+        ? `Invitation sent to ${match.name || 'worker'}`
+        : `Request sent to ${match.name || 'contractor'}`;
+      
       // Fixed: Use correct endpoint and field names per backend validation schema
       const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/send-team-request`, {
         method: 'POST',
@@ -577,19 +600,19 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         },
         body: JSON.stringify({
           receiverId: match.id, // Changed from recipient_id to match backend schema
-          message: `Hi ${match.name || 'there'}, I'd like to invite you to join my team. Your skills in ${skillType} would be a great fit for our project.`,
+          message: message,
           matchContext: {
             skill: skillType,
             distance: match.distanceKm ? `${Math.round(match.distanceKm)} km` : undefined,
             matchScore: match.score,
-            searchType: user?.role === 'contractor' ? 'worker' : 'contractor'
+            searchType: isContractor ? 'worker' : 'contractor'
           }
         }),
       });
 
       if (response.ok) {
         await response.json(); // Consume response body
-        success('Team request sent', `Invitation sent to ${match.name || 'worker'}`);
+        success('Team request sent', successMessage);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to send team request');
@@ -628,6 +651,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
 
   const hasActiveFilters = skillType || activeFilters.length > 0;
 
+  // Determine user role for dynamic content
+  const userRole = user?.role || (token ? JSON.parse(atob(token.split('.')[1])).roles?.[0] : null);
+  const isContractor = userRole === 'contractor';
+
   return (
     <div className="responsive-container page-wrapper" style={{
       backgroundColor: theme.colors.neutral[50],
@@ -642,12 +669,14 @@ export const EnhancedMatchSearchPage: React.FC = () => {
           color: theme.colors.neutral[900],
           marginBottom: theme.spacing.sm,
         }}>
-          Find Your Perfect Team Match
+          {isContractor ? 'Find Skilled Workers' : 'Find Job Opportunities'}
         </h1>
         <p className="responsive-heading-3" style={{
           color: theme.colors.neutral[600],
         }}>
-          Discover talented contractors and workers for your projects
+          {isContractor 
+            ? 'Discover talented workers for your construction projects' 
+            : 'Browse contractors hiring workers in your area'}
         </p>
       </div>
 
@@ -670,7 +699,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               color: theme.colors.neutral[700],
               marginBottom: theme.spacing.xs,
             }}>
-              Skills Required
+              {isContractor ? 'Skills Required' : 'Your Skills / Job Type'}
             </label>
             <select
               value={skillType}
@@ -683,6 +712,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                 borderRadius: theme.borderRadius.md,
                 fontSize: theme.typography.fontSize.sm,
                 backgroundColor: skillsLoading ? theme.colors.neutral[100] : 'white',
+                color: '#000',
                 cursor: skillsLoading ? 'wait' : 'pointer',
               }}
             >
@@ -727,6 +757,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                   borderRadius: theme.borderRadius.md,
                   fontSize: theme.typography.fontSize.sm,
                   backgroundColor: detectingLocation ? theme.colors.neutral[100] : 'white',
+                  color: '#000',
                 }}
               />
               <button
@@ -1032,6 +1063,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                   onContact={() => handleContact(match)}
                   onTeamRequest={() => handleTeamRequest(match)}
                   isLoading={actionLoading === `team-${match.id}` || actionLoading === `contact-${match.id}`}
+                  userRole={userRole}
                 />
               ))}
             </div>

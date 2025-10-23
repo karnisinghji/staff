@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time GPS Location Tracking Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .demo-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 1.5rem;
+        }
+        
+        /* Location Status Banner */
+        .status-banner {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        .status-detecting {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+        }
+        .status-updating {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffe0b2;
+        }
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        /* Manual Update Button */
+        .update-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .update-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #1976D2 0%, #42A5F5 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+            transition: all 0.2s;
+        }
+        .update-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(25, 118, 210, 0.4);
+        }
+        .update-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Team Members List */
+        .team-list {
+            list-style: none;
+        }
+        .team-member {
+            background: #f7f9fc;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .member-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        .member-info {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        .badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.7rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+        .badge-available {
+            background: #4caf50;
+        }
+        .badge-distance-near {
+            background: #4caf50;
+        }
+        .badge-distance-moderate {
+            background: #ff9800;
+        }
+        .badge-distance-far {
+            background: #f44336;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulsing {
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Info Section */
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            color: #1565c0;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        .info-box p {
+            font-size: 0.85rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #1976d2;
+            background: white;
+            color: #1976d2;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: #1976d2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="header">
+            <h1>📍 Real-Time GPS Location Tracking</h1>
+            <p>Live Demo - My Team Page</p>
+        </div>
+        
+        <div class="content">
+            <!-- Status Banner (changes based on state) -->
+            <div id="statusBanner" class="status-banner status-detecting pulsing">
+                🔍 Detecting your location...
+            </div>
+            
+            <!-- Manual Update Button -->
+            <div class="update-btn-container">
+                <button id="updateBtn" class="update-btn" onclick="simulateUpdate()">
+                    📍 Update My Location
+                </button>
+            </div>
+            
+            <!-- Team Members List -->
+            <ul class="team-list">
+                <li class="team-member">
+                    <div class="member-name">Manoj Kumar</div>
+                    <div class="member-info">Worker • Jaipur • Rating: 4.8</div>
+                    <div class="badges">
+                        <span class="badge badge-available">Available</span>
+                        <span id="distance1" class="badge badge-distance-near">🟢 2.3 km away</span>
+                    </div>
+                </li>
+                
+                <li class="team-member">
+                    <div class="member-name">Rahul Sharma</div>
+                    <div class="member-info">Worker • Jodhpur • Rating: 4.5</div>
+                    <div class="badges">
+                        <span class="badge badge-available">Available</span>
+                        <span id="distance2" class="badge badge-distance-moderate">🟡 12.5 km away</span>
+                    </div>
+                </li>
+                
+                <li class="team-member">
+                    <div class="member-name">Sanjay Patel</div>
+                    <div class="member-info">Worker • Udaipur • Rating: 4.9</div>
+                    <div class="badges">
+                        <span class="badge badge-available">Available</span>
+                        <span id="distance3" class="badge badge-distance-far">🔴 45 km away</span>
+                    </div>
+                </li>
+            </ul>
+            
+            <!-- Info Box -->
+            <div class="info-box">
+                <h3>🎯 How It Works</h3>
+                <p>
+                    <strong>1. Auto-Detection:</strong> When you open this page, your GPS location is automatically detected.<br>
+                    <strong>2. Permission:</strong> Browser asks "Allow location access?" - Click "Allow"<br>
+                    <strong>3. Real-Time Distances:</strong> See current distances to all team members<br>
+                    <strong>4. Manual Refresh:</strong> Click "Update My Location" anytime to refresh
+                </p>
+            </div>
+            
+            <!-- Demo Controls -->
+            <div class="controls">
+                <button class="control-btn" onclick="simulateDetecting()">🔍 Show Detecting</button>
+                <button class="control-btn" onclick="simulateUpdating()">⏳ Show Updating</button>
+                <button class="control-btn" onclick="simulateSuccess()">✅ Show Success</button>
+                <button class="control-btn" onclick="simulateError()">⚠️ Show Error</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simulate different states
+        function updateStatus(state, message, className) {
+            const banner = document.getElementById('statusBanner');
+            banner.textContent = message;
+            banner.className = 'status-banner ' + className;
+            banner.classList.remove('pulsing');
+            
+            if (state === 'detecting' || state === 'updating') {
+                banner.classList.add('pulsing');
+            }
+            
+            // Auto-hide success/error after 3 seconds
+            if (state === 'success' || state === 'error') {
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 3000);
+                setTimeout(() => {
+                    banner.style.display = 'flex';
+                }, 3500);
+            }
+        }
+        
+        function simulateDetecting() {
+            updateStatus('detecting', '🔍 Detecting your location...', 'status-detecting');
+        }
+        
+        function simulateUpdating() {
+            updateStatus('updating', '⏳ Updating your location...', 'status-updating');
+            const btn = document.getElementById('updateBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Updating...';
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '📍 Update My Location';
+                simulateSuccess();
+            }, 2000);
+        }
+        
+        function simulateSuccess() {
+            updateStatus('success', '✅ 📍 Location updated successfully', 'status-success');
+            
+            // Update distances with animation
+            setTimeout(() => {
+                const distances = [
+                    { id: 'distance1', text: '🟢 2.1 km away', class: 'badge-distance-near' },
+                    { id: 'distance2', text: '🟡 11.8 km away', class: 'badge-distance-moderate' },
+                    { id: 'distance3', text: '🔴 44.2 km away', class: 'badge-distance-far' }
+                ];
+                
+                distances.forEach(d => {
+                    const elem = document.getElementById(d.id);
+                    elem.style.opacity = '0';
+                    setTimeout(() => {
+                        elem.textContent = d.text;
+                        elem.className = 'badge ' + d.class;
+                        elem.style.transition = 'opacity 0.3s';
+                        elem.style.opacity = '1';
+                    }, 300);
+                });
+            }, 500);
+        }
+        
+        function simulateError() {
+            updateStatus('error', '⚠️ Location permission denied. Please enable location access in your browser settings.', 'status-error');
+        }
+        
+        function simulateUpdate() {
+            simulateUpdating();
+        }
+        
+        // Initial auto-detection simulation
+        setTimeout(() => {
+            simulateUpdating();
+        }, 1000);
+    </script>
+</body>
+</html>

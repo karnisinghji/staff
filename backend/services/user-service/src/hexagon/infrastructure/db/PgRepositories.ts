@@ -191,8 +191,8 @@ export class PgProfileRepository implements ProfileRepositoryPort {
             // Handle availability expiry logic
             if (fields.isAvailable !== undefined) {
                 if (fields.isAvailable === true) {
-                    // Set expiry to 4 hours from now when becoming available
-                    updateSets.push(`availability_expires_at = NOW() + INTERVAL '4 hours'`);
+                    // Set expiry to 24 hours from now when becoming available
+                    updateSets.push(`availability_expires_at = NOW() + INTERVAL '24 hours'`);
                 } else {
                     // Clear expiry when becoming unavailable
                     updateSets.push(`availability_expires_at = NULL`);

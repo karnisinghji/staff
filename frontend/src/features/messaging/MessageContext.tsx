@@ -31,6 +31,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState(30000); // Start with 30 seconds
 
   // Fetch messages from team requests (both sent and received)
   const fetchMessages = async () => {
@@ -41,6 +42,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       setError(null);
       
       // Fetch both received and sent team requests
+      console.log('📨 Fetching team requests from:', API_CONFIG.MATCHING_SERVICE);
       const [receivedRes, sentRes] = await Promise.all([
         axios.get(
           `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
@@ -51,6 +53,9 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
           { headers: { Authorization: `Bearer ${token}` } }
         )
       ]);
+      
+      console.log('✅ Received response:', receivedRes.data);
+      console.log('✅ Sent response:', sentRes.data);
       
       // Transform team requests to Message format
       const receivedMessages: Message[] = receivedRes.data.success 
@@ -85,10 +90,21 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       const allMessages = [...receivedMessages, ...sentMessages]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
+      console.log(`📬 Total messages: ${allMessages.length} (${receivedMessages.length} received, ${sentMessages.length} sent)`);
       setMessages(allMessages);
+      setPollingInterval(30000); // Reset to normal interval on success
     } catch (err: any) {
-      console.error('Failed to fetch messages:', err);
-      setError(err.response?.data?.message || 'Failed to load messages');
+      console.error('❌ Failed to fetch messages:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      
+      // Handle rate limiting with exponential backoff
+      if (err.response?.status === 429) {
+        console.warn('⚠️ Rate limited - increasing polling interval');
+        setPollingInterval((prev) => Math.min(prev * 2, 120000)); // Max 2 minutes
+        setError('Too many requests - slowing down refresh rate');
+      } else {
+        setError(err.response?.data?.message || 'Failed to load messages');
+      }
     } finally {
       setLoading(false);
     }
@@ -97,11 +113,11 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchMessages();
     
-    // Poll for new messages every 10 seconds
-    const interval = setInterval(fetchMessages, 10000);
+    // Poll for new messages with dynamic interval
+    const interval = setInterval(fetchMessages, pollingInterval);
     
     return () => clearInterval(interval);
-  }, [user?.id, token]);
+  }, [user?.id, token, pollingInterval]);
 
   const sendMessage = async (toUserId: string, body: string) => {
     if (!user?.id || !token) {

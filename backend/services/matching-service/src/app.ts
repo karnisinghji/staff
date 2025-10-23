@@ -42,8 +42,8 @@ export function buildApp(): express.Express {
     // More permissive rate limiting for development
     const isDevelopment = process.env.NODE_ENV === 'development';
     const rateLimitConfig = isDevelopment
-        ? { windowMs: 1 * 60 * 1000, limit: 1000 } // 1000 requests per minute in dev
-        : { windowMs: 15 * 60 * 1000, limit: 100 }; // 100 requests per 15 minutes in prod
+        ? { windowMs: 1 * 60 * 1000, limit: 1500 } // 1500 requests per minute in dev
+        : { windowMs: 15 * 60 * 1000, limit: 1000 }; // 1000 requests per 15 minutes in prod (33/min avg, ~1 per 2 seconds)
 
     applyStandardSecurity(app, { rateLimit: rateLimitConfig, trustProxy: true });
     app.use(express.json({ limit: '10mb' }));

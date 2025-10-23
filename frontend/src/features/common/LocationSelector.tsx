@@ -83,14 +83,16 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
           resolve,
           reject,
           {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
+            enableHighAccuracy: true,  // Use GPS instead of WiFi/Cell towers
+            timeout: 15000,             // Increased to 15 seconds for better accuracy
+            maximumAge: 0               // Always get fresh location (no cache)
           }
         );
       });
 
-      const { latitude, longitude } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
+      
+      console.log(`📍 GPS Location: ${latitude}, ${longitude} (accuracy: ±${Math.round(accuracy)}m)`);
       
       // Get address from coordinates
       try {
@@ -255,6 +257,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
           border: 2px solid #e2e8f0;
           border-radius: 6px;
           font-size: 1rem;
+          color: #000;
           transition: all 0.3s ease;
         }
         
