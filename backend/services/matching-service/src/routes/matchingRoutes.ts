@@ -233,6 +233,25 @@ router.put('/api/matching/location',
     matchingController.updateLocation
 );
 
+// Real-time GPS tracking endpoints
+const updateLocationLiveBody = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    accuracy: z.number().min(0).optional(),
+    source: z.enum(['gps', 'manual', 'network', 'cell']).optional(),
+    location: z.string().optional()
+});
+router.post('/api/matching/update-location-live',
+    authenticateToken,
+    validate({ schema: updateLocationLiveBody }),
+    matchingController.updateLocationLive
+);
+
+router.post('/api/matching/stop-location-tracking',
+    authenticateToken,
+    matchingController.stopLocationTracking
+);
+
 // Location History endpoints
 const saveLocationHistoryBody = z.object({
     latitude: z.number().min(-90).max(90),

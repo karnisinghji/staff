@@ -8,6 +8,7 @@ import { LocationHistoryViewer } from './LocationHistoryViewer';
 import { TeamMapView } from './TeamMapView';
 import { API_CONFIG } from '../../config/api';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
+import { useGPSTracking } from '../../hooks/useGPSTracking';
 
 // Use production API URL
 const API_URL = `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`;
@@ -31,6 +32,11 @@ interface TeamMember {
   rating?: string;
   total_work?: number;
   isAvailable?: boolean;
+  // Live location tracking fields
+  location_status?: 'live' | 'recent' | 'stale' | 'old' | 'very_old' | 'unknown';
+  location_status_text?: string;
+  is_tracking_live?: boolean;
+  location_last_update?: string;
 }
 
 export const MyTeamPage: React.FC = () => {
@@ -49,6 +55,22 @@ export const MyTeamPage: React.FC = () => {
   const [locationUpdateMessage, setLocationUpdateMessage] = useState('');
   const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(false);
   const [autoTrackingTimeRemaining, setAutoTrackingTimeRemaining] = useState<number>(0); // in seconds
+  
+  // Real-time GPS tracking (auto-updates every 30 seconds)
+  const { status: gpsStatus, startTracking, stopTracking, isSupported: isGPSSupported } = useGPSTracking({
+    enabled: autoTrackingEnabled,
+    updateInterval: 30000, // 30 seconds
+    highAccuracy: true,
+    onLocationUpdate: (position) => {
+      console.log('[My Team] GPS updated:', position.coords);
+      // Refresh team data to get updated distances/statuses
+      fetchMatches();
+    },
+    onError: (error) => {
+      console.error('[My Team] GPS error:', error);
+      setLocationUpdateMessage(`GPS Error: ${error.message}`);
+    }
+  });
   
   // Modal states
   const [showContactModal, setShowContactModal] = useState(false);
@@ -421,6 +443,53 @@ export const MyTeamPage: React.FC = () => {
     );
   };
 
+  // Helper function to get location status badge
+  const getLocationStatusBadge = (member: TeamMember) => {
+    const status = member.location_status || 'unknown';
+    const statusText = member.location_status_text || 'Location not updated';
+    const isTracking = member.is_tracking_live || false;
+
+    // Color coding based on status
+    let bgColor = '#9e9e9e'; // gray for unknown
+    let icon = '📍';
+    
+    switch (status) {
+      case 'live':
+        bgColor = '#4caf50'; // green
+        icon = '🟢';
+        break;
+      case 'recent':
+        bgColor = '#8bc34a'; // light green
+        icon = '🟡';
+        break;
+      case 'stale':
+        bgColor = '#ff9800'; // orange
+        icon = '🟠';
+        break;
+      case 'old':
+      case 'very_old':
+        bgColor = '#9e9e9e'; // gray
+        icon = '⚪';
+        break;
+    }
+
+    return (
+      <span style={{ 
+        display: 'inline-block', 
+        padding: '0.2rem 0.6rem', 
+        borderRadius: '12px', 
+        fontSize: '0.85rem', 
+        fontWeight: '600', 
+        background: bgColor, 
+        color: 'white',
+        marginLeft: '0.5rem'
+      }}
+      title={isTracking ? 'GPS tracking active' : 'Using last known location'}>
+        {icon} {statusText}
+      </span>
+    );
+  };
+
   return (
     <>
       <style>{`
@@ -644,6 +713,58 @@ export const MyTeamPage: React.FC = () => {
             </button>
           )}
           
+          {/* Real-time GPS Tracking Toggle */}
+          {isGPSSupported && (
+            <div style={{
+              background: autoTrackingEnabled ? '#e8f5e9' : '#fff3e0',
+              border: `2px solid ${autoTrackingEnabled ? '#4caf50' : '#ff9800'}`,
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.25rem' }}>
+                    {gpsStatus.isTracking ? '🟢' : '⚪'}
+                  </span>
+                  <strong style={{ fontSize: '0.95rem' }}>
+                    {gpsStatus.isTracking ? 'Live GPS Tracking' : 'GPS Tracking Off'}
+                  </strong>
+                </div>
+                <button
+                  onClick={() => setAutoTrackingEnabled(!autoTrackingEnabled)}
+                  style={{
+                    background: autoTrackingEnabled ? '#f44336' : '#4caf50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.5rem 1rem',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  {autoTrackingEnabled ? 'Stop' : 'Start'}
+                </button>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                {gpsStatus.isTracking ? (
+                  <>
+                    📡 Updating every 30s • {gpsStatus.updateCount} updates
+                    {gpsStatus.accuracy && ` • ${gpsStatus.accuracy.toFixed(0)}m accuracy`}
+                  </>
+                ) : (
+                  'Enable to share your live location with team members'
+                )}
+              </div>
+              {gpsStatus.error && (
+                <div style={{ fontSize: '0.8rem', color: '#f44336', marginTop: '0.5rem' }}>
+                  ⚠️ {gpsStatus.error}
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* View All on Map Button */}
           {(() => {
             // Use same filter logic as TeamMapView for consistency
@@ -746,8 +867,9 @@ export const MyTeamPage: React.FC = () => {
                   <div style={{fontSize: '0.85em', color: '#666', marginTop: '4px'}}>
                     {member.role} • {member.location} • Rating: {member.rating || 'N/A'}
                   </div>
-                  <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                     {getAvailabilityBadge(member.isAvailable)}
+                    {getLocationStatusBadge(member)}
                     {getDistanceBadge(member.distance_km, member.distance_formatted)}
                   </div>
                 </div>

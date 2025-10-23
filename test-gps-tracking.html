@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPS Tracking Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    .status-panel {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .status-panel.inactive {
+      background: #fff3e0;
+      border-color: #ff9800;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+    }
+    button.stop {
+      background: #f44336;
+    }
+    button.stop:hover {
+      background: #da190b;
+    }
+    .log {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #2196f3;
+      padding-left: 10px;
+    }
+    .log-entry.success {
+      border-color: #4caf50;
+      color: #2e7d32;
+    }
+    .log-entry.error {
+      border-color: #f44336;
+      color: #c62828;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .badge.live {
+      background: #4caf50;
+      color: white;
+    }
+    .badge.inactive {
+      background: #9e9e9e;
+      color: white;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛰️ GPS Tracking Test</h1>
+    
+    <div>
+      <label for="token">JWT Token (from login):</label>
+      <input type="password" id="token" placeholder="Paste your JWT token here..." />
+    </div>
+    
+    <div id="status-panel" class="status-panel inactive">
+      <div class="status-row">
+        <div>
+          <span id="indicator">⚪</span>
+          <strong id="status-text">GPS Tracking Off</strong>
+        </div>
+        <button id="toggle-btn" onclick="toggleTracking()">Start</button>
+      </div>
+      <div style="font-size: 14px; color: #666; margin-top: 10px;">
+        <div id="stats">Ready to start tracking...</div>
+      </div>
+    </div>
+    
+    <div>
+      <strong>Console Log:</strong>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3003';
+    let isTracking = false;
+    let watchId = null;
+    let intervalId = null;
+    let updateCount = 0;
+    let lastPosition = null;
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+      logDiv.insertBefore(entry, logDiv.firstChild);
+    }
+
+    async function sendLocationUpdate(latitude, longitude, accuracy) {
+      const token = document.getElementById('token').value;
+      if (!token) {
+        log('No token provided!', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/matching/update-location-live`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            latitude,
+            longitude,
+            accuracy,
+            source: 'gps'
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          updateCount++;
+          log(`✅ Location updated: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (${accuracy.toFixed(0)}m)`, 'success');
+          updateStats(accuracy);
+        } else {
+          log(`❌ Update failed: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    function updateStats(accuracy) {
+      const statsDiv = document.getElementById('stats');
+      statsDiv.innerHTML = `
+        📡 Updating every 30s • ${updateCount} updates
+        ${accuracy ? ` • ${accuracy.toFixed(0)}m accuracy` : ''}
+      `;
+    }
+
+    function handlePosition(position) {
+      const { latitude, longitude, accuracy } = position.coords;
+      lastPosition = position;
+      
+      log(`📍 GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${accuracy.toFixed(0)}m)`);
+      
+      if (accuracy < 100) {
+        sendLocationUpdate(latitude, longitude, accuracy);
+      } else {
+        log(`⚠️ Low accuracy (${accuracy.toFixed(0)}m), skipping update`, 'error');
+      }
+    }
+
+    function handleError(error) {
+      let message = 'Unknown GPS error';
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          message = 'Location permission denied';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message = 'Location unavailable';
+          break;
+        case error.TIMEOUT:
+          message = 'Location request timeout';
+          break;
+      }
+      log(`❌ ${message}`, 'error');
+    }
+
+    function startTracking() {
+      log('🚀 Starting GPS tracking...');
+      
+      isTracking = true;
+      updateCount = 0;
+      
+      // Update UI
+      document.getElementById('status-panel').classList.remove('inactive');
+      document.getElementById('indicator').textContent = '🟢';
+      document.getElementById('status-text').textContent = 'Live GPS Tracking';
+      document.getElementById('toggle-btn').textContent = 'Stop';
+      document.getElementById('toggle-btn').classList.add('stop');
+      
+      // Start watching position
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          handlePosition,
+          handleError,
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 5000
+          }
+        );
+        
+        // Backup: periodic updates every 30 seconds
+        intervalId = setInterval(() => {
+          if (lastPosition) {
+            log('🔄 Periodic update check');
+            const { latitude, longitude, accuracy } = lastPosition.coords;
+            sendLocationUpdate(latitude, longitude, accuracy);
+          }
+        }, 30000);
+        
+        log('✅ GPS tracking started', 'success');
+      } else {
+        log('❌ Geolocation not supported', 'error');
+      }
+    }
+
+    async function stopTracking() {
+      log('🛑 Stopping GPS tracking...');
+      
+      isTracking = false;
+      
+      // Clear watchers
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      
+      // Notify backend
+      const token = document.getElementById('token').value;
+      if (token) {
+        try {
+          await fetch(`${API_BASE}/api/matching/stop-location-tracking`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          log('✅ Backend notified of stop', 'success');
+        } catch (error) {
+          log(`⚠️ Failed to notify backend: ${error.message}`, 'error');
+        }
+      }
+      
+      // Update UI
+      document.getElementById('status-panel').classList.add('inactive');
+      document.getElementById('indicator').textContent = '⚪';
+      document.getElementById('status-text').textContent = 'GPS Tracking Off';
+      document.getElementById('toggle-btn').textContent = 'Start';
+      document.getElementById('toggle-btn').classList.remove('stop');
+      document.getElementById('stats').textContent = 'Tracking stopped';
+      
+      log('✅ GPS tracking stopped', 'success');
+    }
+
+    function toggleTracking() {
+      if (isTracking) {
+        stopTracking();
+      } else {
+        startTracking();
+      }
+    }
+
+    log('🌟 GPS Tracking Test Page Loaded');
+    log('👉 Enter your JWT token and click Start');
+  </script>
+</body>
+</html>

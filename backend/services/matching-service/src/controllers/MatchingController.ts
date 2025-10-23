@@ -931,6 +931,11 @@ export class MatchingController {
                     u.location,
                     u.latitude,
                     u.longitude,
+                    u.last_location_update,
+                    u.location_accuracy,
+                    u.location_source,
+                    u.is_location_tracking_active,
+                    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - u.last_location_update))/60 as minutes_since_location_update,
                     CASE 
                         WHEN u.role = 'contractor' THEN cp.company_name
                         WHEN u.role = 'worker' THEN wp.skill_type::text
@@ -1005,17 +1010,47 @@ export class MatchingController {
             );
             const currentUserLocation = userCoords.rows[0] || null;
 
-            // Calculate distance for each team member
+            // Calculate distance and live status for each team member
             const teamMembersWithDistance = filteredRows.map((member: any) => {
                 const distance = calculateTeamMemberDistance(
                     currentUserLocation,
                     { latitude: member.latitude, longitude: member.longitude }
                 );
 
+                // Determine location status
+                const minutesSinceUpdate = member.minutes_since_location_update;
+                let locationStatus = 'unknown';
+                let locationStatusText = 'Location not updated';
+
+                if (member.last_location_update) {
+                    if (minutesSinceUpdate < 2) {
+                        locationStatus = 'live';
+                        locationStatusText = 'Live Now 🟢';
+                    } else if (minutesSinceUpdate < 5) {
+                        locationStatus = 'recent';
+                        locationStatusText = `${Math.floor(minutesSinceUpdate)} min ago`;
+                    } else if (minutesSinceUpdate < 60) {
+                        locationStatus = 'stale';
+                        locationStatusText = `${Math.floor(minutesSinceUpdate)} min ago`;
+                    } else if (minutesSinceUpdate < 1440) { // < 24 hours
+                        const hours = Math.floor(minutesSinceUpdate / 60);
+                        locationStatus = 'old';
+                        locationStatusText = `${hours}h ago`;
+                    } else {
+                        const days = Math.floor(minutesSinceUpdate / 1440);
+                        locationStatus = 'very_old';
+                        locationStatusText = `${days}d ago`;
+                    }
+                }
+
                 return {
                     ...member,
                     distance_km: distance,
-                    distance_formatted: distance ? formatDistance(distance) : null
+                    distance_formatted: distance ? formatDistance(distance) : null,
+                    location_status: locationStatus,
+                    location_status_text: locationStatusText,
+                    is_tracking_live: member.is_location_tracking_active || false,
+                    location_last_update: member.last_location_update
                 };
             });
 
@@ -1394,6 +1429,150 @@ export class MatchingController {
                 ...(process.env.NODE_ENV === 'development' && {
                     error: error instanceof Error ? error.message : 'Unknown error'
                 })
+            });
+        }
+    };
+
+    /**
+     * Update location with real-time GPS tracking metadata
+     * POST /api/matching/update-location-live
+     * Body: { latitude, longitude, accuracy?, source?, location? }
+     * 
+     * This endpoint is optimized for frequent GPS updates:
+     * - Updates location with timestamp
+     * - Stores GPS accuracy
+     * - Tracks location source (gps/network/cell)
+     * - Marks user as actively tracking
+     */
+    updateLocationLive = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            const { latitude, longitude, accuracy, source = 'gps', location } = req.body;
+
+            // Validate coordinates
+            if (latitude === undefined || longitude === undefined) {
+                res.status(400).json({ success: false, message: 'latitude and longitude are required' });
+                return;
+            }
+
+            if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+                res.status(400).json({ success: false, message: 'latitude and longitude must be numbers' });
+                return;
+            }
+
+            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                res.status(400).json({ success: false, message: 'Invalid coordinates range' });
+                return;
+            }
+
+            // Validate accuracy if provided
+            if (accuracy !== undefined && (typeof accuracy !== 'number' || accuracy < 0)) {
+                res.status(400).json({ success: false, message: 'accuracy must be a positive number' });
+                return;
+            }
+
+            // Validate source
+            const validSources = ['gps', 'manual', 'network', 'cell'];
+            if (!validSources.includes(source)) {
+                res.status(400).json({
+                    success: false,
+                    message: `source must be one of: ${validSources.join(', ')}`
+                });
+                return;
+            }
+
+            // Update user location with tracking metadata
+            const result = await pool.query(
+                `UPDATE users 
+                 SET 
+                    latitude = $1, 
+                    longitude = $2, 
+                    location = COALESCE($3, location),
+                    location_accuracy = $4,
+                    location_source = $5,
+                    last_location_update = CURRENT_TIMESTAMP,
+                    is_location_tracking_active = true,
+                    updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $6
+                 RETURNING 
+                    id, 
+                    latitude, 
+                    longitude, 
+                    location, 
+                    location_accuracy, 
+                    location_source,
+                    last_location_update,
+                    is_location_tracking_active`,
+                [latitude, longitude, location, accuracy, source, req.user.id]
+            );
+
+            if (result.rows.length === 0) {
+                res.status(404).json({ success: false, message: 'User not found' });
+                return;
+            }
+
+            logger.info(`Live location updated for user ${req.user.id}: ${latitude}, ${longitude} (accuracy: ${accuracy}m, source: ${source})`);
+
+            res.json({
+                success: true,
+                message: 'Live location updated successfully',
+                data: {
+                    latitude: result.rows[0].latitude,
+                    longitude: result.rows[0].longitude,
+                    location: result.rows[0].location,
+                    accuracy: result.rows[0].location_accuracy,
+                    source: result.rows[0].location_source,
+                    lastUpdate: result.rows[0].last_location_update,
+                    isTracking: result.rows[0].is_location_tracking_active
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error updating live location:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error updating live location',
+                ...(process.env.NODE_ENV === 'development' && {
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
+            });
+        }
+    };
+
+    /**
+     * Stop GPS tracking for current user
+     * POST /api/matching/stop-location-tracking
+     */
+    stopLocationTracking = async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.user) {
+                res.status(401).json({ success: false, message: 'Authentication required' });
+                return;
+            }
+
+            await pool.query(
+                `UPDATE users 
+                 SET is_location_tracking_active = false, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1`,
+                [req.user.id]
+            );
+
+            logger.info(`Location tracking stopped for user ${req.user.id}`);
+
+            res.json({
+                success: true,
+                message: 'Location tracking stopped'
+            });
+
+        } catch (error) {
+            logger.error('Error stopping location tracking:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error stopping location tracking'
             });
         }
     };
