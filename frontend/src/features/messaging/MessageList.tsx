@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { useMessages } from './MessageContext';
+import { useAuth } from '../auth/AuthContext';
 
 export const MessageList = () => {
   const { messages, loading, error, sendMessage } = useMessages();
+  const { user } = useAuth();
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<string>('');
   const [sending, setSending] = useState(false);
 
-  const handleReply = async (toUserId: string) => {
+  const handleReply = async (msg: any) => {
     if (!replyText.trim()) return;
+    
+    // Determine the correct recipient:
+    // If the message is from you (fromUserId === your ID), reply to toUserId
+    // If the message is to you (toUserId === your ID), reply to fromUserId
+    const recipientId = msg.fromUserId === user?.id ? msg.toUserId : msg.fromUserId;
     
     setSending(true);
     try {
-      await sendMessage(toUserId, replyText);
+      await sendMessage(recipientId, replyText);
       setReplyText('');
       setReplyingTo(null);
     } catch (err) {
@@ -217,7 +224,7 @@ export const MessageList = () => {
                     />
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                       <button
-                        onClick={() => handleReply(msg.fromUserId)}
+                        onClick={() => handleReply(msg)}
                         disabled={sending || !replyText.trim()}
                         style={{
                           flex: 1,

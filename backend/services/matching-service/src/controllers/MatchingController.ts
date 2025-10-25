@@ -1515,6 +1515,19 @@ export class MatchingController {
                 return;
             }
 
+            // Also save to location_history for tracking trail
+            try {
+                await pool.query(
+                    `INSERT INTO location_history (user_id, latitude, longitude, accuracy, source, recorded_at)
+                     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+                    [req.user.id, latitude, longitude, accuracy || null, source]
+                );
+                logger.info(`Location history saved for user ${req.user.id} (GPS tracking)`);
+            } catch (historyError) {
+                // Don't fail the request if history insert fails, just log it
+                logger.warn(`Failed to save location history for user ${req.user.id}:`, historyError);
+            }
+
             logger.info(`Live location updated for user ${req.user.id}: ${latitude}, ${longitude} (accuracy: ${accuracy}m, source: ${source})`);
 
             res.json({

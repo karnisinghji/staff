@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import { NotificationProvider } from './features/notifications/NotificationContext';
+import { MessageProvider } from './features/messaging/MessageContext';
 import { NotificationList } from './features/notifications/NotificationList';
 import { NavBar } from './features/common/NavBar';
 import { ToastContainer } from './components/ToastContainer';
@@ -18,7 +19,7 @@ const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage')
 const OAuthCallback = lazy(() => import('./features/auth/OAuthCallback').then(m => ({ default: m.OAuthCallback })));
 const EnhancedMatchSearchPage = lazy(() => import('./features/matching/EnhancedMatchSearchPage'));
 const MyTeamPage = lazy(() => import('./features/matching/SavedMatchesPage').then(m => ({ default: m.MyTeamPage })));
-const MessagingPage = lazy(() => import('./features/messaging/MessagingPage').then(m => ({ default: m.MessagingPage })));
+const ModernMessagingPage = lazy(() => import('./features/messaging/ModernMessagingPage'));
 const HomePage = lazy(() => import('./features/home/HomePage').then(m => ({ default: m.HomePage })));
 const EnhancedProfilePage = lazy(() => import('./features/profile/EnhancedProfilePage'));
 const StatusPage = lazy(() => import('./features/status/StatusPage'));
@@ -47,12 +48,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
 const App: React.FC = () => (
   <AuthProvider>
     <NotificationProvider>
-      <Router>
-        <GlobalAnimations />
-        <NavBar />
-        <NotificationList />
-        <ToastContainer />
-        <Suspense fallback={<LoadingFallback />}>
+      <MessageProvider>
+        <Router>
+          <GlobalAnimations />
+          <NavBar />
+          <NotificationList />
+          <ToastContainer />
+          <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -76,7 +78,7 @@ const App: React.FC = () => (
             } />
             <Route path="/messages" element={
               <ProtectedRoute>
-                <MessagingPage />
+                <ModernMessagingPage />
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
@@ -95,6 +97,7 @@ const App: React.FC = () => (
           </Routes>
         </Suspense>
       </Router>
+      </MessageProvider>
     </NotificationProvider>
   </AuthProvider>
 );

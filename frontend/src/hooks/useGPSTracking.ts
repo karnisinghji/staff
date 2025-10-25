@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { API_CONFIG } from '../config/api';
 
+type TrackingMode = 'live' | 'shift';
+
 interface GPSTrackingOptions {
     enabled?: boolean;
-    updateInterval?: number; // milliseconds
+    mode?: TrackingMode; // 'live' = 30s updates, 'shift' = 5min updates
+    updateInterval?: number; // milliseconds (overrides mode default)
     highAccuracy?: boolean;
     onLocationUpdate?: (position: GeolocationPosition) => void;
     onError?: (error: GeolocationPositionError) => void;
@@ -33,11 +36,15 @@ interface LocationStatus {
 export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
     const {
         enabled = false,
-        updateInterval = 30000, // 30 seconds default
+        mode = 'shift', // Default to shift mode (5 min updates)
+        updateInterval, // Optional override
         highAccuracy = true,
         onLocationUpdate,
         onError
     } = options;
+
+    // Determine update interval based on mode
+    const effectiveUpdateInterval = updateInterval || (mode === 'live' ? 30000 : 300000); // 30s or 5min
 
     const [status, setStatus] = useState<LocationStatus>({
         isTracking: false,
@@ -80,11 +87,38 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             });
 
             if (!response.ok) {
+                // Handle JWT expiration specifically
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('[GPS Tracking] Authentication failed - token may be expired');
+                    setStatus(prev => ({
+                        ...prev,
+                        error: 'Session expired. Please log in again.',
+                        isTracking: false
+                    }));
+
+                    // Stop tracking on auth failure
+                    if (watchIdRef.current !== null) {
+                        navigator.geolocation.clearWatch(watchIdRef.current);
+                        watchIdRef.current = null;
+                    }
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                        intervalRef.current = null;
+                    }
+                    isTrackingRef.current = false;
+
+                    // Optionally redirect to login
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/login?reason=session_expired';
+                    }
+                    return;
+                }
+
                 const error = await response.json();
                 throw new Error(error.message || 'Failed to update location');
             }
 
-            const data = await response.json();
+            await response.json(); // Consume response
 
             setStatus(prev => ({
                 ...prev,
@@ -131,30 +165,42 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
      */
     const handleError = useCallback((error: GeolocationPositionError) => {
         let errorMessage = 'Unknown GPS error';
+        let shouldStopTracking = false;
 
         switch (error.code) {
             case error.PERMISSION_DENIED:
-                errorMessage = 'Location permission denied';
+                errorMessage = 'Location permission denied. Please enable location access.';
+                shouldStopTracking = true;
+                console.error('[GPS Tracking] Permission denied:', error);
                 break;
             case error.POSITION_UNAVAILABLE:
-                errorMessage = 'Location unavailable';
+                errorMessage = 'GPS unavailable. Try mobile device or update manually.';
+                // Don't stop tracking - might become available
+                // Only log once, not repeatedly
+                if (!isTrackingRef.current) {
+                    console.info('[GPS Tracking] GPS unavailable (normal on desktop)');
+                }
                 break;
             case error.TIMEOUT:
-                errorMessage = 'Location request timeout';
+                errorMessage = 'GPS timeout. Will retry automatically.';
+                // Don't stop tracking - just retry
+                // Suppress repeated timeout messages
                 break;
         }
-
-        console.error('[GPS Tracking] Error:', errorMessage, error);
 
         setStatus(prev => ({
             ...prev,
             error: errorMessage
         }));
 
-        onError?.(error);
-    }, [onError]);
+        // If permission denied, stop tracking
+        if (shouldStopTracking && isTrackingRef.current) {
+            console.log('[GPS Tracking] Stopping due to permission denial');
+            stopTracking();
+        }
 
-    /**
+        onError?.(error);
+    }, [onError]);    /**
      * Start GPS tracking
      */
     const startTracking = useCallback(() => {
@@ -172,7 +218,8 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
         }
 
         console.log('[GPS Tracking] Starting...', {
-            updateInterval: `${updateInterval / 1000}s`,
+            mode,
+            updateInterval: `${effectiveUpdateInterval / 1000}s`,
             highAccuracy
         });
 
@@ -183,24 +230,24 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             error: null
         }));
 
-        // Start watching position
+        // Start watching position with more lenient settings
         watchIdRef.current = navigator.geolocation.watchPosition(
             handlePosition,
             handleError,
             {
                 enableHighAccuracy: highAccuracy,
-                timeout: 15000,
-                maximumAge: 5000
+                timeout: 30000, // Increased from 15s to 30s for slower GPS
+                maximumAge: 10000 // Allow cached positions up to 10s old
             }
         );
 
         // Set up periodic updates (watchPosition can be slow sometimes)
         intervalRef.current = setInterval(() => {
             if (lastPositionRef.current) {
-                console.log('[GPS Tracking] Periodic update check');
+                console.log(`[GPS Tracking] Periodic update check (${mode} mode)`);
                 sendLocationUpdate(lastPositionRef.current);
             }
-        }, updateInterval);
+        }, effectiveUpdateInterval);
 
     }, [updateInterval, highAccuracy, handlePosition, handleError, sendLocationUpdate]);
 
@@ -296,6 +343,8 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
         status,
         startTracking,
         stopTracking,
-        isSupported: !!navigator.geolocation
+        isSupported: !!navigator.geolocation,
+        mode,
+        updateInterval: effectiveUpdateInterval
     };
 };

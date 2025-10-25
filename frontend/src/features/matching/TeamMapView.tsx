@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../auth/AuthContext';
@@ -47,6 +47,7 @@ export const TeamMapView: React.FC = () => {
   const [error, setError] = useState('');
   const [mapCenter, setMapCenter] = useState<[number, number]>([27.245289, 75.657525]); // Default to Govindgarh
   const [mapZoom, setMapZoom] = useState(12);
+  const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Fetch team members with location data
   useEffect(() => {
@@ -82,6 +83,39 @@ export const TeamMapView: React.FC = () => {
         members.forEach((m: TeamMember) => {
           console.log(`  ${m.name}: lat=${m.latitude}, lng=${m.longitude}`);
         });
+        
+        // Fetch current user's location
+        try {
+          const userResponse = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log('🔍 Full user data response:', userData);
+            
+            // API returns {success: true, data: {user: {...}}}
+            const user = userData.data?.user || userData.data || userData;
+            console.log('🔍 User lat/lng:', user.latitude, user.longitude);
+            
+            if (user.latitude && user.longitude) {
+              setCurrentUserLocation({
+                lat: Number(user.latitude),
+                lng: Number(user.longitude)
+              });
+              console.log('✅ Current user location SET:', user.latitude, user.longitude);
+            } else {
+              console.warn('⚠️ User has no location data in profile');
+            }
+          } else {
+            console.error('❌ Failed to fetch user data:', userResponse.status);
+          }
+        } catch (err) {
+          console.error('❌ Error fetching user location:', err);
+        }
         
         // Store all members for display
         setAllMembers(members);
@@ -174,6 +208,48 @@ export const TeamMapView: React.FC = () => {
     popupAnchor: [1, -34],
     shadowSize: [41, 41]
   });
+
+  // Create a special icon for current user (home icon)
+  const createHomeIcon = () => new L.DivIcon({
+    className: 'custom-home-icon',
+    html: `
+      <div style="
+        background: #1976d2;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        font-size: 20px;
+      ">
+        🏠
+      </div>
+    `,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
+
+  // Calculate distance between two points (Haversine formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const formatDistance = (km: number): string => {
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
+  };
 
   const handleCall = (phone: string) => {
     window.location.href = `tel:${phone}`;
@@ -303,8 +379,23 @@ export const TeamMapView: React.FC = () => {
         </h2>
         <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
           {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''} with location data
+          {!currentUserLocation && ' • ⚠️ Your location not found'}
         </p>
       </div>
+
+      {/* Debug Banner for Missing User Location */}
+      {!currentUserLocation && (
+        <div style={{
+          background: '#fff3cd',
+          padding: '0.75rem 1rem',
+          borderBottom: '2px solid #ffc107',
+          color: '#856404',
+          fontSize: '0.85rem',
+          textAlign: 'center'
+        }}>
+          ⚠️ Your location is not saved. Distance lines won't show. Enable GPS tracking on "My Team" page to save your location.
+        </div>
+      )}
 
       {/* Map */}
       <div style={{ flex: 1, position: 'relative', minHeight: '400px' }}>
@@ -322,6 +413,107 @@ export const TeamMapView: React.FC = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
+
+          {/* Current User Location Marker */}
+          {currentUserLocation && (
+            <Marker
+              position={[currentUserLocation.lat, currentUserLocation.lng]}
+              icon={createHomeIcon()}
+            >
+              <Tooltip 
+                direction="top" 
+                offset={[0, -20]} 
+                permanent
+                className="marker-tooltip"
+              >
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  color: '#1976d2',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                }}>
+                  📍 You
+                </div>
+              </Tooltip>
+              
+              <Popup>
+                <div style={{ padding: '0.5rem' }}>
+                  <strong style={{ fontSize: '1.1rem', color: '#1976d2' }}>
+                    Your Location
+                  </strong>
+                  <br />
+                  <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                    🏠 Current Position
+                  </span>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Dotted Lines from Current User to Each Team Member */}
+          {currentUserLocation && teamMembers.map((member, index) => {
+            const lat = Number(member.latitude);
+            const lng = Number(member.longitude);
+            
+            // Calculate distance
+            const distance = calculateDistance(
+              currentUserLocation.lat,
+              currentUserLocation.lng,
+              lat,
+              lng
+            );
+            
+            // Color for the line (match team member color)
+            const colorIndex = index % markerColors.length;
+            const memberColor = markerColors[colorIndex];
+            
+            // Calculate midpoint for distance label
+            const midLat = (currentUserLocation.lat + lat) / 2;
+            const midLng = (currentUserLocation.lng + lng) / 2;
+            
+            return (
+              <React.Fragment key={`line-${member.team_member_id}`}>
+                <Polyline
+                  positions={[
+                    [currentUserLocation.lat, currentUserLocation.lng],
+                    [lat, lng]
+                  ]}
+                  pathOptions={{
+                    color: memberColor.hex,
+                    weight: 2,
+                    opacity: 0.6,
+                    dashArray: '10, 10'
+                  }}
+                />
+                
+                {/* Distance Label at midpoint */}
+                <Marker
+                  position={[midLat, midLng]}
+                  icon={new L.DivIcon({
+                    className: 'distance-label',
+                    html: `
+                      <div style="
+                        background: white;
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        border: 2px solid ${memberColor.hex};
+                        font-size: 11px;
+                        font-weight: bold;
+                        color: ${memberColor.hex};
+                        white-space: nowrap;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                      ">
+                        ${formatDistance(distance)}
+                      </div>
+                    `,
+                    iconSize: [50, 20],
+                    iconAnchor: [25, 10]
+                  })}
+                />
+              </React.Fragment>
+            );
+          })}
 
           {/* Team Member Markers */}
           {teamMembers.map((member, index) => {

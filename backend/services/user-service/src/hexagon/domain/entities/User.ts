@@ -7,6 +7,8 @@ export interface UserProps {
     location?: string | null;
     address?: string | null;
     phone?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     profileCompletedAt?: string | null;
     profileLockedAt?: string | null;
     createdAt: Date;
@@ -25,6 +27,8 @@ export class UserEntity {
     get location() { return this.props.location ?? null; }
     get address() { return this.props.address ?? null; }
     get phone() { return this.props.phone ?? null; }
+    get latitude() { return this.props.latitude ?? null; }
+    get longitude() { return this.props.longitude ?? null; }
     get profileCompletedAt() { return this.props.profileCompletedAt ?? null; }
     get profileLockedAt() { return this.props.profileLockedAt ?? null; }
     get createdAt() { return this.props.createdAt; }

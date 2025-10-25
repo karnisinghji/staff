@@ -24,6 +24,8 @@ export class PgUserRepository implements UserRepositoryPort {
             location: r.location,
             address: r.address,
             phone: r.phone,
+            latitude: r.latitude,
+            longitude: r.longitude,
             profileCompletedAt: r.profile_completed_at?.toISOString() || null,
             profileLockedAt: r.profile_locked_at?.toISOString() || null,
             createdAt: r.created_at
@@ -56,6 +58,7 @@ export class PgUserRepository implements UserRepositoryPort {
             return new UserEntity({
                 id: r.id, username: r.username, role: r.role, name: r.name,
                 email: r.email, location: r.location, address: r.address, phone: r.phone,
+                latitude: r.latitude, longitude: r.longitude,
                 profileCompletedAt: r.profile_completed_at?.toISOString() || null,
                 profileLockedAt: r.profile_locked_at?.toISOString() || null,
                 createdAt: r.created_at

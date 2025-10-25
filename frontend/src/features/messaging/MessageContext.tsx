@@ -14,6 +14,7 @@ interface Message {
   senderCompany?: string;
   status?: string;
   matchContext?: any;
+  type?: string;
 }
 
 interface MessageContextType {
@@ -31,7 +32,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pollingInterval, setPollingInterval] = useState(30000); // Start with 30 seconds
+  const [pollingInterval, setPollingInterval] = useState(5000); // 5 seconds - balanced for performance and responsiveness
 
   // Fetch messages from team requests (both sent and received)
   const fetchMessages = async () => {
@@ -41,9 +42,9 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       
-      // Fetch both received and sent team requests
-      console.log('📨 Fetching team requests from:', API_CONFIG.MATCHING_SERVICE);
-      const [receivedRes, sentRes] = await Promise.all([
+      // Fetch team requests AND actual chat messages
+      console.log('📨 Fetching messages from:', API_CONFIG.MATCHING_SERVICE, '&', API_CONFIG.COMMUNICATION_SERVICE);
+      const [receivedRes, sentRes, chatMessagesRes] = await Promise.all([
         axios.get(
           `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -51,11 +52,19 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
         axios.get(
           `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/sent`,
           { headers: { Authorization: `Bearer ${token}` } }
-        )
+        ),
+        axios.get(
+          `${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(err => {
+          console.warn('Failed to fetch chat messages:', err);
+          return { data: { success: false, data: [] } };
+        })
       ]);
       
-      console.log('✅ Received response:', receivedRes.data);
-      console.log('✅ Sent response:', sentRes.data);
+      console.log('✅ Received team requests:', receivedRes.data);
+      console.log('✅ Sent team requests:', sentRes.data);
+      console.log('✅ Chat messages:', chatMessagesRes.data);
       
       // Transform team requests to Message format
       const receivedMessages: Message[] = receivedRes.data.success 
@@ -68,7 +77,8 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
             senderName: req.sender_name,
             senderCompany: req.sender_company,
             status: req.status,
-            matchContext: req.match_context
+            matchContext: req.match_context,
+            type: 'team-request'
           }))
         : [];
       
@@ -82,15 +92,61 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
             senderName: req.receiver_name,
             senderCompany: req.receiver_company,
             status: req.status,
-            matchContext: req.match_context
+            matchContext: req.match_context,
+            type: 'team-request'
           }))
         : [];
       
+      // Transform chat messages and fetch user names
+      const chatMessagesRaw = chatMessagesRes.data.success ? (chatMessagesRes.data.data || []) : [];
+      
+      // Fetch user details for all unique user IDs in chat messages
+      const userIds = new Set(chatMessagesRaw.map((msg: any) => msg.from_user_id || msg.fromUserId));
+      const userDetailsMap: Record<string, any> = {};
+      
+      // Fetch user details in parallel
+      await Promise.all(
+        Array.from(userIds).map(async (userId: any) => {
+          const userIdStr = String(userId);
+          if (userIdStr === user.id) {
+            userDetailsMap[userIdStr] = { name: 'You' };
+            return;
+          }
+          try {
+            const userRes = await axios.get(
+              `${API_CONFIG.USER_SERVICE}/api/users/${userIdStr}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (userRes.data.success) {
+              userDetailsMap[userIdStr] = userRes.data.data.user || userRes.data.data;
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch user ${userIdStr}:`, err);
+            userDetailsMap[userIdStr] = { name: 'Team Member' };
+          }
+        })
+      );
+      
+      const chatMessages: Message[] = chatMessagesRaw.map((msg: any) => {
+        const senderId = String(msg.from_user_id || msg.fromUserId);
+        const senderDetails = userDetailsMap[senderId];
+        
+        return {
+          id: String(msg.id),
+          fromUserId: senderId,
+          toUserId: msg.to_user_id || msg.toUserId,
+          body: msg.body,
+          createdAt: msg.created_at || msg.createdAt,
+          senderName: senderDetails?.name || 'Team Member',
+          type: 'chat-message'
+        };
+      });
+      
       // Combine and sort by date
-      const allMessages = [...receivedMessages, ...sentMessages]
+      const allMessages = [...receivedMessages, ...sentMessages, ...chatMessages]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
-      console.log(`📬 Total messages: ${allMessages.length} (${receivedMessages.length} received, ${sentMessages.length} sent)`);
+      console.log(`📬 Total messages: ${allMessages.length} (${receivedMessages.length} team requests received, ${sentMessages.length} team requests sent, ${chatMessages.length} chat messages)`);
       setMessages(allMessages);
       setPollingInterval(30000); // Reset to normal interval on success
     } catch (err: any) {
@@ -124,16 +180,29 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('You must be logged in to send messages');
     }
     
+    // Optimistic update - add message immediately
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      fromUserId: user.id,
+      toUserId: toUserId,
+      body: body,
+      createdAt: new Date().toISOString(),
+      senderName: 'You',
+      type: 'chat-message'
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    
     try {
       setError(null);
+      
+      // Use communication-service for actual chat messages
       const response = await axios.post(
-        `${API_CONFIG.MATCHING_SERVICE}/api/matching/send-team-request`,
+        `${API_CONFIG.COMMUNICATION_SERVICE}/messages`,
         {
-          receiverId: toUserId,
-          message: body,
-          matchContext: {
-            searchType: 'direct-message'
-          }
+          fromUserId: user.id,
+          toUserId: toUserId,
+          body: body
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -141,11 +210,13 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       );
       
       if (response.data.success) {
-        // Refresh messages to show the new one
+        // Refresh messages to get the real message from server
         await fetchMessages();
       }
     } catch (err: any) {
       console.error('Failed to send message:', err);
+      // Remove the optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       const errorMsg = err.response?.data?.message || 'Failed to send message';
       setError(errorMsg);
       throw new Error(errorMsg);

@@ -7,7 +7,6 @@ import { LocationMapModal } from '../common/LocationMapModal';
 import { LocationHistoryViewer } from './LocationHistoryViewer';
 import { TeamMapView } from './TeamMapView';
 import { API_CONFIG } from '../../config/api';
-import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { useGPSTracking } from '../../hooks/useGPSTracking';
 
 // Use production API URL
@@ -49,26 +48,23 @@ export const MyTeamPage: React.FC = () => {
   // Get user role from JWT token or user object
   const userRole = user?.role || user?.roles?.[0] || 'worker';
   
-  // GPS location tracking
-  const { location: currentLocation, error: locationError, loading: locationLoading, getCurrentLocation } = useCurrentLocation();
-  const [locationUpdateStatus, setLocationUpdateStatus] = useState<'idle' | 'updating' | 'success' | 'error'>('idle');
-  const [locationUpdateMessage, setLocationUpdateMessage] = useState('');
-  const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(false);
-  const [autoTrackingTimeRemaining, setAutoTrackingTimeRemaining] = useState<number>(0); // in seconds
+  // Tracking mode: 'live' (30s) or 'shift' (5min)
+  const [trackingMode, setTrackingMode] = useState<'live' | 'shift'>('shift');
   
-  // Real-time GPS tracking (auto-updates every 30 seconds)
-  const { status: gpsStatus, startTracking, stopTracking, isSupported: isGPSSupported } = useGPSTracking({
+  // GPS location tracking
+  const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(false);
+  
+  // Real-time GPS tracking with selectable mode
+  const { status: gpsStatus, isSupported: isGPSSupported } = useGPSTracking({
     enabled: autoTrackingEnabled,
-    updateInterval: 30000, // 30 seconds
+    mode: trackingMode,
     highAccuracy: true,
     onLocationUpdate: (position) => {
       console.log('[My Team] GPS updated:', position.coords);
-      // Refresh team data to get updated distances/statuses
-      fetchMatches();
+      // Location saved to backend, no need to refresh entire team list
     },
     onError: (error) => {
       console.error('[My Team] GPS error:', error);
-      setLocationUpdateMessage(`GPS Error: ${error.message}`);
     }
   });
   
@@ -78,191 +74,6 @@ export const MyTeamPage: React.FC = () => {
   const [showTeamMapView, setShowTeamMapView] = useState(false); // New: Full team map view
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  // Update location to backend
-  const updateLocationToBackend = async (lat: number, lng: number) => {
-    if (!token) return;
-    
-    setLocationUpdateStatus('updating');
-    setLocationUpdateMessage('Updating your location...');
-    
-    // Save to state immediately for map display
-    setCurrentUserLocation({ latitude: lat, longitude: lng });
-    
-    try {
-      // Save to location history (also updates current location)
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          latitude: lat, 
-          longitude: lng,
-          source: 'manual' // Indicates this was a manual update
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save location');
-      }
-      
-      setLocationUpdateStatus('success');
-      setLocationUpdateMessage('✅ Location saved to history');
-      
-      // Refresh team data to get updated distances
-      fetchMatches();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setLocationUpdateStatus('idle');
-        setLocationUpdateMessage('');
-      }, 3000);
-    } catch (err) {
-      console.error('Location update error:', err);
-      setLocationUpdateStatus('error');
-      setLocationUpdateMessage('❌ Failed to save location');
-      
-      setTimeout(() => {
-        setLocationUpdateStatus('idle');
-        setLocationUpdateMessage('');
-      }, 3000);
-    }
-  };
-
-  // Start auto-tracking for 24 hours (saves every 30 minutes)
-  const startAutoTracking = () => {
-    const AUTO_TRACK_DURATION = 24 * 60 * 60; // 24 hours in seconds
-    const AUTO_TRACK_INTERVAL = 30; // 30 minutes
-    
-    setAutoTrackingEnabled(true);
-    setAutoTrackingTimeRemaining(AUTO_TRACK_DURATION);
-    
-    // Store start time in localStorage
-    localStorage.setItem('autoTrackingStartTime', Date.now().toString());
-    localStorage.setItem('autoTrackingEnabled', 'true');
-    
-    setLocationUpdateMessage('✅ Location saved! Auto-tracking every 30 min for 24 hours');
-    setTimeout(() => setLocationUpdateMessage(''), 5000);
-  };
-
-  const stopAutoTracking = () => {
-    setAutoTrackingEnabled(false);
-    setAutoTrackingTimeRemaining(0);
-    localStorage.removeItem('autoTrackingStartTime');
-    localStorage.removeItem('autoTrackingEnabled');
-    
-    setLocationUpdateMessage('⏹️ Auto-tracking stopped. Location updates paused.');
-    setTimeout(() => setLocationUpdateMessage(''), 3000);
-  };
-
-  // Auto-detect location on mount
-  useEffect(() => {
-    if (currentLocation && !locationError) {
-      // Save to state for map display
-      setCurrentUserLocation({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude
-      });
-      // Also update backend
-      updateLocationToBackend(currentLocation.latitude, currentLocation.longitude);
-    }
-  }, [currentLocation, locationError]);
-
-  // Restore auto-tracking state from localStorage
-  useEffect(() => {
-    const startTime = localStorage.getItem('autoTrackingStartTime');
-    const enabled = localStorage.getItem('autoTrackingEnabled');
-    
-    if (enabled === 'true' && startTime) {
-      const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime)) / 1000);
-      const remainingSeconds = (24 * 60 * 60) - elapsedSeconds;
-      
-      if (remainingSeconds > 0) {
-        setAutoTrackingEnabled(true);
-        setAutoTrackingTimeRemaining(remainingSeconds);
-      } else {
-        // Auto-tracking period expired
-        stopAutoTracking();
-      }
-    }
-  }, []);
-
-  // Auto-tracking interval effect (saves every 30 minutes)
-  useEffect(() => {
-    if (!autoTrackingEnabled || !token) return;
-    
-    const AUTO_TRACK_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
-    
-    // Set interval to auto-save location
-    const intervalId = setInterval(async () => {
-      try {
-        // Get fresh location with high accuracy
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,  // Use GPS for maximum precision
-            timeout: 15000,             // 15 seconds to get accurate fix
-            maximumAge: 0               // Always fresh location
-          });
-        });
-        
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-        
-        console.log(`🔄 Auto-tracking location: ${lat}, ${lng} (±${Math.round(accuracy)}m)`);
-        
-        // Save to history with 'auto' source
-        await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            latitude: lat, 
-            longitude: lng,
-            source: 'auto' // Mark as auto-save
-          })
-        });
-        
-        console.log('Auto-tracking: Location saved at', new Date().toLocaleTimeString());
-        
-        // Update time remaining
-        const startTime = parseInt(localStorage.getItem('autoTrackingStartTime') || '0');
-        const elapsedMinutes = Math.floor((Date.now() - startTime) / (1000 * 60));
-        const remainingMinutes = (24 * 60) - elapsedMinutes;
-        
-        setAutoTrackingTimeRemaining(remainingMinutes);
-        
-        // Stop if 24 hours elapsed
-        if (remainingMinutes <= 0) {
-          stopAutoTracking();
-        }
-      } catch (error) {
-        console.error('Auto-tracking error:', error);
-      }
-    }, AUTO_TRACK_INTERVAL);
-    
-    // Countdown timer (updates every second for display)
-    const countdownId = setInterval(() => {
-      const startTime = parseInt(localStorage.getItem('autoTrackingStartTime') || '0');
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      const remainingSeconds = (24 * 60 * 60) - elapsedSeconds;
-      
-      setAutoTrackingTimeRemaining(remainingSeconds);
-      
-      if (remainingSeconds <= 0) {
-        stopAutoTracking();
-      }
-    }, 1000); // Update every second
-    
-    return () => {
-      clearInterval(intervalId);
-      clearInterval(countdownId);
-    };
-  }, [autoTrackingEnabled, token]);
 
   const fetchMatches = async () => {
     setError('');
@@ -375,6 +186,20 @@ export const MyTeamPage: React.FC = () => {
     
     fetchUserLocation();
   }, [token]);
+
+  // Periodic refresh when GPS tracking is active (backend fetches fresh locations, no page reload)
+  useEffect(() => {
+    if (!gpsStatus.isTracking) return;
+    
+    // Silently fetch updated team data from backend every 60 seconds
+    // Backend always returns fresh location data, no UI refresh needed
+    const refreshInterval = setInterval(() => {
+      console.log('[My Team] Fetching updated team locations from backend');
+      fetchMatches(); // This calls the API, backend returns latest data
+    }, 60 * 1000); // 1 minute
+    
+    return () => clearInterval(refreshInterval);
+  }, [gpsStatus.isTracking]);
 
   // Filter matches based on availability status
   const filteredMatches = matches.filter(match => {
@@ -649,75 +474,11 @@ export const MyTeamPage: React.FC = () => {
             </div>
           )}
           
-          {/* Location update status */}
-          {locationUpdateMessage && (
-            <div style={{ 
-              background: locationUpdateStatus === 'success' ? '#e8f5e9' : locationUpdateStatus === 'error' ? '#ffebee' : '#e3f2fd',
-              color: locationUpdateStatus === 'success' ? '#2e7d32' : locationUpdateStatus === 'error' ? '#d32f2f' : '#1565c0',
-              padding: '0.75rem', 
-              borderRadius: '8px', 
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              marginBottom: '1rem',
-              border: `1px solid ${locationUpdateStatus === 'success' ? '#c8e6c9' : locationUpdateStatus === 'error' ? '#ffcdd2' : '#bbdefb'}`
-            }}>
-              {locationUpdateMessage}
-            </div>
-          )}
-          
-          {/* Smart Location Button - Updates location AND starts auto-tracking */}
-          {!locationLoading && (
-            <button
-              onClick={() => {
-                if (autoTrackingEnabled) {
-                  // Stop auto-tracking
-                  stopAutoTracking();
-                } else {
-                  // Update location and start auto-tracking
-                  getCurrentLocation();
-                  startAutoTracking();
-                }
-              }}
-              style={{
-                background: autoTrackingEnabled ? '#d32f2f' : '#2196f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                marginBottom: '1rem',
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              {autoTrackingEnabled ? (
-                <>
-                  📍 Active ({(() => {
-                    const hours = Math.floor(autoTrackingTimeRemaining / 3600);
-                    const minutes = Math.floor((autoTrackingTimeRemaining % 3600) / 60);
-                    const seconds = autoTrackingTimeRemaining % 60;
-                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                  })()})
-                </>
-              ) : (
-                <>
-                  📍 Update My Location
-                </>
-              )}
-            </button>
-          )}
-          
-          {/* Real-time GPS Tracking Toggle */}
+          {/* Real-time GPS Tracking Toggle - Live & Shift Modes */}
           {isGPSSupported && (
             <div style={{
-              background: autoTrackingEnabled ? '#e8f5e9' : '#fff3e0',
-              border: `2px solid ${autoTrackingEnabled ? '#4caf50' : '#ff9800'}`,
+              background: gpsStatus.isTracking ? '#e8f5e9' : '#fff3e0',
+              border: `2px solid ${gpsStatus.isTracking ? '#4caf50' : '#ff9800'}`,
               borderRadius: '8px',
               padding: '1rem',
               marginBottom: '1rem'
@@ -725,16 +486,16 @@ export const MyTeamPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ fontSize: '1.25rem' }}>
-                    {gpsStatus.isTracking ? '🟢' : '⚪'}
+                    {gpsStatus.isTracking ? (trackingMode === 'live' ? '🟢' : '🔵') : '⚪'}
                   </span>
                   <strong style={{ fontSize: '0.95rem' }}>
-                    {gpsStatus.isTracking ? 'Live GPS Tracking' : 'GPS Tracking Off'}
+                    {gpsStatus.isTracking ? (trackingMode === 'live' ? 'Live Tracking' : 'Shift Mode') : 'GPS Tracking Off'}
                   </strong>
                 </div>
                 <button
                   onClick={() => setAutoTrackingEnabled(!autoTrackingEnabled)}
                   style={{
-                    background: autoTrackingEnabled ? '#f44336' : '#4caf50',
+                    background: gpsStatus.isTracking ? '#f44336' : '#4caf50',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -744,22 +505,93 @@ export const MyTeamPage: React.FC = () => {
                     fontWeight: '600'
                   }}
                 >
-                  {autoTrackingEnabled ? 'Stop' : 'Start'}
+                  {gpsStatus.isTracking ? 'Stop' : 'Start'}
                 </button>
               </div>
+              
+              {/* Tracking Mode Selection */}
+              {!gpsStatus.isTracking && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+                    Choose tracking mode:
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <label style={{ 
+                      flex: 1, 
+                      cursor: 'pointer',
+                      border: `2px solid ${trackingMode === 'live' ? '#4caf50' : '#ddd'}`,
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      background: trackingMode === 'live' ? '#e8f5e9' : 'white',
+                      transition: 'all 0.2s'
+                    }}>
+                      <input
+                        type="radio"
+                        name="trackingMode"
+                        value="live"
+                        checked={trackingMode === 'live'}
+                        onChange={(e) => setTrackingMode(e.target.value as 'live' | 'shift')}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      <strong style={{ fontSize: '0.85rem' }}>🟢 Live Mode</strong>
+                      <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
+                        Updates every 30s<br/>
+                        <em>For active jobs</em>
+                      </div>
+                    </label>
+                    
+                    <label style={{ 
+                      flex: 1, 
+                      cursor: 'pointer',
+                      border: `2px solid ${trackingMode === 'shift' ? '#2196f3' : '#ddd'}`,
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      background: trackingMode === 'shift' ? '#e3f2fd' : 'white',
+                      transition: 'all 0.2s'
+                    }}>
+                      <input
+                        type="radio"
+                        name="trackingMode"
+                        value="shift"
+                        checked={trackingMode === 'shift'}
+                        onChange={(e) => setTrackingMode(e.target.value as 'live' | 'shift')}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      <strong style={{ fontSize: '0.85rem' }}>🔵 Shift Mode</strong>
+                      <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
+                        Updates every 5 min<br/>
+                        <em>Battery-friendly</em>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+              
               <div style={{ fontSize: '0.8rem', color: '#666' }}>
                 {gpsStatus.isTracking ? (
                   <>
-                    📡 Updating every 30s • {gpsStatus.updateCount} updates
+                    📡 {trackingMode === 'live' ? 'Updating every 30s' : 'Updating every 5 min'} • {gpsStatus.updateCount} updates
                     {gpsStatus.accuracy && ` • ${gpsStatus.accuracy.toFixed(0)}m accuracy`}
                   </>
                 ) : (
-                  'Enable to share your live location with team members'
+                  'Enable to share your location with team members'
                 )}
               </div>
               {gpsStatus.error && (
                 <div style={{ fontSize: '0.8rem', color: '#f44336', marginTop: '0.5rem' }}>
                   ⚠️ {gpsStatus.error}
+                </div>
+              )}
+              {gpsStatus.error && gpsStatus.error.includes('unavailable') && (
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: '#666',
+                  marginTop: '0.5rem',
+                  padding: '0.5rem',
+                  background: '#f5f5f5',
+                  borderRadius: '4px'
+                }}>
+                  💡 <strong>Tip:</strong> Desktop browsers often don't have GPS. For best results, use this feature on a mobile device or update your location manually below.
                 </div>
               )}
             </div>
