@@ -7,9 +7,9 @@ export class PgMessageRepository implements MessageRepositoryPort {
 
     async save(message: Message): Promise<void> {
         await this.pool.query(
-            `INSERT INTO messages (id, from_user_id, to_user_id, body, created_at, read_at)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [message.id, message.fromUserId, message.toUserId, message.body, message.createdAt, message.readAt]
+            `INSERT INTO messages (id, sender_id, recipient_id, content, created_at, is_read)
+             VALUES ($1, $2::uuid, $3::uuid, $4, $5, false)`,
+            [message.id, message.fromUserId, message.toUserId, message.body, message.createdAt]
         );
     }
 
@@ -20,24 +20,28 @@ export class PgMessageRepository implements MessageRepositoryPort {
         let params: any[];
 
         if (peerId) {
-            // Conversation between two users
+            // Conversation between two users (exclude soft-deleted)
             query = `
-                SELECT id, from_user_id as "fromUserId", to_user_id as "toUserId", 
-                       body, created_at as "createdAt", read_at as "readAt"
+                SELECT id, sender_id as "fromUserId", recipient_id as "toUserId", 
+                       content as body, created_at as "createdAt", 
+                       CASE WHEN is_read THEN created_at ELSE NULL END as "readAt"
                 FROM messages
-                WHERE (from_user_id = $1 AND to_user_id = $2)
-                   OR (from_user_id = $2 AND to_user_id = $1)
+                WHERE ((sender_id::text = $1 AND recipient_id::text = $2)
+                   OR (sender_id::text = $2 AND recipient_id::text = $1))
+                   AND deleted_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT $3
             `;
             params = [userId, peerId, limit];
         } else {
-            // All messages involving the user
+            // All messages involving the user (exclude soft-deleted)
             query = `
-                SELECT id, from_user_id as "fromUserId", to_user_id as "toUserId", 
-                       body, created_at as "createdAt", read_at as "readAt"
+                SELECT id, sender_id as "fromUserId", recipient_id as "toUserId", 
+                       content as body, created_at as "createdAt",
+                       CASE WHEN is_read THEN created_at ELSE NULL END as "readAt"
                 FROM messages
-                WHERE from_user_id = $1 OR to_user_id = $1
+                WHERE (sender_id::text = $1 OR recipient_id::text = $1)
+                   AND deleted_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT $2
             `;
@@ -59,11 +63,23 @@ export class PgMessageRepository implements MessageRepositoryPort {
     async markRead(messageId: string, readerId: string, at: Date): Promise<boolean> {
         const result = await this.pool.query(
             `UPDATE messages 
-             SET read_at = $1 
-             WHERE id = $2 
-             AND to_user_id = $3
-             AND read_at IS NULL`,
-            [at, messageId, readerId]
+             SET is_read = true
+             WHERE id = $1 
+             AND recipient_id::text = $2
+             AND is_read = false`,
+            [messageId, readerId]
+        );
+
+        return result.rowCount ? result.rowCount > 0 : false;
+    }
+
+    async softDelete(messageId: string): Promise<boolean> {
+        const result = await this.pool.query(
+            `UPDATE messages 
+             SET deleted_at = NOW() 
+             WHERE id = $1 
+             AND deleted_at IS NULL`,
+            [messageId]
         );
 
         return result.rowCount ? result.rowCount > 0 : false;

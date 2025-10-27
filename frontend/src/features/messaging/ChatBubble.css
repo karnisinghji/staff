@@ -4,16 +4,24 @@
 .messaging-app-container {
   display: flex;
   height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
   background-color: #f0f2f5;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
 }
 
 /* Chat List Panel (Left Side) */
 .chat-list-panel {
   width: 380px;
+  min-width: 380px;
   background-color: #ffffff;
   border-right: 1px solid #e9edef;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-list-header {
@@ -155,6 +163,8 @@
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chat-window-header {
@@ -307,6 +317,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.emoji-button svg {
+  width: 24px;
+  height: 24px;
 }
 
 .emoji-button:hover {
@@ -390,12 +408,26 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .messaging-app-container {
+    width: 100vw;
+    max-width: 100vw;
+    height: calc(100vh - 60px);
+    overflow-x: hidden;
+  }
+  
   .chat-list-panel {
     width: 100%;
+    min-width: 100%;
+    max-width: 100%;
   }
   
   .chat-list-panel.hidden-mobile {
     display: none;
+  }
+  
+  .chat-window-panel {
+    width: 100%;
+    max-width: 100%;
   }
   
   .chat-window-panel.hidden-mobile {
@@ -404,5 +436,103 @@
   
   .back-button {
     display: block;
+  }
+  
+  .chat-messages {
+    padding: 12px 8px;
+  }
+  
+  .chat-bubble {
+    max-width: 80% !important;
+  }
+  
+  .chat-input-area {
+    padding: 12px 8px;
+  }
+  
+  .message-input-container {
+    padding: 8px 12px;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .message-input {
+    min-width: 0;
+    flex: 1;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  
+  .emoji-button {
+    padding: 6px;
+    flex-shrink: 0;
+  }
+  
+  .send-button {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .messaging-app-container {
+    height: calc(100vh - 56px);
+  }
+  
+  .chat-list-header {
+    padding: 12px 8px;
+  }
+  
+  .chat-list-header h2 {
+    font-size: 20px;
+  }
+  
+  .chat-messages {
+    padding: 8px 4px;
+  }
+  
+  .chat-bubble {
+    max-width: 85% !important;
+    font-size: 14px;
+  }
+  
+  .message-input-container {
+    padding: 6px 8px;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .message-input {
+    font-size: 14px;
+    padding: 6px 8px;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .emoji-button {
+    padding: 2px;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  
+  .emoji-button svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .send-button {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  
+  .send-button svg {
+    width: 16px;
+    height: 16px;
   }
 }

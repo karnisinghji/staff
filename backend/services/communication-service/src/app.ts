@@ -176,6 +176,41 @@ export function buildApp(version: string): express.Express {
         }
     });
 
+    // Soft delete message
+    const deleteMessageParams = z.object({ id: z.string().min(1) });
+    app.delete('/messages/:id', validate({ schema: deleteMessageParams, target: 'params' }), async (req, res) => {
+        try {
+            // Get the repository from hexagon module (need to expose it)
+            // For now, directly query the database
+            const connectionString = process.env.DATABASE_URL;
+            if (!connectionString) {
+                res.status(500).json({ success: false, message: 'Database not configured' });
+                return;
+            }
+
+            const { Pool } = require('pg');
+            const pool = new Pool({
+                connectionString,
+                ssl: connectionString.includes('localhost') ? false : { rejectUnauthorized: false }
+            });
+
+            const result = await pool.query(
+                'UPDATE messages SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
+                [req.params.id]
+            );
+
+            pool.end();
+
+            if (!result.rowCount || result.rowCount === 0) {
+                res.status(404).json({ success: false, message: 'Message not found' });
+                return;
+            }
+            res.json({ success: true, message: 'Message deleted' });
+        } catch (e: any) {
+            res.status(500).json({ success: false, message: e.message || 'Failed to delete message' });
+        }
+    });
+
     // 404
     app.use((req, res) => {
         res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });

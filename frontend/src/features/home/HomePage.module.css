@@ -105,6 +105,8 @@
   .leftSection, .rightSection {
     padding: 1.5rem 1rem;
     border-radius: 12px;
+    width: 100%;
+    max-width: 100%;
   }
   .leftSection h1 {
     font-size: 1.8rem !important;

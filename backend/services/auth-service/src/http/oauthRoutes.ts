@@ -97,14 +97,38 @@ async function handleOAuthCallback(
         const accessToken = tokenSigner.signAccessToken({ sub: user.id, roles: user.roles }, '15m');
         const refreshToken = tokenSigner.signRefreshToken({ sub: user.id }, '7d');
 
-        // Redirect to frontend with tokens
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const redirectUrl = `${frontendUrl}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
+        // Detect if request is from mobile app by checking User-Agent or custom header
+        const userAgent = res.req?.get('User-Agent') || '';
+        const isMobileApp = userAgent.toLowerCase().includes('capacitor') ||
+            userAgent.toLowerCase().includes('android') ||
+            userAgent.toLowerCase().includes('comeondost');
+
+        // Use mobile deep-link for app, web URL for browser
+        let redirectUrl: string;
+        if (isMobileApp) {
+            // Mobile deep-link
+            redirectUrl = `com.comeondost.app://auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
+        } else {
+            // Web redirect
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            redirectUrl = `${frontendUrl}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
+        }
 
         res.redirect(redirectUrl);
     } catch (error: any) {
         console.error('OAuth callback handling error:', error);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        res.redirect(`${frontendUrl}/login?error=${error.message || 'oauth_failed'}`);
+
+        // Same detection for error redirect
+        const userAgent = res.req?.get('User-Agent') || '';
+        const isMobileApp = userAgent.toLowerCase().includes('capacitor') ||
+            userAgent.toLowerCase().includes('android') ||
+            userAgent.toLowerCase().includes('comeondost');
+
+        if (isMobileApp) {
+            res.redirect(`com.comeondost.app://login?error=${error.message || 'oauth_failed'}`);
+        } else {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            res.redirect(`${frontendUrl}/login?error=${error.message || 'oauth_failed'}`);
+        }
     }
 }

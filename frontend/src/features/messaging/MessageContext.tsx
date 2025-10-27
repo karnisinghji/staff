@@ -66,9 +66,11 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       console.log('✅ Sent team requests:', sentRes.data);
       console.log('✅ Chat messages:', chatMessagesRes.data);
       
-      // Transform team requests to Message format
+      // Transform team requests to Message format - ONLY ACCEPTED REQUESTS
       const receivedMessages: Message[] = receivedRes.data.success 
-        ? (receivedRes.data.data?.requests || []).map((req: any) => ({
+        ? (receivedRes.data.data?.requests || [])
+            .filter((req: any) => req.status === 'accepted')  // Only accepted requests
+            .map((req: any) => ({
             id: String(req.id),
             fromUserId: req.sender_id,
             toUserId: user.id,
@@ -83,7 +85,9 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
         : [];
       
       const sentMessages: Message[] = sentRes.data.success 
-        ? (sentRes.data.data?.requests || []).map((req: any) => ({
+        ? (sentRes.data.data?.requests || [])
+            .filter((req: any) => req.status === 'accepted')  // Only accepted requests
+            .map((req: any) => ({
             id: String(req.id),
             fromUserId: user.id,
             toUserId: req.receiver_id,

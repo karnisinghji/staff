@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { API_CONFIG } from '../../config/api';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 export const LoginPage: React.FC = () => {
   const { login, token } = useAuth();
   const navigate = useNavigate();
@@ -15,9 +17,31 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (token) {
-      navigate('/dashboard');
+      navigate('/team');
     }
   }, [token, navigate]);
+
+  const handleGoogleLogin = async () => {
+    const isNativePlatform = Capacitor.isNativePlatform();
+    const authUrl = `${API_CONFIG.AUTH_SERVICE}/google`;
+    
+    if (isNativePlatform) {
+      // Use in-app browser for mobile
+      try {
+        await Browser.open({ 
+          url: authUrl,
+          presentationStyle: 'popover'
+        });
+      } catch (error) {
+        console.error('Failed to open in-app browser:', error);
+        // Fallback to external browser
+        window.location.href = authUrl;
+      }
+    } else {
+      // Use normal redirect for web
+      window.location.href = authUrl;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +132,7 @@ export const LoginPage: React.FC = () => {
             <span>OR</span>
           </div>
           
-          <button type="button" className="social-btn google-btn" onClick={() => window.location.href = `${API_CONFIG.AUTH_SERVICE}/google`}>
+          <button type="button" className="social-btn google-btn" onClick={handleGoogleLogin}>
             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
               <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>

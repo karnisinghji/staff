@@ -7,11 +7,21 @@ function getSecret(): string {
 }
 
 export const verifyToken = (token: string): AuthUser & { id: string; role: string } => {
-    const decoded = jwt.verify(token, getSecret()) as AuthUser;
+    const decoded = jwt.verify(token, getSecret()) as any;
     // Map JWT format to expected format for backward compatibility
+    // Support both new format (sub, roles) and old format (id, role)
+    const userId = decoded.sub || decoded.id || decoded.userId;
+    const userRole = decoded.roles?.[0] || decoded.role || 'user';
+
+    if (!userId) {
+        throw new Error('Token missing user ID (expected sub or id field)');
+    }
+
     return {
         ...decoded,
-        id: decoded.sub,  // Map 'sub' to 'id' for compatibility
-        role: decoded.roles[0] || 'user'  // Use first role as primary role
+        id: userId,
+        role: userRole,
+        sub: userId,  // Ensure sub is set
+        roles: decoded.roles || [userRole]  // Ensure roles array exists
     };
 };

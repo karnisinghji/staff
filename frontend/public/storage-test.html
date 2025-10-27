@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Storage Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Auto-Login Storage Test</h1>
+    
+    <h2>Step 1: Save Token</h2>
+    <button onclick="saveToken()">Save Test Token</button>
+    <div id="saveResult" class="result"></div>
+    
+    <h2>Step 2: Read Token</h2>
+    <button onclick="readToken()">Read Token</button>
+    <div id="readResult" class="result"></div>
+    
+    <h2>Step 3: Clear Token</h2>
+    <button onclick="clearToken()">Clear Token</button>
+    <div id="clearResult" class="result"></div>
+    
+    <script>
+        function saveToken() {
+            try {
+                const testToken = 'test-token-' + Date.now();
+                localStorage.setItem('token', testToken);
+                localStorage.setItem('user', JSON.stringify({ name: 'Test User', email: 'test@example.com' }));
+                document.getElementById('saveResult').innerHTML = 
+                    '<span class="success">✅ Token saved successfully!</span><br>' +
+                    'Token: ' + testToken;
+            } catch (error) {
+                document.getElementById('saveResult').innerHTML = 
+                    '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        function readToken() {
+            try {
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                
+                if (token) {
+                    document.getElementById('readResult').innerHTML = 
+                        '<span class="success">✅ Token found!</span><br>' +
+                        'Token: ' + token + '<br>' +
+                        'User: ' + user;
+                } else {
+                    document.getElementById('readResult').innerHTML = 
+                        '<span class="error">❌ No token found in localStorage</span>';
+                }
+            } catch (error) {
+                document.getElementById('readResult').innerHTML = 
+                    '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        function clearToken() {
+            try {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                document.getElementById('clearResult').innerHTML = 
+                    '<span class="success">✅ Token cleared!</span>';
+            } catch (error) {
+                document.getElementById('clearResult').innerHTML = 
+                    '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            const existingToken = localStorage.getItem('token');
+            if (existingToken) {
+                alert('Found existing token: ' + existingToken.substring(0, 20) + '...');
+            } else {
+                alert('No existing token found');
+            }
+        };
+    </script>
+</body>
+</html>

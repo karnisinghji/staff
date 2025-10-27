@@ -11,4 +11,5 @@ export interface MessageRepositoryPort {
     save(message: Message): Promise<void>;
     list(criteria: ListMessagesCriteria): Promise<Message[]>;
     markRead(messageId: string, readerId: string, at: Date): Promise<boolean>;
+    softDelete(messageId: string): Promise<boolean>;
 }

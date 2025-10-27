@@ -6,11 +6,14 @@ import { ContactOptionsModal } from '../common/ContactOptionsModal';
 import { LocationMapModal } from '../common/LocationMapModal';
 import { LocationHistoryViewer } from './LocationHistoryViewer';
 import { TeamMapView } from './TeamMapView';
+import ModernMessagingPage from '../messaging/ModernMessagingPage';
 import { API_CONFIG } from '../../config/api';
 import { useGPSTracking } from '../../hooks/useGPSTracking';
 
 // Use production API URL
 const API_URL = `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`;
+
+type TabType = 'members' | 'messages' | 'map';
 
 interface TeamMember {
   team_member_record_id: string;
@@ -44,6 +47,7 @@ export const MyTeamPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'busy'>('all');
+  const [activeTab, setActiveTab] = useState<TabType>('messages');
   
   // Get user role from JWT token or user object
   const userRole = user?.role || user?.roles?.[0] || 'worker';
@@ -446,33 +450,97 @@ export const MyTeamPage: React.FC = () => {
       <div className="myteam-bg">
         <div className="myteam-container">
           <div className="myteam-header">My Team</div>
-          {error && (
-            <div style={{ 
-              background: '#ffebee', 
-              color: '#d32f2f', 
-              padding: '1rem', 
-              borderRadius: '8px', 
-              textAlign: 'center',
-              marginBottom: '1rem',
-              border: '1px solid #ffcdd2'
-            }}>
-              <div style={{ marginBottom: '1rem' }}>❌ {error}</div>
-              <button
-                onClick={fetchMatches}
-                style={{
-                  background: '#1976d2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                🔄 Try Again
-              </button>
-            </div>
-          )}
+          
+          {/* Tab Navigation */}
+          <div style={{ 
+            display: 'flex', 
+            borderBottom: '2px solid #e0e0e0', 
+            marginBottom: '1.5rem',
+            gap: '0.5rem'
+          }}>
+            <button
+              onClick={() => setActiveTab('members')}
+              style={{
+                flex: 1,
+                padding: '0.75rem 1rem',
+                border: 'none',
+                background: activeTab === 'members' ? '#1976d2' : 'transparent',
+                color: activeTab === 'members' ? 'white' : '#666',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontSize: '0.95rem'
+              }}
+            >
+              📋 Team Members ({matches.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('messages')}
+              style={{
+                flex: 1,
+                padding: '0.75rem 1rem',
+                border: 'none',
+                background: activeTab === 'messages' ? '#1976d2' : 'transparent',
+                color: activeTab === 'messages' ? 'white' : '#666',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontSize: '0.95rem'
+              }}
+            >
+              💬 Messages
+            </button>
+            <button
+              onClick={() => setActiveTab('map')}
+              style={{
+                flex: 1,
+                padding: '0.75rem 1rem',
+                border: 'none',
+                background: activeTab === 'map' ? '#1976d2' : 'transparent',
+                color: activeTab === 'map' ? 'white' : '#666',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontSize: '0.95rem'
+              }}
+            >
+              🗺️ Location Map
+            </button>
+          </div>
+          
+          {/* Members Tab Content */}
+          {activeTab === 'members' && (
+            <>
+              {error && (
+                <div style={{ 
+                  background: '#ffebee', 
+                  color: '#d32f2f', 
+                  padding: '1rem', 
+                  borderRadius: '8px', 
+                  textAlign: 'center',
+                  marginBottom: '1rem',
+                  border: '1px solid #ffcdd2'
+                }}>
+                  <div style={{ marginBottom: '1rem' }}>❌ {error}</div>
+                  <button
+                    onClick={fetchMatches}
+                    style={{
+                      background: '#1976d2',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    🔄 Try Again
+                  </button>
+                </div>
+              )}
           
           {/* Real-time GPS Tracking Toggle - Live & Shift Modes */}
           {isGPSSupported && (
@@ -780,8 +848,131 @@ export const MyTeamPage: React.FC = () => {
           {userRole === 'worker' && (
             <ContractorRequirementsList showContactButton={true} />
           )}
+            </>
+          )}
         </div>
       </div>
+      
+      {/* Messages Tab Content - Full Width */}
+      {activeTab === 'messages' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: '#f5f7fa',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '1rem'
+        }}>
+          {/* Header with Back Button */}
+          <div style={{
+            background: 'white',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <button
+              onClick={() => setActiveTab('members')}
+              style={{
+                background: '#1976d2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              ← Back to Team
+            </button>
+            <h2 style={{ margin: 0, color: '#1976d2', fontSize: '1.5rem', fontWeight: '700' }}>
+              💬 Team Messages
+            </h2>
+          </div>
+          
+          {/* Messaging Interface */}
+          <div style={{
+            flex: 1,
+            overflow: 'hidden',
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <ModernMessagingPage />
+          </div>
+        </div>
+      )}
+      
+      {/* Map Tab Content - Full Width */}
+      {activeTab === 'map' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: '#f5f7fa',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '1rem'
+        }}>
+          {/* Header with Back Button */}
+          <div style={{
+            background: 'white',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <button
+              onClick={() => setActiveTab('members')}
+              style={{
+                background: '#1976d2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              ← Back to Team
+            </button>
+            <h2 style={{ margin: 0, color: '#1976d2', fontSize: '1.5rem', fontWeight: '700' }}>
+              🗺️ Team Location Map
+            </h2>
+          </div>
+          
+          {/* Map Interface */}
+          <div style={{
+            flex: 1,
+            overflow: 'hidden',
+            background: 'white',
+            borderRadius: '8px'
+          }}>
+            <TeamMapView />
+          </div>
+        </div>
+      )}
       
       {/* Contact Modal */}
       {showContactModal && selectedMember && (

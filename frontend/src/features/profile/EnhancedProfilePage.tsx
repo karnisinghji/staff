@@ -776,7 +776,7 @@ const EnhancedProfilePage: React.FC = () => {
         }
         
         .profile-main {
-          background: white;
+          background: #f0f2f5;
           border-radius: 20px;
           padding: 2rem;
           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
@@ -1043,38 +1043,64 @@ const EnhancedProfilePage: React.FC = () => {
         .form-label {
           display: block;
           font-weight: 600;
-          color: #2d3748;
+          color: #111b21;
           margin-bottom: 0.5rem;
-          font-size: 0.9em;
+          font-size: 14px;
         }
         
         .form-input {
           width: 100%;
-          padding: 0.75rem 1rem;
-          border: 2px solid #e2e8f0;
+          padding: 10px 16px;
+          border: none;
           border-radius: 8px;
-          font-size: 1rem;
-          color: #000;
-          transition: all 0.3s ease;
-          background: #f7fafc;
+          font-size: 15px;
+          color: #111b21;
+          transition: all 0.2s ease;
+          background: #ffffff;
+          box-sizing: border-box;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
         
         .form-input:focus {
           outline: none;
-          border-color: #667eea;
-          background: white;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          background: #ffffff;
+          box-shadow: 0 0 0 2px #00a884, 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-input:disabled {
+          background: #f0f2f5;
+          color: #8696a0;
+          cursor: not-allowed;
+        }
+        
+        .form-input::placeholder {
+          color: #8696a0;
         }
         
         .form-textarea {
           min-height: 100px;
           resize: vertical;
+          font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+          line-height: 1.6;
+          padding: 12px 16px;
         }
         
         .form-error {
           color: #e53e3e;
           font-size: 0.8em;
           margin-top: 0.25rem;
+        }
+        
+        select.form-input {
+          background: #ffffff;
+          cursor: pointer;
+          padding-right: 40px;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667781' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
         }
         
         .save-button {
@@ -1126,21 +1152,101 @@ const EnhancedProfilePage: React.FC = () => {
         }
         
         @media (max-width: 768px) {
+          .enhanced-profile {
+            padding: 1rem 0;
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+          }
+          
           .profile-container {
             grid-template-columns: 1fr;
             gap: 1rem;
+            width: 100%;
+            max-width: 100%;
+            padding: 0 0.5rem;
+            box-sizing: border-box;
           }
           
           .profile-sidebar {
             position: static;
+            padding: 1.5rem;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          
+          .profile-main {
+            padding: 1.5rem;
+            width: 100%;
+            box-sizing: border-box;
           }
           
           .form-grid {
             grid-template-columns: 1fr;
           }
           
+          .avatar {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .section-title {
+            font-size: 1.3em;
+          }
+          
+          input.form-input, textarea.form-input, select.form-input {
+            font-size: 15px;
+            padding: 10px 14px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          
+          textarea.form-input {
+            min-height: 120px;
+            padding: 12px 14px;
+          }
+        }
+        
+        @media (max-width: 480px) {
           .enhanced-profile {
-            padding: 1rem 0.5rem;
+            padding: 0.5rem 0;
+          }
+          
+          .profile-container {
+            padding: 0 0.25rem;
+          }
+          
+          .profile-sidebar, .profile-main {
+            padding: 1rem;
+            border-radius: 12px;
+          }
+          
+          .avatar {
+            width: 80px;
+            height: 80px;
+          }
+          
+          .form-group {
+            margin-bottom: 1rem;
+          }
+          
+          input.form-input, textarea.form-input, select.form-input {
+            font-size: 15px;
+            padding: 10px 12px;
+          }
+          
+          textarea.form-input {
+            padding: 12px 12px;
+          }
+          
+          .section-tabs {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .tab-button {
+            padding: 0.625rem 1rem;
+            font-size: 0.9em;
           }
         }
       `}</style>

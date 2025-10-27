@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Come On Dost</string>
+    <string name="title_activity_main">Come On Dost</string>
+    <string name="package_name">com.comeondost.app</string>
+    <string name="custom_url_scheme">com.comeondost.app</string>
+</resources>

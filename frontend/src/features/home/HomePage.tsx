@@ -23,6 +23,79 @@ export const HomePage: React.FC = () => (
         <Link to="/messages"><button style={{ padding: '0.85rem 2.2rem', fontSize: '1.08rem', borderRadius: 10, border: 'none', background: '#a5a58d', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #a5a58d22', cursor: 'pointer', transition: 'background 0.2s' }}>Messages</button></Link>
   {/* <Link to="/saved"><button style={{ padding: '0.85rem 2.2rem', fontSize: '1.08rem', borderRadius: 10, border: 'none', background: '#e9d8a6', color: '#222', fontWeight: 600, boxShadow: '0 2px 8px #e9d8a622', cursor: 'pointer', transition: 'background 0.2s' }}>My Team</button></Link> */}
       </div>
+
+      {/* Mobile App Download Section */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)', 
+        borderRadius: 12, 
+        padding: '1.5rem', 
+        marginTop: 32, 
+        textAlign: 'center',
+        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.2)'
+      }}>
+        <div style={{ marginBottom: 12 }}>
+          <svg 
+            width="48" 
+            height="48" 
+            viewBox="0 0 24 24" 
+            fill="white" 
+            style={{ marginBottom: 8 }}
+          >
+            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+          </svg>
+        </div>
+        <h3 style={{ color: 'white', fontSize: '1.4rem', fontWeight: 700, marginBottom: 8 }}>
+          📱 Download Android App
+        </h3>
+        <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', marginBottom: 16 }}>
+          Get the full mobile experience with our native Android app
+        </p>
+        <a 
+          href="https://drive.google.com/file/d/12EOEB6wReqYnkBWrrBLN6Gcdq1cD6S6S/view?usp=sharing" 
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ 
+            display: 'inline-block',
+            textDecoration: 'none'
+          }}
+        >
+          <button style={{ 
+            padding: '0.9rem 2.5rem', 
+            fontSize: '1.1rem', 
+            borderRadius: 10, 
+            border: '2px solid white', 
+            background: 'white', 
+            color: '#25D366', 
+            fontWeight: 700, 
+            boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)', 
+            cursor: 'pointer', 
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            margin: '0 auto'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+            </svg>
+            Download APK (9.3 MB)
+          </button>
+        </a>
+        <div style={{ 
+          marginTop: 12, 
+          padding: '8px 12px', 
+          background: 'rgba(255, 255, 255, 0.2)', 
+          borderRadius: 8,
+          fontSize: '0.85rem',
+          color: 'white'
+        }}>
+          <strong>📥 How to Download:</strong><br/>
+          1. Click "Download" button above<br/>
+          2. On Google Drive page, click the download icon (⬇️) at top-right<br/>
+          3. Enable "Install from Unknown Sources" in Android settings<br/>
+          <em>Note: Google may show a virus scan warning - click "Download anyway". This is normal for APK files.</em>
+        </div>
+      </div>
     </div>
 
     {/* Right: Images */}

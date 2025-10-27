@@ -25,4 +25,12 @@ export class InMemoryMessageRepository implements MessageRepositoryPort {
         msg.readAt = at;
         return true;
     }
+
+    async softDelete(messageId: string): Promise<boolean> {
+        const index = this.messages.findIndex(m => m.id === messageId);
+        if (index === -1) return false;
+        // In memory, we just remove it (or could add a deletedAt field)
+        this.messages.splice(index, 1);
+        return true;
+    }
 }

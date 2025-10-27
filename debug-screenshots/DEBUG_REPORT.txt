@@ -1,0 +1,64 @@
+============================================
+EMULATOR DEBUG REPORT
+============================================
+Date: Mon Oct 27 08:01:05 IST 2025
+Device: sdk_gphone64_x86_64
+Android Version: 13
+App Package: com.comeondost.app
+
+============================================
+SCREENS TESTED
+============================================
+01. Home Page (Logged Out)
+02. Login Page
+03. Dashboard
+04. Profile Page
+05. Search/Matching Page
+06. Messages List
+07. Chat Window
+08. Message Input Area (CRITICAL FIX)
+09. Team/Saved Matches Page
+10. Status/Availability Page
+11. Navigation Bar
+12. Auto-Login Test
+13. Notification Permission
+
+============================================
+CRITICAL FIXES TESTED
+============================================
+1. Message Input Rendering
+   - Emoji button size (should be 32px)
+   - Text input full width
+   - Send button visible
+   - No horizontal scroll
+
+2. Profile Page Mobile
+   - Full width on mobile
+   - No overflow
+   - Responsive layout
+   - Scrollable content
+
+3. Auto-Login
+   - Session persistence
+   - Direct to dashboard
+   - No repeated login
+
+============================================
+FILES GENERATED
+============================================
+- 15+ screenshots in PNG format
+- Error logs for each screen
+- Memory usage report
+- CPU usage report
+- This debug report
+
+============================================
+NEXT STEPS
+============================================
+1. Review all screenshots for visual issues
+2. Check error logs for JavaScript errors
+3. Verify responsive behavior on different screen sizes
+4. Test on real device if possible
+5. Upload updated APK to Google Drive
+
+============================================

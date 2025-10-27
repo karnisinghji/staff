@@ -38,8 +38,8 @@ export const OAuthCallback: React.FC = () => {
         // Use AuthContext login (token, user)
         login(accessToken, userObj);
         
-        // Redirect to dashboard
-        navigate('/dashboard');
+        // Redirect to My Team page
+        navigate('/saved');
       } catch (err) {
         console.error('OAuth callback error:', err);
         setError('Failed to complete authentication. Please try again.');
