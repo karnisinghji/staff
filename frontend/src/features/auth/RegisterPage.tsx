@@ -5,7 +5,6 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { API_CONFIG } from '../../config/api';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 export const RegisterPage: React.FC = () => {
   const { token } = useAuth();
@@ -27,22 +26,8 @@ export const RegisterPage: React.FC = () => {
     // Add platform parameter to identify mobile app
     const authUrl = `${API_CONFIG.AUTH_SERVICE}/google${isNativePlatform ? '?platform=mobile' : ''}`;
     
-    if (isNativePlatform) {
-      // Use in-app browser for mobile
-      try {
-        await Browser.open({ 
-          url: authUrl,
-          presentationStyle: 'popover'
-        });
-      } catch (error) {
-        console.error('Failed to open in-app browser:', error);
-        // Fallback to external browser
-        window.location.href = authUrl;
-      }
-    } else {
-      // Use normal redirect for web
-      window.location.href = authUrl;
-    }
+    // Use standard redirect for both web and mobile
+    window.location.href = authUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

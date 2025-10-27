@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { API_CONFIG } from '../../config/api';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 export const LoginPage: React.FC = () => {
   const { login, token } = useAuth();
   const navigate = useNavigate();
@@ -23,25 +22,15 @@ export const LoginPage: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     const isNativePlatform = Capacitor.isNativePlatform();
+    console.log('[handleGoogleLogin] isNativePlatform:', isNativePlatform);
+    
     // Add platform parameter to identify mobile app
     const authUrl = `${API_CONFIG.AUTH_SERVICE}/google${isNativePlatform ? '?platform=mobile' : ''}`;
+    console.log('[handleGoogleLogin] authUrl:', authUrl);
     
-    if (isNativePlatform) {
-      // Use in-app browser for mobile
-      try {
-        await Browser.open({ 
-          url: authUrl,
-          presentationStyle: 'popover'
-        });
-      } catch (error) {
-        console.error('Failed to open in-app browser:', error);
-        // Fallback to external browser
-        window.location.href = authUrl;
-      }
-    } else {
-      // Use normal redirect for web
-      window.location.href = authUrl;
-    }
+    // Use standard redirect for both web and mobile
+    // The OAuth callback page will handle closing the browser on mobile
+    window.location.href = authUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

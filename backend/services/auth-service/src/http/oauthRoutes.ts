@@ -12,19 +12,10 @@ export function createOAuthRoutes() {
     const tokenSigner = new JwtTokenSigner();
 
     // Google OAuth
-    router.get('/google', (req, res, next) => {
-        // Pass platform info via state parameter (survives OAuth redirect)
-        const platform = req.query.platform === 'mobile' ? 'mobile' : 'web';
-        const state = Buffer.from(JSON.stringify({ platform })).toString('base64');
-
-        passport.authenticate('google', {
-            scope: ['profile', 'email'],
-            session: false,
-            state: state
-        })(req, res, next);
-    });
-
-    router.get('/google/callback',
+    router.get('/google', passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        session: false
+    }));    router.get('/google/callback',
         passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
         async (req, res) => {
             try {
@@ -104,50 +95,15 @@ async function handleOAuthCallback(
         const accessToken = tokenSigner.signAccessToken({ sub: user.id, roles: user.roles }, '15m');
         const refreshToken = tokenSigner.signRefreshToken({ sub: user.id }, '7d');
 
-        // Extract platform from state parameter (survives OAuth redirect)
-        let isMobileApp = false;
-        try {
-            const stateParam = res.req?.query?.state as string;
-            if (stateParam) {
-                const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString());
-                isMobileApp = decoded.platform === 'mobile';
-            }
-        } catch (e) {
-            console.warn('Failed to parse OAuth state:', e);
-        }
-
-        // Use mobile deep-link for app, web URL for browser
-        let redirectUrl: string;
-        if (isMobileApp) {
-            // Mobile deep-link
-            redirectUrl = `com.comeondost.app://auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
-        } else {
-            // Web redirect
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            redirectUrl = `${frontendUrl}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
-        }
+        // Always redirect to HTTPS callback URL (works for both web and mobile)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const redirectUrl = `${frontendUrl}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
 
         res.redirect(redirectUrl);
     } catch (error: any) {
         console.error('OAuth callback handling error:', error);
-
-        // Extract platform from state parameter for error redirect
-        let isMobileApp = false;
-        try {
-            const stateParam = res.req?.query?.state as string;
-            if (stateParam) {
-                const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString());
-                isMobileApp = decoded.platform === 'mobile';
-            }
-        } catch (e) {
-            // Ignore
-        }
-
-        if (isMobileApp) {
-            res.redirect(`com.comeondost.app://login?error=${error.message || 'oauth_failed'}`);
-        } else {
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            res.redirect(`${frontendUrl}/login?error=${error.message || 'oauth_failed'}`);
-        }
+        
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/login?error=${error.message || 'oauth_failed'}`);
     }
 }
