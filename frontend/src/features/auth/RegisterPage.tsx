@@ -5,9 +5,11 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { API_CONFIG } from '../../config/api';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 
 export const RegisterPage: React.FC = () => {
-  const { token } = useAuth();
+  const { token, login } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
     if (token) {
@@ -23,11 +25,48 @@ export const RegisterPage: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     const isNativePlatform = Capacitor.isNativePlatform();
-    // Add platform parameter to identify mobile app
     const authUrl = `${API_CONFIG.AUTH_SERVICE}/google${isNativePlatform ? '?platform=mobile' : ''}`;
     
-    // Use standard redirect for both web and mobile
-    window.location.href = authUrl;
+    if (isNativePlatform) {
+      // On mobile: Use Capacitor Browser with deep link handling
+      console.log('[RegisterPage] Opening OAuth in Capacitor Browser');
+      
+      const handleAppUrlOpen = (event: any) => {
+        const url = event.url;
+        console.log('[RegisterPage] Deep link received:', url);
+        
+        if (url.includes('/auth/callback') || url.includes('access_token')) {
+          console.log('[RegisterPage] OAuth callback detected, closing browser');
+          Browser.close();
+          
+          try {
+            const urlObj = new URL(url);
+            const accessToken = urlObj.searchParams.get('access_token');
+            const refreshToken = urlObj.searchParams.get('refresh_token');
+            const userId = urlObj.searchParams.get('user_id');
+            
+            if (accessToken && refreshToken && userId) {
+              localStorage.setItem('refreshToken', refreshToken);
+              const userObj = { id: userId };
+              login(accessToken, userObj);
+              navigate('/team');
+            }
+          } catch (err) {
+            console.error('[RegisterPage] Error parsing callback URL:', err);
+          }
+        }
+      };
+      
+      const listener = await App.addListener('appUrlOpen', handleAppUrlOpen);
+      await Browser.open({ 
+        url: authUrl,
+        presentationStyle: 'popover'
+      });
+      
+      setTimeout(() => listener.remove(), 300000);
+    } else {
+      window.location.href = authUrl;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

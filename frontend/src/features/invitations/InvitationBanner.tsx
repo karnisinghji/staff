@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { API_CONFIG } from '../../config/api';
 
 interface InvitationInfo {
   valid: boolean;
@@ -37,7 +38,7 @@ const InvitationBanner: React.FC<InvitationBannerProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(`/api/invitations/${inviteCode}/validate`);
+      const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/invitations/${inviteCode}/validate`);
       const data = await response.json();
 
       if (response.ok && data.success) {

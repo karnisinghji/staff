@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 
 export const OAuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -38,8 +40,34 @@ export const OAuthCallback: React.FC = () => {
         // Use AuthContext login (token, user)
         login(accessToken, userObj);
         
-        // Redirect to My Team page
-        navigate('/saved');
+        // On mobile, close the browser and return to app
+        if (Capacitor.isNativePlatform()) {
+          console.log('[OAuthCallback] Mobile platform detected - closing browser and returning to app');
+          
+          // Give a moment for tokens to save
+          setTimeout(() => {
+            // Try to close the window (this will close the Chrome Custom Tab)
+            window.close();
+            
+            // Also try to navigate back to the app using deep link
+            // This ensures we return to the app even if window.close() doesn't work
+            const appUrl = 'comeondost://team';
+            window.location.href = appUrl;
+            
+            // Fallback: Use Capacitor App plugin to bring app to foreground
+            App.getState().then(state => {
+              if (!state.isActive) {
+                // App is in background, try to bring it forward
+                console.log('[OAuthCallback] App in background, attempting to activate');
+              }
+            }).catch(err => {
+              console.error('[OAuthCallback] Error checking app state:', err);
+            });
+          }, 500);
+        } else {
+          // On web, just navigate normally
+          navigate('/saved');
+        }
       } catch (err) {
         console.error('OAuth callback error:', err);
         setError('Failed to complete authentication. Please try again.');

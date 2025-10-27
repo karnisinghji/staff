@@ -89,53 +89,96 @@ const RouterNavigatorInjector: React.FC = () => {
 // Small component to listen for app URL opens (deep links) on native platforms
 const AppUrlListener: React.FC = () => {
   const navigate = (window as any).reactRouterNavigate;
-  // If reactRouterNavigate is not injected, we'll add a runtime no-op
+  const { login } = useAuth();
+  
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    try {
-      const handler = (data: any) => {
-        try {
-          const url = data.url as string;
-          console.log('[AppUrlListener] appUrlOpen:', url);
-          // Attempt to parse and route to the internal path
-          // For Capacitor deep links the URL may be like: com.app.scheme://auth/callback?code=...
-          // Use a fallback strategy to extract path+search
-          let pathAndSearch = '/';
+    
+    const handler = async (data: any) => {
+      try {
+        const url = data.url as string;
+        console.log('[AppUrlListener] Deep link received:', url);
+        
+        // Check if this is an OAuth callback with tokens
+        if (url.includes('/auth/callback') && url.includes('access_token')) {
+          console.log('[AppUrlListener] OAuth callback detected');
+          
+          // Parse the URL to extract tokens
           try {
-            const parsed = new URL(url);
-            pathAndSearch = parsed.pathname + (parsed.search || '');
-          } catch (err) {
-            // If URL constructor fails (custom schemes), try manual parsing
-            const idx = url.indexOf('://');
-            const after = idx >= 0 ? url.slice(idx + 3) : url;
-            const firstSlash = after.indexOf('/');
-            if (firstSlash >= 0) {
-              pathAndSearch = after.slice(firstSlash);
-            } else {
-              pathAndSearch = '/';
+            // Handle custom scheme URLs (comeondost://auth/callback?...)
+            const urlToParse = url.replace('comeondost://', 'https://dummy.com/');
+            const parsed = new URL(urlToParse);
+            
+            const accessToken = parsed.searchParams.get('access_token');
+            const refreshToken = parsed.searchParams.get('refresh_token');
+            const userId = parsed.searchParams.get('user_id');
+            
+            if (accessToken && refreshToken && userId) {
+              console.log('[AppUrlListener] Tokens found, logging in');
+              
+              // Close browser if still open
+              try {
+                const { Browser } = await import('@capacitor/browser');
+                await Browser.close();
+              } catch (e) {
+                console.log('[AppUrlListener] Browser already closed or not available');
+              }
+              
+              // Store refresh token
+              localStorage.setItem('refreshToken', refreshToken);
+              
+              // Login user
+              const userObj = { id: userId };
+              login(accessToken, userObj);
+              
+              // Navigate to team page
+              if (typeof navigate === 'function') {
+                navigate('/team');
+              } else {
+                window.location.href = '/team';
+              }
+              
+              return; // Exit early for OAuth callback
             }
+          } catch (err) {
+            console.error('[AppUrlListener] Error parsing OAuth callback:', err);
           }
-
-          // If we discovered the navigate function, use it.
-          if (typeof navigate === 'function') {
-            navigate(pathAndSearch);
-          } else {
-            // As a fallback, set window.location to route within webview
-            window.location.href = pathAndSearch;
-          }
-        } catch (e) {
-          console.error('[AppUrlListener] handler error', e);
         }
-      };
+        
+        // For non-OAuth deep links, route to the path
+        let pathAndSearch = '/';
+        try {
+          const parsed = new URL(url);
+          pathAndSearch = parsed.pathname + (parsed.search || '');
+        } catch (err) {
+          // If URL constructor fails (custom schemes), try manual parsing
+          const idx = url.indexOf('://');
+          const after = idx >= 0 ? url.slice(idx + 3) : url;
+          const firstSlash = after.indexOf('/');
+          if (firstSlash >= 0) {
+            pathAndSearch = after.slice(firstSlash);
+          } else {
+            pathAndSearch = '/';
+          }
+        }
 
-      const listener = CapacitorApp.addListener('appUrlOpen', handler);
-      return () => {
-        try { listener.remove(); } catch (e) {}
-      };
-    } catch (e) {
-      console.warn('[AppUrlListener] could not register listener', e);
-    }
-  }, []);
+        // Navigate to the path
+        if (typeof navigate === 'function') {
+          navigate(pathAndSearch);
+        } else {
+          window.location.href = pathAndSearch;
+        }
+      } catch (e) {
+        console.error('[AppUrlListener] handler error', e);
+      }
+    };
+
+    const listener = CapacitorApp.addListener('appUrlOpen', handler);
+    return () => {
+      try { listener.remove(); } catch (e) {}
+    };
+  }, [navigate, login]);
+  
   return null;
 };
 

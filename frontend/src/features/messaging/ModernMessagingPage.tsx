@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useMessages } from './MessageContext';
 import { useNavigate } from 'react-router-dom';
+import { API_CONFIG } from '../../config/api';
 import './ChatBubble.css';
 
 interface Conversation {
@@ -56,7 +57,7 @@ const ModernMessagingPage: React.FC = () => {
     
     const fetchTeam = async () => {
       try {
-        const response = await fetch('https://matching-service-production.up.railway.app/api/matching/my-team', {
+        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -225,7 +226,7 @@ const ModernMessagingPage: React.FC = () => {
     
     setLoadingTeam(true);
     try {
-      const response = await fetch('https://matching-service-production.up.railway.app/api/matching/my-team', {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -289,7 +290,7 @@ const ModernMessagingPage: React.FC = () => {
       setChatMessages(prev => prev.filter(msg => msg.id !== messageId));
 
       // Call backend to soft delete
-      const response = await fetch(`https://communication-service-production-c165.up.railway.app/messages/${messageId}`, {
+      const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

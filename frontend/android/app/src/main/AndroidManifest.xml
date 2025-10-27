@@ -25,8 +25,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 
-                <!-- Custom scheme for OAuth -->
+                <!-- Custom scheme for OAuth and app navigation -->
                 <data android:scheme="com.comeondost.app" />
+                <data android:scheme="comeondost" />
                 
                 <!-- HTTPS deep links -->
                 <data android:scheme="https" 
