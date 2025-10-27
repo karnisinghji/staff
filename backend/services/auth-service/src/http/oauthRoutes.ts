@@ -12,10 +12,16 @@ export function createOAuthRoutes() {
     const tokenSigner = new JwtTokenSigner();
 
     // Google OAuth
-    router.get('/google', passport.authenticate('google', {
-        scope: ['profile', 'email'],
-        session: false
-    }));
+    router.get('/google', (req, res, next) => {
+        // Store platform query param in session/cookie for callback
+        if (req.query.platform === 'mobile') {
+            res.cookie('oauth_platform', 'mobile', { httpOnly: true, maxAge: 600000 }); // 10 min
+        }
+        passport.authenticate('google', {
+            scope: ['profile', 'email'],
+            session: false
+        })(req, res, next);
+    });
 
     router.get('/google/callback',
         passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
@@ -97,11 +103,11 @@ async function handleOAuthCallback(
         const accessToken = tokenSigner.signAccessToken({ sub: user.id, roles: user.roles }, '15m');
         const refreshToken = tokenSigner.signRefreshToken({ sub: user.id }, '7d');
 
-        // Detect if request is from mobile app by checking User-Agent or custom header
-        const userAgent = res.req?.get('User-Agent') || '';
-        const isMobileApp = userAgent.toLowerCase().includes('capacitor') ||
-            userAgent.toLowerCase().includes('android') ||
-            userAgent.toLowerCase().includes('comeondost');
+        // Check if this is a mobile app OAuth flow (from cookie set in initial request)
+        const isMobileApp = res.req?.cookies?.oauth_platform === 'mobile';
+
+        // Clear the platform cookie
+        res.clearCookie('oauth_platform');
 
         // Use mobile deep-link for app, web URL for browser
         let redirectUrl: string;
@@ -118,11 +124,9 @@ async function handleOAuthCallback(
     } catch (error: any) {
         console.error('OAuth callback handling error:', error);
 
-        // Same detection for error redirect
-        const userAgent = res.req?.get('User-Agent') || '';
-        const isMobileApp = userAgent.toLowerCase().includes('capacitor') ||
-            userAgent.toLowerCase().includes('android') ||
-            userAgent.toLowerCase().includes('comeondost');
+        // Check mobile platform from cookie
+        const isMobileApp = res.req?.cookies?.oauth_platform === 'mobile';
+        res.clearCookie('oauth_platform');
 
         if (isMobileApp) {
             res.redirect(`com.comeondost.app://login?error=${error.message || 'oauth_failed'}`);

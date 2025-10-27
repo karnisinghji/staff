@@ -24,7 +24,8 @@ export const RegisterPage: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     const isNativePlatform = Capacitor.isNativePlatform();
-    const authUrl = `${API_CONFIG.AUTH_SERVICE}/google`;
+    // Add platform parameter to identify mobile app
+    const authUrl = `${API_CONFIG.AUTH_SERVICE}/google${isNativePlatform ? '?platform=mobile' : ''}`;
     
     if (isNativePlatform) {
       // Use in-app browser for mobile

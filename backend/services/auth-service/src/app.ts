@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import passport from './config/passport';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -83,6 +84,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
     // Cast due to potential duplicate @types/express versions across service and shared packages
     app.use(requestContextMiddleware as any);
     app.use(express.json());
+    app.use(cookieParser()); // Enable cookie parsing for OAuth platform detection
     // Apply shared security defaults (helmet + rate limiter) enabling trust proxy for rate limiting when behind proxy
     applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
 
