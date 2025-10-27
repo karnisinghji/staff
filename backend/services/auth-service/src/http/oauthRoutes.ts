@@ -13,13 +13,14 @@ export function createOAuthRoutes() {
 
     // Google OAuth
     router.get('/google', (req, res, next) => {
-        // Store platform query param in session/cookie for callback
-        if (req.query.platform === 'mobile') {
-            res.cookie('oauth_platform', 'mobile', { httpOnly: true, maxAge: 600000 }); // 10 min
-        }
+        // Pass platform info via state parameter (survives OAuth redirect)
+        const platform = req.query.platform === 'mobile' ? 'mobile' : 'web';
+        const state = Buffer.from(JSON.stringify({ platform })).toString('base64');
+
         passport.authenticate('google', {
             scope: ['profile', 'email'],
-            session: false
+            session: false,
+            state: state
         })(req, res, next);
     });
 
@@ -103,11 +104,17 @@ async function handleOAuthCallback(
         const accessToken = tokenSigner.signAccessToken({ sub: user.id, roles: user.roles }, '15m');
         const refreshToken = tokenSigner.signRefreshToken({ sub: user.id }, '7d');
 
-        // Check if this is a mobile app OAuth flow (from cookie set in initial request)
-        const isMobileApp = res.req?.cookies?.oauth_platform === 'mobile';
-
-        // Clear the platform cookie
-        res.clearCookie('oauth_platform');
+        // Extract platform from state parameter (survives OAuth redirect)
+        let isMobileApp = false;
+        try {
+            const stateParam = res.req?.query?.state as string;
+            if (stateParam) {
+                const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString());
+                isMobileApp = decoded.platform === 'mobile';
+            }
+        } catch (e) {
+            console.warn('Failed to parse OAuth state:', e);
+        }
 
         // Use mobile deep-link for app, web URL for browser
         let redirectUrl: string;
@@ -124,9 +131,17 @@ async function handleOAuthCallback(
     } catch (error: any) {
         console.error('OAuth callback handling error:', error);
 
-        // Check mobile platform from cookie
-        const isMobileApp = res.req?.cookies?.oauth_platform === 'mobile';
-        res.clearCookie('oauth_platform');
+        // Extract platform from state parameter for error redirect
+        let isMobileApp = false;
+        try {
+            const stateParam = res.req?.query?.state as string;
+            if (stateParam) {
+                const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString());
+                isMobileApp = decoded.platform === 'mobile';
+            }
+        } catch (e) {
+            // Ignore
+        }
 
         if (isMobileApp) {
             res.redirect(`com.comeondost.app://login?error=${error.message || 'oauth_failed'}`);
