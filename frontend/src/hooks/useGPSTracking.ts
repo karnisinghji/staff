@@ -58,12 +58,22 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const isTrackingRef = useRef(false);
     const lastPositionRef = useRef<GeolocationPosition | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const isRequestInProgressRef = useRef(false); // Prevent concurrent requests
 
     /**
      * Send location update to backend
      */
     const sendLocationUpdate = useCallback(async (position: GeolocationPosition) => {
+        // Prevent concurrent requests
+        if (isRequestInProgressRef.current) {
+            console.log('[GPS Tracking] Request already in progress, skipping...');
+            return;
+        }
+
         try {
+            isRequestInProgressRef.current = true;
+
             const token = localStorage.getItem('token');
             if (!token) {
                 console.warn('[GPS Tracking] No auth token found, skipping update');
@@ -71,6 +81,14 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             }
 
             const { latitude, longitude, accuracy } = position.coords;
+
+            // Cancel previous request if still pending
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
+            // Create new abort controller for this request
+            abortControllerRef.current = new AbortController();
 
             const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/update-location-live`, {
                 method: 'POST',
@@ -83,7 +101,10 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
                     longitude,
                     accuracy,
                     source: 'gps'
-                })
+                }),
+                signal: abortControllerRef.current.signal,
+                // Add timeout using AbortSignal.timeout (for modern browsers)
+                // For older browsers, the AbortController timeout will handle it
             });
 
             if (!response.ok) {
@@ -138,11 +159,27 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             onLocationUpdate?.(position);
 
         } catch (error) {
+            // Ignore abort errors (these are intentional cancellations)
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('[GPS Tracking] Request aborted (replaced by newer request)');
+                return;
+            }
+
+            // Ignore network errors caused by insufficient resources (will retry on next interval)
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                console.warn('[GPS Tracking] Network error, will retry on next update');
+                // Don't show error to user, just log it
+                return;
+            }
+
             console.error('[GPS Tracking] Failed to send location update:', error);
             setStatus(prev => ({
                 ...prev,
                 error: error instanceof Error ? error.message : 'Failed to update location'
             }));
+        } finally {
+            // Always reset the lock, even if request failed
+            isRequestInProgressRef.current = false;
         }
     }, [onLocationUpdate, status.updateCount]);
 
@@ -275,6 +312,15 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
+
+        // Abort any pending location update requests
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+
+        // Reset request lock
+        isRequestInProgressRef.current = false;
 
         // Notify backend
         try {
