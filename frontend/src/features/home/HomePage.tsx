@@ -51,7 +51,7 @@ export const HomePage: React.FC = () => (
           Get the full mobile experience with our native Android app
         </p>
         <a 
-          href="https://drive.google.com/file/d/12EOEB6wReqYnkBWrrBLN6Gcdq1cD6S6S/view?usp=sharing" 
+          href="https://drive.google.com/uc?export=download&id=1D6fAn60m3VwsqcVgWT-DUYKML7YHhAho" 
           target="_blank"
           rel="noopener noreferrer"
           style={{ 
@@ -78,7 +78,7 @@ export const HomePage: React.FC = () => (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
             </svg>
-            Download APK (9.3 MB)
+            Download APK (18 MB)
           </button>
         </a>
         <div style={{ 
@@ -89,11 +89,13 @@ export const HomePage: React.FC = () => (
           fontSize: '0.85rem',
           color: 'white'
         }}>
-          <strong>📥 How to Download:</strong><br/>
-          1. Click "Download" button above<br/>
-          2. On Google Drive page, click the download icon (⬇️) at top-right<br/>
-          3. Enable "Install from Unknown Sources" in Android settings<br/>
-          <em>Note: Google may show a virus scan warning - click "Download anyway". This is normal for APK files.</em>
+          <strong>📥 How to Install:</strong><br/>
+          1. Click "Download APK" button above<br/>
+          2. File will download directly (18 MB)<br/>
+          3. Open the downloaded APK file<br/>
+          4. Enable "Install from Unknown Sources" if prompted<br/>
+          5. Tap "Install" to complete<br/>
+          <em>Note: If Google Drive shows a virus scan warning, click "Download anyway". This is normal for APK files not from Play Store.</em>
         </div>
       </div>
     </div>
