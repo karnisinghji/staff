@@ -12,10 +12,19 @@ export function createOAuthRoutes() {
     const tokenSigner = new JwtTokenSigner();
 
     // Google OAuth
-    router.get('/google', passport.authenticate('google', {
-        scope: ['profile', 'email'],
-        session: false
-    })); router.get('/google/callback',
+    router.get('/google', (req, res, next) => {
+        // Store platform parameter in session-like storage (query param will be preserved)
+        const platform = req.query.platform;
+        if (platform === 'mobile') {
+            // For mobile, we'll check this in callback
+            req.query.state = 'mobile'; // Use state parameter to pass platform info
+        }
+        passport.authenticate('google', {
+            scope: ['profile', 'email'],
+            session: false,
+            state: platform === 'mobile' ? 'mobile' : undefined
+        })(req, res, next);
+    }); router.get('/google/callback',
         passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
         async (req, res) => {
             try {
@@ -95,18 +104,23 @@ async function handleOAuthCallback(
         const accessToken = tokenSigner.signAccessToken({ sub: user.id, roles: user.roles }, '15m');
         const refreshToken = tokenSigner.signRefreshToken({ sub: user.id }, '7d');
 
-        // Detect if request is from mobile app by checking User-Agent
+        // Detect if request is from mobile app
+        // Check: 1) Query parameter from initial request, 2) User-Agent, 3) State parameter
         const userAgent = res.req?.get('User-Agent') || '';
-        const isMobileApp = userAgent.toLowerCase().includes('capacitor') ||
-            userAgent.toLowerCase().includes('android') ||
+        const platformQuery = res.req?.query?.platform;
+        const stateParam = res.req?.query?.state;
+        
+        const isMobileApp = platformQuery === 'mobile' ||
+            stateParam === 'mobile' ||
+            userAgent.toLowerCase().includes('capacitor') ||
             userAgent.toLowerCase().includes('comeondost');
 
-        // Use mobile deep-link for app, web URL for browser
+        // ALWAYS use deep-link for mobile to ensure app opens
         let redirectUrl: string;
         if (isMobileApp) {
-            // Mobile deep-link
+            // Mobile deep-link - this will open the app
             redirectUrl = `com.comeondost.app://auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}&user_id=${user.id}`;
-            console.log('[OAuth] Mobile app detected, redirecting to deep link:', redirectUrl);
+            console.log('[OAuth] Mobile platform detected, redirecting to deep link:', redirectUrl);
         } else {
             // Web redirect
             const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
