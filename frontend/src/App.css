@@ -1,13 +1,14 @@
-
+/* Production-ready App Styles */
 
 body {
-  background: #f5ecd6 !important;
+  background: #f7fafc !important;
   margin: 0;
   padding: 0;
   min-height: 100vh;
   overflow-x: hidden;
   width: 100%;
   box-sizing: border-box;
+  color: #1a1a1a;
 }
 
 #root {
@@ -17,9 +18,9 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  font-size: 1.15rem;
+  font-size: 1rem;
   line-height: 1.6;
-  background: #f5ecd6;
+  background: #f7fafc;
   box-sizing: border-box;
   overflow-x: hidden;
   display: flex;

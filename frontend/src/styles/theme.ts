@@ -1,77 +1,92 @@
-// Design System Theme
+// Design System Theme - Production Ready with Enhanced Contrast
 export const theme = {
     colors: {
         primary: {
-            50: '#eff6ff',
-            100: '#dbeafe',
-            200: '#bfdbfe',
-            300: '#93c5fd',
-            400: '#60a5fa',
-            500: '#3b82f6',
-            600: '#1976d2', // Main primary
+            50: '#e3f2fd',
+            100: '#bbdefb',
+            200: '#90caf9',
+            300: '#64b5f6',
+            400: '#42a5f5',
+            500: '#2196f3',
+            600: '#1976d2', // Main primary - Enhanced for better contrast
             700: '#1565c0',
-            800: '#1e40af',
-            900: '#1e3a8a',
+            800: '#0d47a1',
+            900: '#0a3d91',
         },
         secondary: {
-            50: '#fefdf8',
-            100: '#fef7cd',
-            200: '#fef08a',
-            300: '#fde047',
-            400: '#facc15',
+            50: '#fffef7',
+            100: '#fef9e7',
+            200: '#fcf3cf',
+            300: '#f9e79f',
+            400: '#f7dc6f',
             500: '#f5ecd6', // Main secondary (navbar background)
             600: '#e9d8a6',
-            700: '#ca8a04',
-            800: '#a16207',
-            900: '#854d0e',
+            700: '#d4af37',
+            800: '#b8860b',
+            900: '#9a7d0a',
         },
         success: {
-            50: '#f0fdf4',
-            100: '#dcfce7',
-            200: '#bbf7d0',
-            300: '#86efac',
-            400: '#4ade80',
-            500: '#10b981', // Main success
-            600: '#059669',
-            700: '#047857',
-            800: '#065f46',
-            900: '#064e3b',
+            50: '#e8f5e9',
+            100: '#c8e6c9',
+            200: '#a5d6a7',
+            300: '#81c784',
+            400: '#66bb6a',
+            500: '#4caf50', // Main success - Brighter, better contrast
+            600: '#43a047',
+            700: '#388e3c',
+            800: '#2e7d32',
+            900: '#1b5e20',
         },
         warning: {
-            50: '#fffbeb',
-            100: '#fef3c7',
-            200: '#fde68a',
-            300: '#fcd34d',
-            400: '#fbbf24',
-            500: '#f59e0b', // Main warning
-            600: '#d97706',
-            700: '#b45309',
-            800: '#92400e',
-            900: '#78350f',
+            50: '#fff8e1',
+            100: '#ffecb3',
+            200: '#ffe082',
+            300: '#ffd54f',
+            400: '#ffca28',
+            500: '#ffc107', // Main warning - High visibility
+            600: '#ffb300',
+            700: '#ffa000',
+            800: '#ff8f00',
+            900: '#ff6f00',
         },
         danger: {
-            50: '#fef2f2',
-            100: '#fee2e2',
-            200: '#fecaca',
-            300: '#fca5a5',
-            400: '#f87171',
-            500: '#ef4444', // Main danger
-            600: '#dc2626',
-            700: '#b91c1c',
-            800: '#991b1b',
-            900: '#7f1d1d',
+            50: '#ffebee',
+            100: '#ffcdd2',
+            200: '#ef9a9a',
+            300: '#e57373',
+            400: '#ef5350',
+            500: '#f44336', // Main danger - Strong contrast
+            600: '#e53935',
+            700: '#d32f2f',
+            800: '#c62828',
+            900: '#b71c1c',
         },
         neutral: {
-            50: '#f9fafb',
-            100: '#f3f4f6',
-            200: '#e5e7eb',
-            300: '#d1d5db',
-            400: '#9ca3af',
-            500: '#6b7280', // Main neutral
-            600: '#4b5563',
-            700: '#374151',
-            800: '#1f2937',
-            900: '#111827',
+            50: '#fafafa',
+            100: '#f5f5f5',
+            200: '#eeeeee',
+            300: '#e0e0e0',
+            400: '#bdbdbd',
+            500: '#9e9e9e', // Main neutral
+            600: '#757575',
+            700: '#616161',
+            800: '#424242',
+            900: '#212121',
+        },
+        // New: Text colors for optimal readability
+        text: {
+            primary: '#1a1a1a',      // Near black for main content
+            secondary: '#4a5568',    // Dark gray for secondary content
+            tertiary: '#718096',     // Medium gray for hints
+            disabled: '#cbd5e0',     // Light gray for disabled
+            inverse: '#ffffff',      // White for dark backgrounds
+        },
+        // New: Background colors
+        background: {
+            primary: '#ffffff',      // Pure white
+            secondary: '#f7fafc',    // Very light gray
+            tertiary: '#edf2f7',     // Light gray
+            elevated: '#ffffff',     // White with shadow
         }
     },
 
@@ -94,10 +109,13 @@ export const theme = {
     },
 
     shadows: {
-        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        sm: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.1)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+        outline: '0 0 0 3px rgba(66, 153, 225, 0.5)',
     },
 
     typography: {

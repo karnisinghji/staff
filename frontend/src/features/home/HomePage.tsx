@@ -12,16 +12,16 @@ export const HomePage: React.FC = () => (
   <div className={styles.homeRoot}>
     {/* Left: Text & Actions */}
     <div className={styles.leftSection}>
-      <div style={{ background: '#f5ecd6', borderRadius: 12, padding: '1.2rem 1.5rem', marginBottom: 28, boxShadow: '0 2px 8px #e9d8a633', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.4rem', fontWeight: 700, marginBottom: 16, color: '#222', lineHeight: 1.2 }}>Connecting People.<br />Creating Success.</h1>
-        <p style={{ fontSize: '1.15rem', color: '#555', marginBottom: 0 }}>
+      <div style={{ background: '#e3f2fd', borderRadius: 12, padding: '1.5rem 2rem', marginBottom: 24, boxShadow: '0 2px 8px rgba(25, 118, 210, 0.1)', textAlign: 'center', border: '1px solid #bbdefb' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: 16, color: '#1a1a1a', lineHeight: 1.2 }}>Connecting People.<br />Creating Success.</h1>
+        <p style={{ fontSize: '1.1rem', color: '#4a5568', marginBottom: 0, lineHeight: 1.6 }}>
           Welcome! Find the best matches for your needs, chat in real time, and manage your saved connections.
         </p>
       </div>
       <div className={styles.buttonRow}>
-        <Link to="/search"><button style={{ padding: '0.85rem 2.2rem', fontSize: '1.08rem', borderRadius: 10, border: 'none', background: '#c97d60', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #c97d6022', cursor: 'pointer', transition: 'background 0.2s' }}>Find Matches</button></Link>
-        <Link to="/messages"><button style={{ padding: '0.85rem 2.2rem', fontSize: '1.08rem', borderRadius: 10, border: 'none', background: '#a5a58d', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #a5a58d22', cursor: 'pointer', transition: 'background 0.2s' }}>Messages</button></Link>
-  {/* <Link to="/saved"><button style={{ padding: '0.85rem 2.2rem', fontSize: '1.08rem', borderRadius: 10, border: 'none', background: '#e9d8a6', color: '#222', fontWeight: 600, boxShadow: '0 2px 8px #e9d8a622', cursor: 'pointer', transition: 'background 0.2s' }}>My Team</button></Link> */}
+        <Link to="/search"><button style={{ padding: '0.9rem 2rem', fontSize: '1.05rem', borderRadius: 8, border: 'none', background: '#1976d2', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)', cursor: 'pointer', transition: 'all 0.2s' }}>Find Matches</button></Link>
+        <Link to="/messages"><button style={{ padding: '0.9rem 2rem', fontSize: '1.05rem', borderRadius: 8, border: 'none', background: '#4caf50', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)', cursor: 'pointer', transition: 'all 0.2s' }}>Messages</button></Link>
+  {/* <Link to="/saved"><button style={{ padding: '0.9rem 2rem', fontSize: '1.05rem', borderRadius: 8, border: 'none', background: '#ffc107', color: '#1a1a1a', fontWeight: 600, boxShadow: '0 2px 8px rgba(255, 193, 7, 0.3)', cursor: 'pointer', transition: 'all 0.2s' }}>My Team</button></Link> */}
       </div>
 
       {/* Mobile App Download Section */}
