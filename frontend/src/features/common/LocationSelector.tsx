@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { API_CONFIG } from '../../config/api';
 
 interface LocationSelectorProps {
   location: string;
@@ -34,12 +35,11 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   const [isDetecting, setIsDetecting] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(true);
 
-  // Reverse geocoding using a free geocoding service
+  // Reverse geocoding using backend proxy to avoid CORS issues
   const reverseGeocode = async (lat: number, lng: number): Promise<LocationData['address']> => {
     try {
-      // Using Nominatim (OpenStreetMap's geocoding service) - free and no API key required
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lng}`
       );
       
       if (!response.ok) {

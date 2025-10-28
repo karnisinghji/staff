@@ -26,10 +26,24 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 
                 <!-- Custom scheme for OAuth and app navigation -->
-                <data android:scheme="com.comeondost.app" />
-                <data android:scheme="comeondost" />
+                <data android:scheme="comeondost" android:host="auth" android:pathPrefix="/callback" />
+            </intent-filter>
+            
+            <!-- Alternative custom scheme format -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 
-                <!-- HTTPS deep links -->
+                <data android:scheme="com.comeondost.app" />
+            </intent-filter>
+            
+            <!-- HTTPS deep links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
                 <data android:scheme="https" 
                       android:host="comeondost.web.app" 
                       android:pathPrefix="/auth" />

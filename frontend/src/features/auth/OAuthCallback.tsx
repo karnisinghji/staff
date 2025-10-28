@@ -44,29 +44,25 @@ export const OAuthCallback: React.FC = () => {
         if (Capacitor.isNativePlatform()) {
           console.log('[OAuthCallback] Mobile platform detected - closing browser and returning to app');
           
-          // Give a moment for tokens to save
-          setTimeout(() => {
-            // Try to close the window (this will close the Chrome Custom Tab)
-            window.close();
-            
-            // Also try to navigate back to the app using deep link
-            // This ensures we return to the app even if window.close() doesn't work
-            const appUrl = 'comeondost://team';
-            window.location.href = appUrl;
-            
-            // Fallback: Use Capacitor App plugin to bring app to foreground
-            App.getState().then(state => {
-              if (!state.isActive) {
-                // App is in background, try to bring it forward
-                console.log('[OAuthCallback] App in background, attempting to activate');
-              }
+          // Import Browser plugin dynamically
+          import('@capacitor/browser').then(({ Browser }) => {
+            // Close the Chrome Custom Tab
+            Browser.close().then(() => {
+              console.log('[OAuthCallback] Browser closed successfully');
             }).catch(err => {
-              console.error('[OAuthCallback] Error checking app state:', err);
+              console.error('[OAuthCallback] Error closing browser:', err);
             });
-          }, 500);
+          }).catch(err => {
+            console.error('[OAuthCallback] Error importing Browser:', err);
+          });
+          
+          // Navigate to team page in the app
+          setTimeout(() => {
+            navigate('/team');
+          }, 300);
         } else {
           // On web, just navigate normally
-          navigate('/saved');
+          navigate('/team');
         }
       } catch (err) {
         console.error('OAuth callback error:', err);

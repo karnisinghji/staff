@@ -280,4 +280,33 @@ router.delete('/api/matching/location/history',
     locationHistoryController.cleanupOldHistory
 );
 
+// Reverse geocoding proxy to avoid CORS issues with Nominatim
+router.get('/api/matching/reverse-geocode', async (req, res) => {
+    try {
+        const { lat, lon } = req.query;
+
+        if (!lat || !lon) {
+            return res.status(400).json({ error: 'Missing lat or lon parameters' });
+        }
+
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'ComeOnDost/1.0' // Required by Nominatim
+            }
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Geocoding service error' });
+        }
+
+        const data = await response.json();
+        return res.json(data);
+    } catch (error: any) {
+        console.error('Reverse geocoding proxy error:', error);
+        return res.status(500).json({ error: 'Failed to reverse geocode', message: error.message });
+    }
+});
+
 export default router;

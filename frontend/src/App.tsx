@@ -94,56 +94,89 @@ const AppUrlListener: React.FC = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
-    const handler = async (data: any) => {
+    // Check if app was launched with a deep link (only fires once on launch)
+    const checkLaunchUrl = async () => {
       try {
-        const url = data.url as string;
-        console.log('[AppUrlListener] Deep link received:', url);
-        
-        // Check if this is an OAuth callback with tokens
-        if (url.includes('/auth/callback') && url.includes('access_token')) {
-          console.log('[AppUrlListener] OAuth callback detected');
-          
-          // Parse the URL to extract tokens
-          try {
-            // Handle custom scheme URLs (comeondost://auth/callback?...)
-            const urlToParse = url.replace('comeondost://', 'https://dummy.com/');
-            const parsed = new URL(urlToParse);
-            
-            const accessToken = parsed.searchParams.get('access_token');
-            const refreshToken = parsed.searchParams.get('refresh_token');
-            const userId = parsed.searchParams.get('user_id');
-            
-            if (accessToken && refreshToken && userId) {
-              console.log('[AppUrlListener] Tokens found, logging in');
-              
-              // Close browser if still open
-              try {
-                const { Browser } = await import('@capacitor/browser');
-                await Browser.close();
-              } catch (e) {
-                console.log('[AppUrlListener] Browser already closed or not available');
-              }
-              
-              // Store refresh token
-              localStorage.setItem('refreshToken', refreshToken);
-              
-              // Login user
-              const userObj = { id: userId };
-              login(accessToken, userObj);
-              
-              // Navigate to team page
-              if (typeof navigate === 'function') {
-                navigate('/team');
-              } else {
-                window.location.href = '/team';
-              }
-              
-              return; // Exit early for OAuth callback
-            }
-          } catch (err) {
-            console.error('[AppUrlListener] Error parsing OAuth callback:', err);
-          }
+        const result = await CapacitorApp.getLaunchUrl();
+        if (result && result.url) {
+          console.log('[AppUrlListener] App launched with URL:', result.url);
+          await processDeepLink(result.url);
         }
+      } catch (err) {
+        console.error('[AppUrlListener] Error checking launch URL:', err);
+      }
+    };
+    
+    // Function to process deep link URLs (used by both launch and runtime)
+    const processDeepLink = async (url: string) => {
+      console.log('[AppUrlListener] Processing deep link:', url);
+      
+      // Check if this is an OAuth callback with tokens
+      if (url.includes('/auth/callback') && (url.includes('access_token') || url.includes('#'))) {
+        console.log('[AppUrlListener] OAuth callback detected');
+        
+        // Parse the URL to extract tokens
+        try {
+          // Handle custom scheme URLs (comeondost://auth/callback#access_token=...&refresh_token=...)
+          const urlToParse = url.replace('comeondost://', 'https://dummy.com/');
+          const parsed = new URL(urlToParse);
+          
+          // Try to get tokens from hash first (mobile OAuth uses hash)
+          let accessToken = null;
+          let refreshToken = null;
+          let userId = null;
+          
+          if (parsed.hash) {
+            // Parse hash parameters manually
+            const hashParams = new URLSearchParams(parsed.hash.substring(1)); // Remove '#'
+            accessToken = hashParams.get('access_token');
+            refreshToken = hashParams.get('refresh_token');
+            userId = hashParams.get('user_id');
+            console.log('[AppUrlListener] Parsed from hash - access_token length:', accessToken?.length, 'userId:', userId);
+          }
+          
+          // Fallback to query parameters (web OAuth uses query params)
+          if (!accessToken) {
+            accessToken = parsed.searchParams.get('access_token');
+            refreshToken = parsed.searchParams.get('refresh_token');
+            userId = parsed.searchParams.get('user_id');
+            console.log('[AppUrlListener] Parsed from query - access_token length:', accessToken?.length, 'userId:', userId);
+          }
+          
+          if (accessToken && refreshToken && userId) {
+            console.log('[AppUrlListener] Tokens found, logging in');
+            
+            // Close browser if still open
+            try {
+              const { Browser } = await import('@capacitor/browser');
+              await Browser.close();
+            } catch (e) {
+              console.log('[AppUrlListener] Browser already closed or not available');
+            }
+            
+            // Store refresh token
+            localStorage.setItem('refreshToken', refreshToken);
+            
+            // Login user
+            const userObj = { id: userId };
+            login(accessToken, userObj);
+            
+            // Navigate to team page
+            if (typeof navigate === 'function') {
+              navigate('/team');
+            } else {
+              window.location.href = '/team';
+            }
+            
+            return; // Exit early for OAuth callback
+          } else {
+            console.log('[AppUrlListener] Missing tokens - accessToken:', !!accessToken, 'refreshToken:', !!refreshToken, 'userId:', !!userId);
+          }
+        } catch (err) {
+          console.error('[AppUrlListener] Error parsing OAuth callback:', err);
+        }
+      } else {
+        console.log('[AppUrlListener] Not an OAuth callback URL');
         
         // For non-OAuth deep links, route to the path
         let pathAndSearch = '/';
@@ -161,21 +194,41 @@ const AppUrlListener: React.FC = () => {
             pathAndSearch = '/';
           }
         }
-
+        
         // Navigate to the path
         if (typeof navigate === 'function') {
           navigate(pathAndSearch);
         } else {
           window.location.href = pathAndSearch;
         }
+      }
+    };
+    
+    // Check launch URL on mount
+    checkLaunchUrl();
+    
+    const handler = async (data: any) => {
+      try {
+        const url = data.url as string;
+        console.log('[AppUrlListener] Deep link received (appUrlOpen event):', url);
+        await processDeepLink(url);
       } catch (e) {
         console.error('[AppUrlListener] handler error', e);
       }
     };
 
-    const listener = CapacitorApp.addListener('appUrlOpen', handler);
+    // Add listener for runtime deep links (when app is already running)
+    CapacitorApp.addListener('appUrlOpen', handler).then(listenerHandle => {
+      // Store handle for cleanup
+      (window as any).__appUrlListenerHandle = listenerHandle;
+    });
+    
     return () => {
-      try { listener.remove(); } catch (e) {}
+      // Cleanup listener on unmount
+      const handle = (window as any).__appUrlListenerHandle;
+      if (handle && handle.remove) {
+        try { handle.remove(); } catch (e) {}
+      }
     };
   }, [navigate, login]);
   

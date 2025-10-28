@@ -434,15 +434,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         // Store the GPS coordinates for accurate search
         setLocationCoords({ lat: latitude, lng: longitude });
         
-        // Use Nominatim reverse geocoding with zoom=18 for exact address (same as Profile page)
+        // Use reverse geocoding via backend proxy to avoid CORS issues
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            {
-              headers: {
-                'User-Agent': 'ComeOnDost/1.0'
-              }
-            }
+            `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`
           );
           
           if (response.ok) {
@@ -788,15 +783,10 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                     // Store the GPS coordinates for accurate search
                     setLocationCoords({ lat: latitude, lng: longitude });
                     
-                    // Use Nominatim reverse geocoding with zoom=18 for exact address (same as Profile page)
+                    // Use reverse geocoding via backend proxy to avoid CORS issues
                     try {
                       const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-                        {
-                          headers: {
-                            'User-Agent': 'ComeOnDost/1.0'
-                          }
-                        }
+                        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`
                       );
                       
                       if (response.ok) {
