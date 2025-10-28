@@ -281,12 +281,28 @@ router.delete('/api/matching/location/history',
 );
 
 // Reverse geocoding proxy to avoid CORS issues with Nominatim
+// Simple in-memory cache to reduce API calls
+const geocodeCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 3600000; // 1 hour in milliseconds
+
 router.get('/api/matching/reverse-geocode', async (req, res) => {
     try {
         const { lat, lon } = req.query;
 
         if (!lat || !lon) {
             return res.status(400).json({ error: 'Missing lat or lon parameters' });
+        }
+
+        // Round coordinates to 4 decimal places (~11m precision) for cache key
+        const latRounded = parseFloat(lat as string).toFixed(4);
+        const lonRounded = parseFloat(lon as string).toFixed(4);
+        const cacheKey = `${latRounded},${lonRounded}`;
+
+        // Check cache first
+        const cached = geocodeCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            console.log(`[Geocode Cache] Hit for ${cacheKey}`);
+            return res.json(cached.data);
         }
 
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
@@ -302,6 +318,21 @@ router.get('/api/matching/reverse-geocode', async (req, res) => {
         }
 
         const data = await response.json();
+
+        // Cache the result
+        geocodeCache.set(cacheKey, { data, timestamp: Date.now() });
+        console.log(`[Geocode Cache] Stored for ${cacheKey}`);
+
+        // Clean up old cache entries periodically (every 100 requests)
+        if (geocodeCache.size % 100 === 0) {
+            const now = Date.now();
+            for (const [key, value] of geocodeCache.entries()) {
+                if (now - value.timestamp > CACHE_DURATION) {
+                    geocodeCache.delete(key);
+                }
+            }
+        }
+
         return res.json(data);
     } catch (error: any) {
         console.error('Reverse geocoding proxy error:', error);

@@ -56,16 +56,30 @@ export const LocationHistoryViewer: React.FC<LocationHistoryViewerProps> = ({
       const data = await response.json();
       const locationsData = data.data?.locations || [];
       
-      // Fetch address names for all locations using reverse geocoding
-      const locationsWithAddresses = await Promise.all(
-        locationsData.map(async (location: LocationRecord) => {
-          const addressName = await reverseGeocode(
-            parseFloat(location.latitude),
-            parseFloat(location.longitude)
-          );
-          return { ...location, addressName };
-        })
-      );
+      // Set locations first without addresses for immediate display
+      setLocations(locationsData.map((loc: LocationRecord) => ({ ...loc, addressName: 'Loading...' })));
+      
+      // Fetch address names sequentially with delay to avoid rate limiting
+      const locationsWithAddresses: LocationRecord[] = [];
+      for (let i = 0; i < locationsData.length; i++) {
+        const location = locationsData[i];
+        
+        // Add 1 second delay between requests (Nominatim rate limit = 1 req/sec)
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        const addressName = await reverseGeocode(
+          parseFloat(location.latitude),
+          parseFloat(location.longitude)
+        );
+        
+        const locationWithAddress = { ...location, addressName };
+        locationsWithAddresses.push(locationWithAddress);
+        
+        // Update UI progressively as addresses load
+        setLocations([...locationsWithAddresses, ...locationsData.slice(i + 1).map((loc: LocationRecord) => ({ ...loc, addressName: 'Loading...' }))]);
+      }
       
       setLocations(locationsWithAddresses);
     } catch (err) {
@@ -79,12 +93,12 @@ export const LocationHistoryViewer: React.FC<LocationHistoryViewerProps> = ({
   // Reverse geocode coordinates to readable address
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
-      // Use zoom=19 (maximum) for building-level precision, accept-language=en for English results
+      // Use backend proxy to avoid CORS and rate limiting
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=19&addressdetails=1&accept-language=en`,
+        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lng}`,
         {
           headers: {
-            'User-Agent': 'ContractorWorkerPlatform/1.0' // Required by Nominatim
+            'Authorization': `Bearer ${token}`
           }
         }
       );

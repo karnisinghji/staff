@@ -109,7 +109,7 @@ async function handleOAuthCallback(
         const userAgent = res.req?.get('User-Agent') || '';
         const platformQuery = res.req?.query?.platform;
         const stateParam = res.req?.query?.state;
-        
+
         const isMobileApp = platformQuery === 'mobile' ||
             stateParam === 'mobile' ||
             userAgent.toLowerCase().includes('capacitor') ||

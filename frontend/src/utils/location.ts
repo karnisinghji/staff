@@ -1,4 +1,5 @@
 // Location utilities for converting coordinates to city names
+import { API_CONFIG } from '../config/api';
 
 // Comprehensive Indian cities database with coordinates
 export const INDIAN_CITIES = [
@@ -169,17 +170,13 @@ export function formatLocation(location: string | undefined | null): string {
 
 /**
  * Enhanced reverse geocoding with fallback to nearest city
+ * Now uses backend proxy to avoid CORS and rate limiting
  */
 export async function reverseGeocode(lat: number, lon: number): Promise<string> {
     try {
-        // First try OpenStreetMap Nominatim
+        // Use backend proxy instead of direct Nominatim call
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
-            {
-                headers: {
-                    'User-Agent': 'ComeOnDost/1.0' // Required by Nominatim
-                }
-            }
+            `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lon}`
         );
 
         if (response.ok) {
