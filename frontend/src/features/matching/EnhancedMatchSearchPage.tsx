@@ -5,6 +5,7 @@ import { theme } from '../../styles/theme';
 import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
 import { API_CONFIG } from '../../config/api';
 import { reverseGeocode, formatLocation } from '../../utils/location';
+import { Geolocation } from '@capacitor/geolocation';
 
 interface SearchResultCardProps {
   match: any;
@@ -409,27 +410,34 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   useEffect(() => {
     const detectUserLocation = async () => {
       // Only auto-detect if location is empty and user hasn't searched yet
-      if (location || searched || !navigator.geolocation) {
+      if (location || searched) {
         return;
       }
 
       setDetectingLocation(true);
       
       try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            resolve,
-            reject,
-            {
-              enableHighAccuracy: true, // Use GPS chip for best accuracy
-              timeout: 15000, // Give GPS more time for accurate fix
-              maximumAge: 0 // Always get fresh reading, no cache
-            }
-          );
+        // Check and request location permissions
+        const permissionStatus = await Geolocation.checkPermissions();
+        
+        if (permissionStatus.location === 'denied') {
+          const requestResult = await Geolocation.requestPermissions();
+          if (requestResult.location === 'denied') {
+            console.log('Location permission denied');
+            setDetectingLocation(false);
+            return;
+          }
+        }
+
+        // Get current position using Capacitor Geolocation
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
         });
 
         const { latitude, longitude, accuracy } = position.coords;
-        console.log(`🔍 Manual location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (accuracy: ±${Math.round(accuracy)}m)`);
+        console.log(`🔍 Auto location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (accuracy: ±${Math.round(accuracy || 0)}m)`);
         
         // Store the GPS coordinates for accurate search
         setLocationCoords({ lat: latitude, lng: longitude });
@@ -758,27 +766,30 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!navigator.geolocation) {
-                    showError('GPS not supported', 'Your browser does not support location detection');
-                    return;
-                  }
-                  
                   setDetectingLocation(true);
                   
                   try {
-                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                      navigator.geolocation.getCurrentPosition(
-                        resolve,
-                        reject,
-                        {
-                          enableHighAccuracy: true,
-                          timeout: 10000,
-                          maximumAge: 60000 // Cache for 1 minute
-                        }
-                      );
+                    // Check and request location permissions
+                    const permissionStatus = await Geolocation.checkPermissions();
+                    
+                    if (permissionStatus.location === 'denied') {
+                      const requestResult = await Geolocation.requestPermissions();
+                      if (requestResult.location === 'denied') {
+                        showError('Permission denied', 'Location permission is required to use this feature');
+                        setDetectingLocation(false);
+                        return;
+                      }
+                    }
+
+                    // Get current position using Capacitor Geolocation
+                    const position = await Geolocation.getCurrentPosition({
+                      enableHighAccuracy: true,
+                      timeout: 10000,
+                      maximumAge: 60000 // Cache for 1 minute
                     });
 
                     const { latitude, longitude } = position.coords;
+                    console.log(`📍 Button location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
                     
                     // Store the GPS coordinates for accurate search
                     setLocationCoords({ lat: latitude, lng: longitude });
