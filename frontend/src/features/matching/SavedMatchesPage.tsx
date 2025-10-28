@@ -639,7 +639,7 @@ export const MyTeamPage: React.FC = () => {
                 {gpsStatus.isTracking ? (
                   <>
                     📡 {trackingMode === 'live' ? 'Updating every 30s' : 'Updating every 5 min'} • {gpsStatus.updateCount} updates
-                    {gpsStatus.accuracy && ` • ${gpsStatus.accuracy.toFixed(0)}m accuracy`}
+                    {gpsStatus.accuracy != null && typeof gpsStatus.accuracy === 'number' && ` • ${gpsStatus.accuracy.toFixed(0)}m accuracy`}
                   </>
                 ) : (
                   'Enable to share your location with team members'
