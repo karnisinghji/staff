@@ -475,7 +475,7 @@ export const LocationHistoryViewer: React.FC<LocationHistoryViewerProps> = ({
                 {/* Coordinates (smaller, secondary) */}
                 <div style={{ fontSize: '11px', color: '#999' }}>
                   {parseFloat(location.latitude).toFixed(6)}, {parseFloat(location.longitude).toFixed(6)}
-                  {location.accuracy && (
+                  {location.accuracy != null && typeof location.accuracy === 'number' && (
                     <span style={{ marginLeft: '0.5rem' }}>
                       (±{location.accuracy.toFixed(0)}m)
                     </span>
