@@ -53,10 +53,36 @@ export const MyTeamPage: React.FC = () => {
   const userRole = user?.role || user?.roles?.[0] || 'worker';
   
   // Tracking mode: 'live' (30s) or 'shift' (5min)
-  const [trackingMode, setTrackingMode] = useState<'live' | 'shift'>('shift');
+  const [trackingMode, setTrackingMode] = useState<'live' | 'shift'>(() => {
+    // Restore tracking mode from localStorage
+    const saved = localStorage.getItem('gpsTrackingMode');
+    return (saved === 'live' || saved === 'shift') ? saved : 'shift';
+  });
   
-  // GPS location tracking
-  const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(false);
+  // GPS location tracking - restore state from localStorage
+  const [autoTrackingEnabled, setAutoTrackingEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('gpsTrackingEnabled');
+    const enabledAt = localStorage.getItem('gpsTrackingEnabledAt');
+    
+    // If tracking was enabled, check if it's been less than 24 hours
+    if (saved === 'true' && enabledAt) {
+      const enabledTime = new Date(enabledAt).getTime();
+      const now = Date.now();
+      const hoursElapsed = (now - enabledTime) / (1000 * 60 * 60);
+      
+      // Keep tracking enabled if less than 24 hours have passed
+      if (hoursElapsed < 24) {
+        console.log('[GPS Tracking] Auto-resuming tracking (enabled ${hoursElapsed.toFixed(1)}h ago)');
+        return true;
+      } else {
+        // Clear expired tracking state
+        localStorage.removeItem('gpsTrackingEnabled');
+        localStorage.removeItem('gpsTrackingEnabledAt');
+        console.log('[GPS Tracking] 24-hour period expired, tracking disabled');
+      }
+    }
+    return false;
+  });
   
   // Real-time GPS tracking with selectable mode
   const { status: gpsStatus, isSupported: isGPSSupported } = useGPSTracking({
@@ -78,6 +104,61 @@ export const MyTeamPage: React.FC = () => {
   const [showTeamMapView, setShowTeamMapView] = useState(false); // New: Full team map view
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Persist GPS tracking state to localStorage
+  useEffect(() => {
+    if (autoTrackingEnabled) {
+      localStorage.setItem('gpsTrackingEnabled', 'true');
+      // Set the enabled timestamp only if it doesn't exist (first time enabling)
+      if (!localStorage.getItem('gpsTrackingEnabledAt')) {
+        localStorage.setItem('gpsTrackingEnabledAt', new Date().toISOString());
+      }
+      console.log('[GPS Tracking] Tracking enabled and persisted');
+    } else {
+      localStorage.removeItem('gpsTrackingEnabled');
+      localStorage.removeItem('gpsTrackingEnabledAt');
+      console.log('[GPS Tracking] Tracking disabled and cleared from storage');
+    }
+  }, [autoTrackingEnabled]);
+
+  // Show notification when tracking auto-resumes on page load
+  useEffect(() => {
+    if (autoTrackingEnabled) {
+      const enabledAt = localStorage.getItem('gpsTrackingEnabledAt');
+      if (enabledAt) {
+        const enabledTime = new Date(enabledAt).getTime();
+        const now = Date.now();
+        const hoursElapsed = (now - enabledTime) / (1000 * 60 * 60);
+        const hoursRemaining = Math.max(0, 24 - hoursElapsed);
+        
+        console.log(`[GPS Tracking] Auto-resumed tracking (${hoursRemaining.toFixed(1)}h remaining)`);
+      }
+    }
+  }, []); // Only run on mount
+
+  // Persist tracking mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('gpsTrackingMode', trackingMode);
+  }, [trackingMode]);
+
+  // Calculate remaining tracking time
+  const getRemainingTrackingTime = (): string => {
+    const enabledAt = localStorage.getItem('gpsTrackingEnabledAt');
+    if (!enabledAt) return '';
+    
+    const enabledTime = new Date(enabledAt).getTime();
+    const now = Date.now();
+    const hoursElapsed = (now - enabledTime) / (1000 * 60 * 60);
+    const hoursRemaining = Math.max(0, 24 - hoursElapsed);
+    
+    if (hoursRemaining > 1) {
+      return `${hoursRemaining.toFixed(1)}h remaining`;
+    } else if (hoursRemaining > 0) {
+      const minutesRemaining = Math.floor(hoursRemaining * 60);
+      return `${minutesRemaining}m remaining`;
+    }
+    return 'Expiring soon';
+  };
 
   const fetchMatches = async () => {
     setError('');
@@ -561,7 +642,16 @@ export const MyTeamPage: React.FC = () => {
                   </strong>
                 </div>
                 <button
-                  onClick={() => setAutoTrackingEnabled(!autoTrackingEnabled)}
+                  onClick={() => {
+                    if (autoTrackingEnabled) {
+                      // Confirm before stopping
+                      if (window.confirm('Stop GPS tracking? You will need to manually restart it.')) {
+                        setAutoTrackingEnabled(false);
+                      }
+                    } else {
+                      setAutoTrackingEnabled(true);
+                    }
+                  }}
                   style={{
                     background: gpsStatus.isTracking ? '#f44336' : '#4caf50',
                     color: 'white',
@@ -576,6 +666,20 @@ export const MyTeamPage: React.FC = () => {
                   {gpsStatus.isTracking ? 'Stop' : 'Start'}
                 </button>
               </div>
+              
+              {/* Show remaining time when tracking is active */}
+              {gpsStatus.isTracking && (
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: '#666', 
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  ⏱️ Auto-tracking enabled • {getRemainingTrackingTime()}
+                </div>
+              )}
               
               {/* Tracking Mode Selection */}
               {!gpsStatus.isTracking && (
