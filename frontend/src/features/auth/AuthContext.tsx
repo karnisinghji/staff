@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useCallback, useEffect, type ReactNode } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { MobileNotificationService } from '../../services/mobileNotifications';
+import { pushNotificationService } from '../../services/pushNotificationService';
 
 interface AuthState {
   token: string | null;
@@ -46,6 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('[AuthContext] Token set successfully');
           // Initialize mobile notifications if token exists
           await MobileNotificationService.initialize(localToken);
+          
+          // Initialize push notifications
+          if (localUser) {
+            const parsedUser = JSON.parse(localUser);
+            await pushNotificationService.initialize(parsedUser.id, localToken);
+          }
         } else {
           console.warn('[AuthContext] NO TOKEN FOUND - User will need to login');
         }
@@ -83,6 +90,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Initialize mobile notifications
     await MobileNotificationService.initialize(newToken);
+    
+    // Initialize push notifications
+    await pushNotificationService.initialize(newUser.id, newToken);
   }, []);
 
   const logout = useCallback(async () => {
@@ -95,6 +105,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Stop mobile notifications
     MobileNotificationService.stopPolling();
+    
+    // Unregister push notifications
+    await pushNotificationService.unregister();
   }, []);
 
   // Auto-logout on token expiry

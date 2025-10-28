@@ -194,6 +194,51 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
         }
     });
 
+    // FCM Token Registration for Push Notifications
+    const registerDeviceSchema = z.object({
+        userId: z.string().uuid(),
+        fcmToken: z.string().min(1),
+        platform: z.enum(['android', 'ios']),
+        deviceInfo: z.object({
+            model: z.string().optional(),
+            os: z.string().optional()
+        }).optional()
+    });
+
+    app.post('/api/notifications/register-device', validate({ schema: registerDeviceSchema }), async (req, res) => {
+        try {
+            const { userId, fcmToken, platform, deviceInfo } = req.body;
+
+            // TODO: Store FCM token in database
+            // For now, just log it
+            logger.info(`[FCM] Device registered - User: ${userId}, Platform: ${platform}, Token: ${fcmToken.substring(0, 20)}...`);
+
+            // You would typically store this in a database like:
+            // await db.query(`
+            //   INSERT INTO device_tokens (user_id, fcm_token, platform, device_info, created_at, updated_at)
+            //   VALUES ($1, $2, $3, $4, NOW(), NOW())
+            //   ON CONFLICT (user_id, platform)
+            //   DO UPDATE SET fcm_token = $2, device_info = $4, updated_at = NOW()
+            // `, [userId, fcmToken, platform, deviceInfo]);
+
+            res.status(200).json({
+                success: true,
+                message: 'Device registered successfully',
+                data: {
+                    userId,
+                    platform,
+                    registeredAt: new Date().toISOString()
+                }
+            });
+        } catch (e: any) {
+            logger.error('[FCM] Device registration error:', e);
+            res.status(500).json({
+                success: false,
+                message: e.message || 'Failed to register device'
+            });
+        }
+    });
+
     // WebSocket route placeholder - returns upgrade required
     app.get('/ws', (req, res) => {
         logger.info(`WebSocket connection attempt from ${req.ip} - returning upgrade required`);
