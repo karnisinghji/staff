@@ -47,7 +47,7 @@ export const MyTeamPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'available' | 'busy'>('all');
-  const [activeTab, setActiveTab] = useState<TabType>('messages');
+  const [activeTab, setActiveTab] = useState<TabType>('members');
   
   // Get user role from JWT token or user object
   const userRole = user?.role || user?.roles?.[0] || 'worker';
