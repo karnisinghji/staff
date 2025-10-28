@@ -15,7 +15,7 @@ export function createOAuthRoutes() {
     router.get('/google', passport.authenticate('google', {
         scope: ['profile', 'email'],
         session: false
-    }));    router.get('/google/callback',
+    })); router.get('/google/callback',
         passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
         async (req, res) => {
             try {

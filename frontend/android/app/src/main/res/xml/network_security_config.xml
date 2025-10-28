@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow all HTTPS connections -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+            <!-- Trust user-added certificates (for debugging with proxy tools) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Allow specific domains (Railway backend services) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">railway.app</domain>
+        <domain includeSubdomains="true">comeondost.web.app</domain>
+        <domain includeSubdomains="true">comeondost.firebaseapp.com</domain>
+    </domain-config>
+</network-security-config>

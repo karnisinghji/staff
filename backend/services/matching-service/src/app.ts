@@ -27,6 +27,8 @@ export function buildApp(): express.Express {
     const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [
         'http://localhost:3000',
         'http://localhost:5173',
+        'https://localhost',  // Capacitor mobile app
+        'capacitor://localhost',  // Alternative Capacitor scheme
         'https://comeondost.web.app',
         'https://comeondost.firebaseapp.com'
     ];

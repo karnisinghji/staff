@@ -97,7 +97,9 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
         'https://comeondost.firebaseapp.com',
         'https://comeondost.netlify.app',
         'http://localhost:5173',
-        'http://localhost:5174'
+        'http://localhost:5174',
+        'https://localhost',  // Capacitor mobile app
+        'capacitor://localhost'  // Alternative Capacitor scheme
     ];
     console.log('Configured allowed origins:');
     console.log(allowedOrigins);

@@ -41,6 +41,8 @@ export function buildApp(): express.Express {
             'http://localhost:5173',
             'http://localhost:5174',
             'http://localhost:3000',
+            'https://localhost',  // Capacitor mobile app
+            'capacitor://localhost',  // Alternative Capacitor scheme
             'https://comeondost.web.app',
             'https://comeondost.firebaseapp.com',
             ...allowedOrigins
