@@ -4,10 +4,12 @@ import { useAuth } from './AuthContext';
 import { API_CONFIG } from '../../config/api';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { useToast } from '../../contexts/ToastContext';
 
 export const LoginPage: React.FC = () => {
   const { login, token } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,75 +24,71 @@ export const LoginPage: React.FC = () => {
     }
   }, [token, navigate]);
 
+  const pollForOAuthCompletion = async (sessionId: string) => {
+    const maxAttempts = 60; // Poll for up to 5 minutes (every 5 seconds)
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        toast.error('Authentication timeout. Please try again.');
+        return;
+      }
+
+      attempts++;
+      
+      try {
+        const response = await fetch(`${API_CONFIG.AUTH_SERVICE}/oauth/poll/${sessionId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[OAuth Poll] Success! Got tokens');
+          
+          // Close the OAuth browser
+          await Browser.close();
+          
+          // Login with received tokens
+          login(data.accessToken, { id: data.userId });
+          toast.success('Logged in successfully!');
+          navigate('/team');
+        } else if (response.status === 404) {
+          // Not ready yet, poll again
+          setTimeout(poll, 5000);
+        } else {
+          toast.error('Authentication failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('[OAuth Poll] Error:', error);
+        setTimeout(poll, 5000);
+      }
+    };
+
+    // Start polling after 2 seconds (give user time to complete OAuth)
+    setTimeout(poll, 2000);
+  };
+
   const handleGoogleLogin = async () => {
     const isNativePlatform = Capacitor.isNativePlatform();
-    console.log('[handleGoogleLogin] isNativePlatform:', isNativePlatform);
+    const platform = Capacitor.getPlatform();
     
-    if (isNativePlatform) {
-      // Generate a unique session ID for this OAuth attempt
+    console.log('[handleGoogleLogin] platform:', platform, 'isNative:', isNativePlatform);
+    
+    const isMobile = isNativePlatform || platform === 'android' || platform === 'ios';
+    
+    if (isMobile) {
+      // Mobile: Open OAuth in browser, then poll for tokens
       const sessionId = `mobile_oauth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
       const authUrl = `${API_CONFIG.AUTH_SERVICE}/google?platform=mobile&sessionId=${sessionId}`;
+      
       console.log('[handleGoogleLogin] Opening OAuth with sessionId:', sessionId);
       
-      // Open OAuth in Chrome Custom Tab
       await Browser.open({ 
         url: authUrl,
         presentationStyle: 'popover'
       });
       
-      // Poll the backend for tokens using the sessionId
-      let pollAttempts = 0;
-      const maxAttempts = 60; // 30 seconds total
-      
-      const pollForTokens = setInterval(async () => {
-        pollAttempts++;
-        console.log(`[OAuth Poll] Attempt ${pollAttempts}/${maxAttempts}`);
-        
-        if (pollAttempts >= maxAttempts) {
-          clearInterval(pollForTokens);
-          console.log('[OAuth Poll] Timeout - stopping poll');
-          toast.error('Login timeout. Please try again.');
-          return;
-        }
-        
-        try {
-          // Poll the backend for tokens
-          const response = await fetch(`${API_CONFIG.AUTH_SERVICE}/oauth/poll/${sessionId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            
-            if (data.accessToken && data.refreshToken && data.userId) {
-              clearInterval(pollForTokens);
-              console.log('[OAuth Poll] Tokens received! Logging in...');
-              
-              // Close browser
-              await Browser.close();
-              
-              // Store refresh token
-              localStorage.setItem('refreshToken', data.refreshToken);
-              
-              // Login
-              const userObj = { id: data.userId };
-              login(data.accessToken, userObj);
-              
-              // Navigate
-              toast.success('Login successful!');
-              navigate('/team');
-            }
-          }
-        } catch (error) {
-          console.log('[OAuth Poll] Error checking for tokens:', error);
-          // Continue polling
-        }
-      }, 500); // Poll every 500ms
-      
+      // Start polling for OAuth completion
+      toast.info('Waiting for authentication...');
+      pollForOAuthCompletion(sessionId);
     } else {
       // On web: Use standard redirect
       const authUrl = `${API_CONFIG.AUTH_SERVICE}/google`;
