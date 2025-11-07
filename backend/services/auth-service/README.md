@@ -33,3 +33,4 @@ Minimal authentication service implementing a clean hex structure.
 - Add password reset flow (align with user-service logic)
 - Integrate shared logger & metrics
 - Harden error taxonomy & validation schemas
+# Trigger deploy
