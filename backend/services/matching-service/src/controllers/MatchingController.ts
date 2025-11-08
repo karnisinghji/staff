@@ -1003,6 +1003,11 @@ export class MatchingController {
 
             logger.info(`After filtering: ${filteredRows.length} team members remain`);
 
+            // Log team member coordinates
+            filteredRows.forEach((member: any) => {
+                logger.info(`[GET-MY-TEAM] Member: ${member.name} (${member.team_member_id}) - lat=${member.latitude}, lng=${member.longitude}, last_update=${member.last_location_update}, minutes_ago=${member.minutes_since_location_update}`);
+            });
+
             // Get current user's coordinates for distance calculation
             const userCoords = await pool.query(
                 'SELECT latitude, longitude FROM users WHERE id = $1',
@@ -1485,6 +1490,9 @@ export class MatchingController {
                 return;
             }
 
+            // Log before update
+            logger.info(`[UPDATE-LOCATION] Updating user ${req.user.id} location to: lat=${latitude}, lng=${longitude}, accuracy=${accuracy}m, source=${source}`);
+
             // Update user location with tracking metadata
             const result = await pool.query(
                 `UPDATE users 
@@ -1500,6 +1508,7 @@ export class MatchingController {
                  WHERE id = $6
                  RETURNING 
                     id, 
+                    name,
                     latitude, 
                     longitude, 
                     location, 
@@ -1511,9 +1520,14 @@ export class MatchingController {
             );
 
             if (result.rows.length === 0) {
+                logger.error(`[UPDATE-LOCATION] User ${req.user.id} not found in database!`);
                 res.status(404).json({ success: false, message: 'User not found' });
                 return;
             }
+
+            // Log after update to confirm what was saved
+            const updated = result.rows[0];
+            logger.info(`[UPDATE-LOCATION] ✅ Updated ${updated.name} (${req.user.id}): lat=${updated.latitude}, lng=${updated.longitude}, accuracy=${updated.location_accuracy}m, last_update=${updated.last_location_update}`);
 
             // Also save to location_history for tracking trail
             try {
