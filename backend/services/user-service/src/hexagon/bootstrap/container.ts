@@ -31,21 +31,22 @@ export function getHexContainer(): HexContainer {
     const dbConfig = process.env.DATABASE_URL ? {
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        max: 10,                        // Reduced for Neon.tech serverless
-        min: 2,
-        idleTimeoutMillis: 30000,       // 30s - Neon.tech recommended
-        connectionTimeoutMillis: 10000, // 10s - Better for cold starts
-        statement_timeout: 30000,       // 30s query timeout
+        max: 20,                        // Increased pool size for better concurrency
+        min: 2,                         // Keep 2 connections warm
+        idleTimeoutMillis: 10000,       // 10s - Close idle connections faster
+        connectionTimeoutMillis: 3000,  // 3s - Fail fast if can't connect
+        statement_timeout: 5000,        // 5s - Kill slow queries faster
     } : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'contractor_worker_platform',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'PostgresNewMasterPassword!',
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
-        statement_timeout: 30000,
+        max: 20,
+        min: 2,
+        idleTimeoutMillis: 10000,
+        connectionTimeoutMillis: 3000,
+        statement_timeout: 5000,
     };
     const poolInstance = new Pool(dbConfig);
 
