@@ -76,6 +76,8 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
             'https://localhost',  // Capacitor mobile app
             'capacitor://localhost',  // Alternative Capacitor scheme
             'https://comeondost.netlify.app',
+            'https://comeondost.web.app',  // Firebase Hosting
+            'https://comeondost.firebaseapp.com',  // Firebase Hosting alternative
             ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
         ],
         credentials: true,
