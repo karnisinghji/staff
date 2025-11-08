@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
@@ -272,85 +273,88 @@ const EnhancedDashboardPage: React.FC = () => {
     activeProjects: 0,
     profileViews: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchDashboardData = useCallback(async () => {
-    if (!token) return;
-
-    try {
-      setLoading(true);
-      
-      // Fetch both endpoints in parallel to reduce load time
-      const [requestsResponse, teamResponse] = await Promise.all([
-        fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        })
-      ]);
-
-      if (requestsResponse.ok) {
-        const requestsResult = await requestsResponse.json();
-        if (requestsResult.success && requestsResult.data && requestsResult.data.requests) {
-          // Filter out any requests where the current user is the sender (safety check)
-          const filteredRequests = requestsResult.data.requests.filter(
-            (request: TeamRequest) => user?.id && request.sender_id !== user.id
-          );
-          setPendingRequests(filteredRequests);
-        } else {
-          setPendingRequests([]);
-        }
-      }
-
-      if (teamResponse.ok) {
-        const teamResult = await teamResponse.json();
-        if (teamResult.success && teamResult.data && teamResult.data.teamMembers) {
-          // Filter out yourself from team members (safety check)
-          const filteredTeam = teamResult.data.teamMembers.filter(
-            (member: TeamMember) => user?.id && member.team_member_id !== user.id
-          );
-          setTeamMembers(filteredTeam);
-        } else {
-          setTeamMembers([]);
-        }
-      }
-
-      // Update stats
-      setStats({
-        totalConnections: teamMembers.length,
-        pendingRequests: pendingRequests.length,
-        activeProjects: Math.floor(Math.random() * 5) + 1, // Mock data
-        profileViews: Math.floor(Math.random() * 100) + 50, // Mock data
+  // Fetch team requests with React Query
+  const { data: requestsData, isLoading: requestsLoading } = useQuery({
+    queryKey: ['teamRequests', token],
+    queryFn: async () => {
+      if (!token) return [];
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+      if (!response.ok) return [];
+      const result = await response.json();
+      if (result.success && result.data && result.data.requests) {
+        // Filter out any requests where the current user is the sender
+        return result.data.requests.filter(
+          (request: TeamRequest) => user?.id && request.sender_id !== user.id
+        );
+      }
+      return [];
+    },
+    enabled: !!token,
+    staleTime: 1000 * 30, // Cache for 30 seconds
+    retry: 2,
+    retryDelay: 500
+  });
 
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      showError('Failed to load dashboard data', 'Please try refreshing the page');
-      setPendingRequests([]);
-      setTeamMembers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, pendingRequests.length, teamMembers.length, showError]);
+  // Fetch team members with React Query
+  const { data: teamData, isLoading: teamLoading } = useQuery({
+    queryKey: ['teamMembers', token],
+    queryFn: async () => {
+      if (!token) return [];
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) return [];
+      const result = await response.json();
+      if (result.success && result.data && result.data.teamMembers) {
+        // Filter out yourself from team members
+        return result.data.teamMembers.filter(
+          (member: TeamMember) => user?.id && member.team_member_id !== user.id
+        );
+      }
+      return [];
+    },
+    enabled: !!token,
+    staleTime: 1000 * 30, // Cache for 30 seconds
+    retry: 2,
+    retryDelay: 500
+  });
+
+  // Update local state when data changes
+  useEffect(() => {
+    if (requestsData) setPendingRequests(requestsData);
+  }, [requestsData]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (teamData) setTeamMembers(teamData);
+  }, [teamData]);
 
-  const handleRequestAction = async (requestId: number, status: 'accepted' | 'rejected') => {
-    if (!token) return;
+  // Update stats when data changes
+  useEffect(() => {
+    setStats({
+      totalConnections: teamMembers.length,
+      pendingRequests: pendingRequests.length,
+      activeProjects: Math.floor(Math.random() * 5) + 1, // Mock data
+      profileViews: Math.floor(Math.random() * 100) + 50, // Mock data
+    });
+  }, [teamMembers.length, pendingRequests.length]);
 
-    setActionLoading(requestId);
-    try {
-  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
+  const loading = requestsLoading || teamLoading;
+
+  // Mutation for handling team request actions
+  const requestActionMutation = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: number; status: 'accepted' | 'rejected' }) => {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -358,19 +362,26 @@ const EnhancedDashboardPage: React.FC = () => {
         },
         body: JSON.stringify({ status }),
       });
-
-      if (response.ok) {
-        showSuccess(`Request ${status}`, `Team request has been ${status} successfully`);
-        await fetchDashboardData();
-      } else {
-        throw new Error(`Failed to ${status} request`);
-      }
-    } catch (error) {
-      console.error(`Error ${status} request:`, error);
-      showError(`Failed to ${status} request`, 'Please try again');
-    } finally {
-      setActionLoading(null);
+      if (!response.ok) throw new Error(`Failed to ${status} request`);
+      return { requestId, status };
+    },
+    onSuccess: (data) => {
+      showSuccess(`Request ${data.status}`, `Team request has been ${data.status} successfully`);
+      // Invalidate queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['teamRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+    },
+    onError: (error, variables) => {
+      console.error(`Error ${variables.status} request:`, error);
+      showError(`Failed to ${variables.status} request`, 'Please try again');
     }
+  });
+
+  const handleRequestAction = (requestId: number, status: 'accepted' | 'rejected') => {
+    setActionLoading(requestId);
+    requestActionMutation.mutate({ requestId, status }, {
+      onSettled: () => setActionLoading(null)
+    });
   };
 
   const formatDate = (dateString: string) => {
