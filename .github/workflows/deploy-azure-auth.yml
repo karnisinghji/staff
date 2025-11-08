@@ -52,27 +52,23 @@ jobs:
           tenant-id: 667ecb3b-8888-4637-a4bc-cde8a4d37efb
           subscription-id: bb83cf18-522d-4546-ba6b-39e219d3c0db
 
-      - name: Deploy to Azure Container Apps
+      - name: Set Secrets in Azure Container App
         run: |
-          az containerapp create \
+          az containerapp secret set \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --environment staff-env \
-            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
-            --target-port 3000 \
-            --ingress external \
-            --min-replicas 0 \
-            --max-replicas 5 \
-            --cpu 0.5 \
-            --memory 1Gi \
-            --secrets database-url="${{ secrets.DATABASE_URL }}" jwt-secret="${{ secrets.JWT_SECRET }}" \
-            --env-vars PORT=3000 NODE_ENV=production SERVICE_NAME=auth-service DATABASE_URL=secretref:database-url JWT_SECRET=secretref:jwt-secret ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com \
-            --query properties.configuration.ingress.fqdn \
-            --output tsv || \
+            --secrets database-url="${{ secrets.DATABASE_URL }}" jwt-secret="${{ secrets.JWT_SECRET }}" || true
+
+      - name: Deploy to Azure Container Apps
+        run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
-            --set-env-vars PORT=3000 NODE_ENV=production SERVICE_NAME=auth-service ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com DATABASE_URL="${{ secrets.DATABASE_URL }}" JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            --query properties.configuration.ingress.fqdn \
-            --output tsv
+            --set-env-vars \
+              PORT=3000 \
+              NODE_ENV=production \
+              SERVICE_NAME=auth-service \
+              ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com \
+              DATABASE_URL=secretref:database-url \
+              JWT_SECRET=secretref:jwt-secret
