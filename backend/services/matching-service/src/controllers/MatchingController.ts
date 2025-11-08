@@ -914,8 +914,7 @@ export class MatchingController {
             const limit = Math.min(MatchingController.MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.limit as string) || MatchingController.DEFAULT_PAGE_SIZE));
             const offset = (page - 1) * limit;
 
-            logger.info(`Fetching team members for user: ${req.user.id} (page: ${page}, limit: ${limit})`);
-
+            // Single optimized query with count using window function
             const result = await pool.query(`
                 SELECT 
                     tm.id as team_member_record_id,
@@ -955,7 +954,8 @@ export class MatchingController {
                         WHEN u.role = 'worker' THEN wp.is_available
                         WHEN u.role = 'contractor' THEN cp.need_worker_status
                         ELSE NULL 
-                    END as is_available
+                    END as is_available,
+                    COUNT(*) OVER() as total_count
                 FROM team_members tm
                 JOIN users u ON tm.team_member_id = u.id
                 LEFT JOIN contractor_profiles cp ON u.id = cp.user_id
@@ -972,43 +972,19 @@ export class MatchingController {
                 LIMIT $2 OFFSET $3
             `, [req.user.id, limit, offset]);
 
-            logger.info(`Raw query returned ${result.rows.length} team members for user ${req.user.id}`);
-            logger.info(`Team member details:`, JSON.stringify(result.rows.map(r => ({
-                record_id: r.team_member_record_id,
-                user_id: r.user_id,
-                team_member_id: r.team_member_id,
-                name: r.name,
-                is_self: r.team_member_id === req.user?.id,
-                user_equals_member: r.user_id === r.team_member_id
-            })), null, 2));
-
-            // Get total count for pagination
-            const countResult = await pool.query(`
-                SELECT COUNT(*) as total
-                FROM team_members tm
-                LEFT JOIN user_blocks ub ON (
-                    (ub.blocker_id = $1 AND ub.blocked_id = tm.team_member_id)
-                    OR (ub.blocker_id = tm.team_member_id AND ub.blocked_id = $1)
-                )
-                WHERE tm.user_id = $1 
-                    AND tm.team_member_id != $1
-                    AND tm.team_member_id IS NOT NULL
-                    AND ub.id IS NULL
-            `, [req.user.id]);
-            const total = parseInt(countResult.rows[0].total);
+            const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
 
             // Extra safety: filter out yourself and any invalid entries
             const currentUserId = req.user.id;
             const filteredRows = this.filterSelfTeamMembers(result.rows, currentUserId);
 
-            logger.info(`After filtering: ${filteredRows.length} team members remain`);
+            // Simplified logging - only count in production
+            if (filteredRows.length > 0) {
+                logger.info(`[GET-MY-TEAM] Fetched ${filteredRows.length} team members for user ${req.user.id}`);
+            }
 
-            // Log team member coordinates
-            filteredRows.forEach((member: any) => {
-                logger.info(`[GET-MY-TEAM] Member: ${member.name} (${member.team_member_id}) - lat=${member.latitude}, lng=${member.longitude}, last_update=${member.last_location_update}, minutes_ago=${member.minutes_since_location_update}`);
-            });
-
-            // Get current user's coordinates for distance calculation
+            // Get current user's coordinates from JWT or database
+            // This could be cached in JWT to avoid query
             const userCoords = await pool.query(
                 'SELECT latitude, longitude FROM users WHERE id = $1',
                 [req.user.id]
@@ -1490,9 +1466,6 @@ export class MatchingController {
                 return;
             }
 
-            // Log before update
-            logger.info(`[UPDATE-LOCATION] Updating user ${req.user.id} location to: lat=${latitude}, lng=${longitude}, accuracy=${accuracy}m, source=${source}`);
-
             // Update user location with tracking metadata
             const result = await pool.query(
                 `UPDATE users 
@@ -1511,23 +1484,19 @@ export class MatchingController {
                     name,
                     latitude, 
                     longitude, 
-                    location, 
-                    location_accuracy, 
-                    location_source,
-                    last_location_update,
-                    is_location_tracking_active`,
+                    location_accuracy`,
                 [latitude, longitude, location, accuracy, source, req.user.id]
             );
 
             if (result.rows.length === 0) {
-                logger.error(`[UPDATE-LOCATION] User ${req.user.id} not found in database!`);
+                logger.error(`[UPDATE-LOCATION] User ${req.user.id} not found`);
                 res.status(404).json({ success: false, message: 'User not found' });
                 return;
             }
 
-            // Log after update to confirm what was saved
+            // Simplified logging - only log accuracy for debugging
             const updated = result.rows[0];
-            logger.info(`[UPDATE-LOCATION] ✅ Updated ${updated.name} (${req.user.id}): lat=${updated.latitude}, lng=${updated.longitude}, accuracy=${updated.location_accuracy}m, last_update=${updated.last_location_update}`);
+            logger.info(`[UPDATE-LOCATION] User ${req.user.id}: ±${updated.location_accuracy}m`);
 
             // Also save to location_history for tracking trail
             try {
