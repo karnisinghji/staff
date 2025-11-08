@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../auth/AuthContext';
 import { API_CONFIG } from '../../config/api';
+import { Geolocation } from '@capacitor/geolocation';
 
 // Component to invalidate map size
 const MapInvalidator: React.FC = () => {
@@ -48,6 +49,105 @@ export const TeamMapView: React.FC = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([27.245289, 75.657525]); // Default to Govindgarh
   const [mapZoom, setMapZoom] = useState(12);
   const [currentUserLocation, setCurrentUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [hasLiveGPS, setHasLiveGPS] = useState(false); // Track if we have live GPS
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
+  // Get live GPS location on mount
+  useEffect(() => {
+    const getLiveLocation = async () => {
+      try {
+        console.log('🗺️ TeamMapView: Starting live GPS detection...');
+        
+        // Check permissions first
+        const permissionStatus = await Geolocation.checkPermissions();
+        console.log('📋 Permission status:', permissionStatus.location);
+        
+        if (permissionStatus.location === 'denied') {
+          console.warn('❌ Location permission denied');
+          return;
+        }
+
+        // Try to get GPS location with retry for accuracy
+        let position;
+        let accuracy = 999999;
+        let attempts = 0;
+        const maxAttempts = 3; // Fewer attempts for map view
+        
+        while (accuracy > 50 && attempts < maxAttempts) {
+          attempts++;
+          console.log(`📍 TeamMapView GPS attempt ${attempts}/${maxAttempts}...`);
+          
+          position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+          
+          accuracy = position.coords.accuracy || 999999;
+          console.log(`📍 TeamMapView GPS accuracy: ±${Math.round(accuracy)}m`);
+          
+          if (accuracy <= 50) {
+            console.log(`✅ TeamMapView: Accurate GPS locked!`);
+            break;
+          }
+          
+          if (attempts < maxAttempts) {
+            await new Promise(r => setTimeout(r, 1000)); // Wait 1s between attempts
+          }
+        }
+        
+        if (position) {
+          const liveLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          console.log(`✅ TeamMapView: Setting live GPS location:`, liveLocation, `±${Math.round(accuracy)}m`);
+          
+          // Save location to database immediately
+          try {
+            const saveResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/update-location-live`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                latitude: liveLocation.lat,
+                longitude: liveLocation.lng,
+                accuracy,
+                source: 'map-gps'
+              })
+            });
+            
+            if (saveResponse.ok) {
+              console.log(`✅ TeamMapView: Location saved to database`);
+            } else {
+              console.warn(`⚠️ TeamMapView: Failed to save location:`, saveResponse.status);
+            }
+          } catch (err) {
+            console.warn(`⚠️ TeamMapView: Error saving location:`, err);
+          }
+          
+          setCurrentUserLocation(liveLocation);
+          setGpsAccuracy(accuracy);
+          setHasLiveGPS(true); // Mark that we have live GPS
+          setMapCenter([liveLocation.lat, liveLocation.lng]);
+          setMapZoom(14);
+          
+          console.log(`✅ TeamMapView: State updated with live GPS`);
+        } else {
+          console.warn('❌ TeamMapView: No GPS position obtained');
+        }
+      } catch (err) {
+        console.warn('❌ TeamMapView: Could not get live GPS location:', err);
+        // Continue with profile location as fallback
+      }
+    };
+
+    getLiveLocation();
+  }, []);
 
   // Fetch team members with location data
   useEffect(() => {
@@ -76,45 +176,35 @@ export const TeamMapView: React.FC = () => {
         const data = await response.json();
         const members = data.teamMembers || data.data?.teamMembers || [];
         
-        console.log('📊 Team members fetched:', members.length);
-        console.log('📍 Members with location:', members.filter((m: TeamMember) => m.latitude && m.longitude).length);
+        setLastRefresh(new Date()); // Update refresh timestamp
         
-        // Log each member's coordinates
-        members.forEach((m: TeamMember) => {
-          console.log(`  ${m.name}: lat=${m.latitude}, lng=${m.longitude}`);
-        });
-        
-        // Fetch current user's location
-        try {
-          const userResponse = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            console.log('🔍 Full user data response:', userData);
+        // Only fetch user profile if we haven't loaded location yet
+        if (!hasLiveGPS && !currentUserLocation) {
+          try {
+            const userResponse = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
             
-            // API returns {success: true, data: {user: {...}}}
-            const user = userData.data?.user || userData.data || userData;
-            console.log('🔍 User lat/lng:', user.latitude, user.longitude);
-            
-            if (user.latitude && user.longitude) {
-              setCurrentUserLocation({
-                lat: Number(user.latitude),
-                lng: Number(user.longitude)
-              });
-              console.log('✅ Current user location SET:', user.latitude, user.longitude);
-            } else {
-              console.warn('⚠️ User has no location data in profile');
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              const user = userData.data?.user || userData.data || userData;
+              
+              if (user.latitude && user.longitude) {
+                const dbLocation = {
+                  lat: Number(user.latitude),
+                  lng: Number(user.longitude)
+                };
+                setCurrentUserLocation(dbLocation);
+                setMapCenter([dbLocation.lat, dbLocation.lng]);
+                console.log('✅ Using saved location from database');
+              }
             }
-          } else {
-            console.error('❌ Failed to fetch user data:', userResponse.status);
+          } catch (err) {
+            // Silent failure - not critical
           }
-        } catch (err) {
-          console.error('❌ Error fetching user location:', err);
         }
         
         // Store all members for display
@@ -185,7 +275,15 @@ export const TeamMapView: React.FC = () => {
     };
 
     fetchTeamMembers();
-  }, [token]);
+    
+    // Auto-refresh team member locations every 15 seconds (better UX, less overwhelming)
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing team member locations...');
+      fetchTeamMembers();
+    }, 30000); // 15 seconds - not too fast, not too slow
+
+    return () => clearInterval(refreshInterval);
+  }, [token, hasLiveGPS]);
 
   // Color palette for unique markers per team member
   const markerColors = [
@@ -374,13 +472,34 @@ export const TeamMapView: React.FC = () => {
           color: 'white',
         flexShrink: 0
       }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem' }}>
-          🗺️ Team Locations Map
-        </h2>
-        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
-          {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''} with location data
-          {!currentUserLocation && ' • ⚠️ Your location not found'}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.3rem' }}>
+              🗺️ Team Locations Map
+            </h2>
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
+              {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''} with location data
+              {!currentUserLocation && ' • ⚠️ Your location not found'}
+              <br />
+              🔄 Auto-refresh: 30s • Last: {lastRefresh.toLocaleTimeString()}
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.5)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {/* Debug Banner for Missing User Location */}
@@ -428,23 +547,32 @@ export const TeamMapView: React.FC = () => {
               >
                 <div style={{ 
                   fontWeight: 'bold', 
-                  color: '#1976d2',
+                  color: hasLiveGPS ? '#4caf50' : '#1976d2',
                   fontSize: '13px',
                   whiteSpace: 'nowrap',
                   textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
                 }}>
-                  📍 You
+                  {hasLiveGPS ? '�' : '💾'} You {gpsAccuracy && hasLiveGPS && `(±${Math.round(gpsAccuracy)}m)`}
                 </div>
               </Tooltip>
               
               <Popup>
                 <div style={{ padding: '0.5rem' }}>
                   <strong style={{ fontSize: '1.1rem', color: '#1976d2' }}>
-                    Your Location
+                    {hasLiveGPS ? '📡 Live GPS Location' : '💾 Saved Location'}
                   </strong>
                   <br />
                   <span style={{ fontSize: '0.85rem', color: '#666' }}>
-                    🏠 Current Position
+                    📍 {currentUserLocation.lat.toFixed(6)}, {currentUserLocation.lng.toFixed(6)}
+                    <br />
+                    {gpsAccuracy && hasLiveGPS && (
+                      <>
+                        📡 Accuracy: ±{Math.round(gpsAccuracy)}m
+                        {gpsAccuracy <= 50 ? ' ✅' : gpsAccuracy <= 250 ? ' ⚠️' : ' ❌'}
+                        <br />
+                      </>
+                    )}
+                    {hasLiveGPS ? '🟢 Real-time' : '🔵 From database'}
                   </span>
                 </div>
               </Popup>

@@ -619,8 +619,6 @@ export class MatchingController {
             const limit = Math.min(MatchingController.MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.limit as string) || MatchingController.DEFAULT_PAGE_SIZE));
             const offset = (page - 1) * limit;
 
-            logger.info(`Fetching received team requests for user: ${req.user.id} (page: ${page}, limit: ${limit})`);
-
             const result = await pool.query(`
                 SELECT 
                     tr.id,
@@ -656,22 +654,9 @@ export class MatchingController {
                 LIMIT $2 OFFSET $3
             `, [req.user.id, limit, offset]);
 
-            logger.info(`Raw query returned ${result.rows.length} requests for user ${req.user.id}`);
-            logger.info(`Request details:`, JSON.stringify(result.rows.map(r => ({
-                request_id: r.id,
-                sender: r.sender_id,
-                receiver: r.receiver_id,
-                sender_name: r.sender_name,
-                are_equal: r.sender_id === r.receiver_id,
-                sender_equals_user: r.sender_id === req.user?.id,
-                receiver_equals_user: r.receiver_id === req.user?.id
-            })), null, 2));
-
             // Extra safety: filter out any requests where sender equals current user
             const currentUserId = req.user.id;
             const filteredRows = this.filterSelfRequests(result.rows, currentUserId);
-
-            logger.info(`After filtering: ${filteredRows.length} requests remain`);
 
             res.json({
                 success: true,
@@ -1164,7 +1149,7 @@ export class MatchingController {
                 DO UPDATE SET reason = EXCLUDED.reason, created_at = CURRENT_TIMESTAMP
             `, [req.user.id, blockedUserId, reason || null]);
 
-            logger.info(`User ${req.user.id} blocked user ${blockedUserId}`);
+            // User blocked successfully
 
             res.json({
                 success: true,
@@ -1211,7 +1196,7 @@ export class MatchingController {
                 return;
             }
 
-            logger.info(`User ${req.user.id} unblocked user ${blockedUserId}`);
+            // User unblocked successfully
 
             res.json({
                 success: true,
@@ -1330,7 +1315,7 @@ export class MatchingController {
                 [req.user.id, contractorId, message || 'Contact request']
             );
 
-            logger.info(`Contact request sent from user ${req.user.id} to contractor ${contractorId}`);
+            // Contact request sent successfully
 
             res.json({
                 success: true,
@@ -1390,7 +1375,7 @@ export class MatchingController {
                 return;
             }
 
-            logger.info(`Location updated for user ${req.user.id}: ${latitude}, ${longitude}`);
+            // Location updated successfully
 
             res.json({
                 success: true,
@@ -1498,20 +1483,12 @@ export class MatchingController {
             const updated = result.rows[0];
             logger.info(`[UPDATE-LOCATION] User ${req.user.id}: ±${updated.location_accuracy}m`);
 
-            // Also save to location_history for tracking trail
-            try {
-                await pool.query(
-                    `INSERT INTO location_history (user_id, latitude, longitude, accuracy, source, recorded_at)
-                     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-                    [req.user.id, latitude, longitude, accuracy || null, source]
-                );
-                logger.info(`Location history saved for user ${req.user.id} (GPS tracking)`);
-            } catch (historyError) {
-                // Don't fail the request if history insert fails, just log it
-                logger.warn(`Failed to save location history for user ${req.user.id}:`, historyError);
-            }
-
-            logger.info(`Live location updated for user ${req.user.id}: ${latitude}, ${longitude} (accuracy: ${accuracy}m, source: ${source})`);
+            // Save to location_history for tracking trail (fire-and-forget)
+            pool.query(
+                `INSERT INTO location_history (user_id, latitude, longitude, accuracy, source, recorded_at)
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+                [req.user.id, latitude, longitude, accuracy || null, source]
+            ).catch(() => { });  // Silent failure
 
             res.json({
                 success: true,
@@ -1557,7 +1534,7 @@ export class MatchingController {
                 [req.user.id]
             );
 
-            logger.info(`Location tracking stopped for user ${req.user.id}`);
+            // Location tracking stopped
 
             res.json({
                 success: true,

@@ -8,7 +8,7 @@ export interface LoggerOptions {
 
 export function createLogger({ serviceName, level }: LoggerOptions) {
     const envLevel = process.env.LOG_LEVEL;
-    const resolvedLevel = (level || envLevel || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')).toLowerCase();
+    const resolvedLevel = (level || envLevel || (process.env.NODE_ENV === 'production' ? 'warn' : 'debug')).toLowerCase();
     const structured = (process.env.LOG_FORMAT || '').toLowerCase() === 'json';
     const baseFormat = winston.format.combine(
         winston.format.timestamp(),
