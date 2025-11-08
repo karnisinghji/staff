@@ -281,21 +281,21 @@ const EnhancedDashboardPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch pending team requests
-  const requestsResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // Fetch team members
-  const teamResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Fetch both endpoints in parallel to reduce load time
+      const [requestsResponse, teamResponse] = await Promise.all([
+        fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      ]);
 
       if (requestsResponse.ok) {
         const requestsResult = await requestsResponse.json();
