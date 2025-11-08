@@ -49,7 +49,7 @@ Perfect for construction workers, contractors, electricians, plumbers, carpenter
 Download now and start connecting with work opportunities in your area!
 
 📞 Support: support@contractorplatform.com
-🌐 Website: https://contractor-worker-platform.vercel.app
+🌐 Website: https://comeondost.web.app
 ```
 
 ### 🎨 **Visual Assets Required**

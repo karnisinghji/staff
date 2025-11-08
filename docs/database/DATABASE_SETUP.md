@@ -50,9 +50,9 @@ postgresql://contractor_worker_db_owner:PASSWORD@ep-xxx-xxx.us-east-1.aws.neon.t
 
 ## Next Steps:
 Once your database is set up, we'll:
-1. Deploy everything to Vercel (full-stack deployment)
+1. Deploy backend to Azure, frontend to Firebase
 2. Connect frontend and backend services
 3. Test on mobile devices
 4. Enable PWA features
 
-**Ready to proceed to Vercel deployment?**
+**Ready to deploy to Azure and Firebase?**
