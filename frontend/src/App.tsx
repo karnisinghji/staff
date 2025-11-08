@@ -22,7 +22,6 @@ const OAuthCallback = lazy(() => import('./features/auth/OAuthCallback').then(m 
 const EnhancedMatchSearchPage = lazy(() => import('./features/matching/EnhancedMatchSearchPage'));
 const MyTeamPage = lazy(() => import('./features/matching/SavedMatchesPage').then(m => ({ default: m.MyTeamPage })));
 const ModernMessagingPage = lazy(() => import('./features/messaging/ModernMessagingPage'));
-const TeamHub = lazy(() => import('./features/team/TeamHub'));
 const HomePage = lazy(() => import('./features/home/HomePage').then(m => ({ default: m.HomePage })));
 const EnhancedProfilePage = lazy(() => import('./features/profile/EnhancedProfilePage'));
 const StatusPage = lazy(() => import('./features/status/StatusPage'));
@@ -58,8 +57,8 @@ const PublicRoute = ({ children }: { children: React.ReactElement }) => {
     return <LoadingFallback />;
   }
   
-  // If user is already logged in, redirect to team page
-  return token ? <Navigate to="/team" /> : children;
+  // If user is already logged in, redirect to dashboard
+  return token ? <Navigate to="/dashboard" /> : children;
 };
 
 const HomeRoute = () => {
@@ -69,8 +68,8 @@ const HomeRoute = () => {
     return <LoadingFallback />;
   }
   
-  // If logged in, go to team page; otherwise show home page
-  return token ? <Navigate to="/team" /> : <HomePage />;
+  // If logged in, go to dashboard; otherwise show home page
+  return token ? <Navigate to="/dashboard" /> : <HomePage />;
 };
 
 
@@ -279,11 +278,6 @@ const App: React.FC = () => (
             <Route path="/saved" element={
               <ProtectedRoute>
                 <MyTeamPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/team" element={
-              <ProtectedRoute>
-                <TeamHub />
               </ProtectedRoute>
             } />
             <Route path="/messages" element={
