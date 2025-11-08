@@ -34,3 +34,4 @@ Minimal authentication service implementing a clean hex structure.
 - Integrate shared logger & metrics
 - Harden error taxonomy & validation schemas
 # Trigger deploy
+# Azure deployment
