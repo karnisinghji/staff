@@ -30,30 +30,11 @@ poolInstance.on('error', (err) => {
     console.error('Unexpected error on idle database client', err);
 });
 
-// Wrapper pool with query timing
-export const pool = Object.assign(poolInstance, {
-    query: async <T extends QueryResultRow = any>(
-        text: string,
-        params?: any[]
-    ): Promise<QueryResult<T>> => {
-        const start = Date.now();
-        try {
-            const result = await poolInstance.query<T>(text, params);
-            const duration = Date.now() - start;
+// Export pool directly without wrapper to avoid circular reference issues
+export const pool = poolInstance;
 
-            // Log slow queries (>100ms)
-            if (duration > 100) {
-                console.warn(`[AUTH-DB SLOW] ${duration}ms: ${text.substring(0, 80)}...`);
-            }
-
-            return result;
-        } catch (error) {
-            const duration = Date.now() - start;
-            console.error(`[AUTH-DB ERROR] ${duration}ms: ${text.substring(0, 80)}...`, error);
-            throw error;
-        }
-    }
-});
+// Note: Query timing temporarily disabled due to potential circular reference
+// To re-enable, use a proxy or intercept pattern instead of Object.assign
 
 /**
  * Shuts down the shared database pool.

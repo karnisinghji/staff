@@ -50,30 +50,9 @@ export function getHexContainer(): HexContainer {
     };
     const poolInstance = new Pool(dbConfig);
 
-    // Wrapper with query timing
-    const pool = Object.assign(poolInstance, {
-        query: async <T extends QueryResultRow = any>(
-            text: string,
-            params?: any[]
-        ): Promise<QueryResult<T>> => {
-            const start = Date.now();
-            try {
-                const result = await poolInstance.query<T>(text, params);
-                const duration = Date.now() - start;
-
-                // Log slow queries (>100ms)
-                if (duration > 100) {
-                    console.warn(`[USER-DB SLOW] ${duration}ms: ${text.substring(0, 80)}...`);
-                }
-
-                return result;
-            } catch (error) {
-                const duration = Date.now() - start;
-                console.error(`[USER-DB ERROR] ${duration}ms: ${text.substring(0, 80)}...`, error);
-                throw error;
-            }
-        }
-    });
+    // Use pool directly without wrapper to avoid circular reference issues
+    const pool = poolInstance;
+    // Note: Query timing temporarily disabled to prevent stack overflow
 
     const userRepo = new PgUserRepository(pool);
     const contactRepo = new PgContactRepository(pool);
