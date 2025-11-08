@@ -86,13 +86,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('[AuthContext] Token and user saved to both Preferences and localStorage');
     } catch (error) {
       console.error('[AuthContext] Error saving auth:', error);
+      throw error; // Re-throw to prevent login if storage fails
     }
     
-    // Initialize mobile notifications
-    await MobileNotificationService.initialize(newToken);
+    // Initialize mobile notifications (non-blocking)
+    try {
+      await MobileNotificationService.initialize(newToken);
+    } catch (error) {
+      console.warn('[AuthContext] Mobile notifications init failed (non-critical):', error);
+    }
     
-    // Initialize push notifications
-    await pushNotificationService.initialize(newUser.id, newToken);
+    // Initialize push notifications (non-blocking)
+    try {
+      await pushNotificationService.initialize(newUser.id, newToken);
+    } catch (error) {
+      console.warn('[AuthContext] Push notifications init failed (non-critical):', error);
+    }
   }, []);
 
   const logout = useCallback(async () => {
