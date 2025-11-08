@@ -57,7 +57,7 @@ npx cap add ios
   "appName": "Contractor Worker Platform",
   "webDir": "dist",
   "server": {
-    "url": "https://staff-frontend-3cnn.vercel.app",
+    "url": "https://comeondost.web.app",
     "cleartext": true
   },
   "plugins": {
@@ -219,12 +219,12 @@ npx cap open android
     <h1>📱 Install Contractor Worker Platform</h1>
     
     <h2>🤖 Android Users:</h2>
-    <p>1. Visit: <a href="https://staff-frontend-3cnn.vercel.app">https://staff-frontend-3cnn.vercel.app</a></p>
+    <p>1. Visit: <a href="https://comeondost.web.app">https://comeondost.web.app</a></p>
     <p>2. Chrome menu → "Add to Home Screen"</p>
     <p>3. App appears in your app drawer!</p>
     
     <h2>🍎 iPhone Users:</h2>
-    <p>1. Visit: <a href="https://staff-frontend-3cnn.vercel.app">https://staff-frontend-3cnn.vercel.app</a></p>
+    <p>1. Visit: <a href="https://comeondost.web.app">https://comeondost.web.app</a></p>
     <p>2. Safari share button → "Add to Home Screen"</p>
     <p>3. App appears on your home screen!</p>
     

@@ -135,7 +135,7 @@ JWT_EXPIRES_IN=24h
 # API
 PORT=3001
 NODE_ENV=production
-CORS_ORIGIN=https://staff-frontend-3cnn.vercel.app
+CORS_ORIGIN=https://comeondost.web.app
 ```
 
 ## Benefits of Real Database
