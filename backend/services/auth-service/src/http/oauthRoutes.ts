@@ -13,29 +13,46 @@ export function createOAuthRoutes() {
 
     // Google OAuth
     router.get('/google', (req, res, next) => {
+        // If Google strategy isn't configured, avoid throwing an exception from passport
+        const hasGoogle = (passport as any)._strategy && (passport as any)._strategy('google');
+        if (!hasGoogle) {
+            console.warn('[OAuth] Google strategy not configured — redirecting to login with error');
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            return res.redirect(`${frontendUrl}/login?error=google_not_configured`);
+        }
+
         // Store platform parameter in session-like storage (query param will be preserved)
         const platform = req.query.platform;
         if (platform === 'mobile') {
             // For mobile, we'll check this in callback
             req.query.state = 'mobile'; // Use state parameter to pass platform info
         }
+
         passport.authenticate('google', {
             scope: ['profile', 'email'],
             session: false,
             state: platform === 'mobile' ? 'mobile' : undefined
         })(req, res, next);
-    }); router.get('/google/callback',
-        passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
-        async (req, res) => {
-            try {
-                const oauthUser = req.user as OAuthUser;
-                await handleOAuthCallback(oauthUser, res, credRepo, tokenSigner);
-            } catch (error) {
-                console.error('Google OAuth callback error:', error);
-                res.redirect('/login?error=authentication_failed');
-            }
+    });
+
+    router.get('/google/callback', (req, res, next) => {
+        const hasGoogle = (passport as any)._strategy && (passport as any)._strategy('google');
+        if (!hasGoogle) {
+            console.warn('[OAuth] Google strategy not configured on callback — redirecting with error');
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            return res.redirect(`${frontendUrl}/login?error=google_not_configured`);
         }
-    );
+        // Delegate to passport when strategy is present
+        return passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' })(req, res, next);
+    }, async (req, res) => {
+        try {
+            const oauthUser = req.user as OAuthUser;
+            await handleOAuthCallback(oauthUser, res, credRepo, tokenSigner);
+        } catch (error) {
+            console.error('Google OAuth callback error:', error);
+            res.redirect('/login?error=authentication_failed');
+        }
+    });
 
     // Facebook OAuth
     router.get('/facebook', passport.authenticate('facebook', {
