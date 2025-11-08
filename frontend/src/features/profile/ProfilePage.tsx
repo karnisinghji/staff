@@ -155,11 +155,27 @@ const ProfilePage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  // Fetch profile with React Query
   const { data: profileData, isLoading: profileQueryLoading, error: profileQueryError } = useQuery({
     queryKey: ['profile'],
     queryFn: fetchProfile,
     enabled: !!token,
-    staleTime: 1000 * 60
+    staleTime: 1000 * 60,
+    retry: 2,
+    retryDelay: 500
+  });
+
+  // Fetch skills in parallel with React Query
+  const { data: skillsData, isLoading: skillsQueryLoading } = useQuery({
+    queryKey: ['skills'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
+      return res.data?.data || [];
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // Cache skills for 5 minutes
+    retry: 2,
+    retryDelay: 500
   });
 
   useEffect(() => {
@@ -186,25 +202,21 @@ const ProfilePage: React.FC = () => {
     }
   }, [profileData, profileQueryLoading]);
 
-  // Fetch available skills once
-  const fetchSkills = useCallback(async () => {
-    setSkillsLoading(true);
-    setSkillsError('');
-    try {
-      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
-      const list: string[] = res.data?.data || [];
-      const options = [{ value: '', label: 'Select skill type' }, ...list.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))];
+  // Update skillTypeOptions when skillsData changes
+  useEffect(() => {
+    if (skillsData) {
+      const list: string[] = skillsData;
+      const options = [
+        { value: '', label: 'Select skill type' },
+        ...list.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))
+      ];
       setSkillTypeOptions(options);
-    } catch (e) {
-      setSkillsError('Failed to load skills');
-    } finally {
+      setSkillsLoading(false);
+      setSkillsError('');
+    } else if (!skillsQueryLoading) {
       setSkillsLoading(false);
     }
-  }, []);
-
-  // Initial fetch
-  // No manual fetch effect; handled by React Query
-  useEffect(() => { fetchSkills(); }, [fetchSkills]);
+  }, [skillsData, skillsQueryLoading]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -364,10 +376,44 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Show loading state while both profile and skills are loading
+  const isPageLoading = profileQueryLoading || skillsQueryLoading || loading;
+
   return (
     <div style={{ maxWidth: 500, margin: '2rem auto', padding: '2rem', background: '#fff', borderRadius: 12, boxShadow: '0 2px 12px #eee' }}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+      {isPageLoading && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          background: 'rgba(255,255,255,0.9)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              width: 60, 
+              height: 60, 
+              border: '4px solid #f3f3f3', 
+              borderTop: '4px solid #43a047', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 1rem'
+            }}></div>
+            <p style={{ color: '#43a047', fontWeight: 600 }}>Loading profile...</p>
+          </div>
+        </div>
+      )}
       <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         .profile-form input, .profile-form select {
           padding: 1.1rem;
           border-radius: 14px;
