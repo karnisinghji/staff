@@ -35,3 +35,4 @@ Minimal authentication service implementing a clean hex structure.
 - Harden error taxonomy & validation schemas
 # Trigger deploy
 # Azure deployment
+# Test
