@@ -4,7 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { theme } from '../../styles/theme';
 import { SkeletonCard, LoadingButton } from '../../components/LoadingComponents';
 import { API_CONFIG } from '../../config/api';
-import { reverseGeocode, formatLocation } from '../../utils/location';
+import { formatLocation } from '../../utils/location';
 import { Geolocation } from '@capacitor/geolocation';
 
 interface SearchResultCardProps {
@@ -335,7 +335,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
 
 export const EnhancedMatchSearchPage: React.FC = () => {
   const { token, user } = useAuth();
-  const { success, error: showError } = useToast();
+  const { success, error: showError, info, warning } = useToast();
   
   // Search state
   const [skillType, setSkillType] = useState('');
@@ -356,6 +356,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('relevance');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
 
   // Skills fetched from backend database
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
@@ -429,18 +430,39 @@ export const EnhancedMatchSearchPage: React.FC = () => {
           }
         }
 
-        // Get current position using Capacitor Geolocation
-        const position = await Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        });
-
-        const { latitude, longitude, accuracy } = position.coords;
-        console.log(`🔍 Auto location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (accuracy: ±${Math.round(accuracy || 0)}m)`);
+        // Get location (GPS or WiFi - whatever is available)
+        console.log(`� Detecting location...`);
         
-        // Store the GPS coordinates for accurate search
+        let position;
+        let accuracy = 999999;
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        while (accuracy > 50 && attempts < maxAttempts) {
+          attempts++;
+          console.log(`GPS attempt ${attempts}/${maxAttempts}...`);
+          
+          position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          });
+          
+          accuracy = position.coords.accuracy || 999999;
+          console.log(`Accuracy: ±${Math.round(accuracy)}m`);
+          
+          if (accuracy <= 50) break;
+          if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 2000));
+        }
+        
+        const latitude = position!.coords.latitude;
+        const longitude = position!.coords.longitude;
+        
+        console.log(`📍 Location detected: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`);
+        
+        // Store coordinates and accuracy
         setLocationCoords({ lat: latitude, lng: longitude });
+        setLocationAccuracy(accuracy || null);
         
         // Use reverse geocoding via backend proxy to avoid CORS issues
         try {
@@ -452,7 +474,9 @@ export const EnhancedMatchSearchPage: React.FC = () => {
             const data = await response.json();
             const addressComponents = data.address || {};
             
-            // Get city name (same priority as Profile page)
+            // Get detailed address with street name
+            const road = addressComponents.road || addressComponents.street || '';
+            const suburb = addressComponents.suburb || addressComponents.neighbourhood || '';
             const cityName = addressComponents.city || 
               addressComponents.town || 
               addressComponents.village || 
@@ -460,7 +484,15 @@ export const EnhancedMatchSearchPage: React.FC = () => {
               addressComponents.state || '';
             
             const stateName = addressComponents.state || '';
-            const locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+            
+            // Build location string with street if available
+            let locationString = '';
+            if (road && accuracy < 500) {
+              // Only show street if GPS is accurate
+              locationString = suburb ? `${road}, ${suburb}, ${cityName}` : `${road}, ${cityName}`;
+            } else {
+              locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+            }
             
             setLocation(locationString || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
             console.log(`📍 Auto-detected location: ${locationString} (${latitude}, ${longitude})`);
@@ -518,13 +550,12 @@ export const EnhancedMatchSearchPage: React.FC = () => {
       console.log('User role:', userRole, '| Contractor?', isContractor, '| Endpoint:', endpoint);
       
       // Prepare search body for POST request
-      // If we have GPS coordinates, send them directly for maximum accuracy
-      // Otherwise, send location name and let backend geocode it
+      // Use GPS coordinates if available (should be accurate ±50m from retry logic)
       const searchBody = {
         location: locationCoords 
-          ? `${locationCoords.lat}, ${locationCoords.lng}` // Send GPS coordinates directly
-          : location.trim(), // Fallback to city name
-        maxDistance: Math.max(1, maxDistance), // Required, ensure positive
+          ? `${locationCoords.lat}, ${locationCoords.lng}`
+          : location.trim(),
+        maxDistance: Math.max(1, maxDistance),
         skillType: skillType || undefined,
         limit: 12,
         ...(pageNum > 1 && { offset: (pageNum - 1) * 12 })
@@ -731,13 +762,28 @@ export const EnhancedMatchSearchPage: React.FC = () => {
           {/* Location */}
           <div>
             <label style={{
-              display: 'block',
+              display: 'flex',
+              alignItems: 'center',
+              gap: theme.spacing.xs,
               fontSize: theme.typography.fontSize.sm,
               fontWeight: theme.typography.fontWeight.medium,
               color: theme.colors.neutral[700],
               marginBottom: theme.spacing.xs,
             }}>
-              Location {detectingLocation && <span style={{ color: theme.colors.primary[600] }}>(Detecting...)</span>}
+              <span>Location</span>
+              {detectingLocation && <span style={{ color: theme.colors.primary[600] }}>(Detecting...)</span>}
+              {locationAccuracy && !detectingLocation && (
+                <span style={{
+                  fontSize: '0.7rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: locationAccuracy <= 100 ? '#dcfce7' : locationAccuracy <= 1000 ? '#fef3c7' : '#fee2e2',
+                  color: locationAccuracy <= 100 ? '#166534' : locationAccuracy <= 1000 ? '#92400e' : '#991b1b',
+                  fontWeight: 600,
+                }}>
+                  {locationAccuracy <= 100 ? '✓ Accurate' : locationAccuracy <= 1000 ? `⚠ ±${Math.round(locationAccuracy)}m` : `⚠ ±${Math.round(locationAccuracy / 1000)}km`}
+                </span>
+              )}
             </label>
             <div style={{ display: 'flex', gap: theme.spacing.xs }}>
               <input
@@ -781,18 +827,53 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                       }
                     }
 
-                    // Get current position using Capacitor Geolocation
-                    const position = await Geolocation.getCurrentPosition({
-                      enableHighAccuracy: true,
-                      timeout: 10000,
-                      maximumAge: 60000 // Cache for 1 minute
-                    });
-
-                    const { latitude, longitude } = position.coords;
-                    console.log(`📍 Button location detection: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+                    // Get location quickly
+                    console.log(`� Getting your location...`);
                     
-                    // Store the GPS coordinates for accurate search
+                    info('Getting accurate GPS location...');
+                    
+                    let position;
+                    let accuracy = 999999;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    
+                    while (accuracy > 50 && attempts < maxAttempts) {
+                      attempts++;
+                      console.log(`GPS attempt ${attempts}/${maxAttempts}...`);
+                      
+                      if (attempts > 1) {
+                        info(`Improving GPS... (${attempts}/${maxAttempts})`);
+                      }
+                      
+                      position = await Geolocation.getCurrentPosition({
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                      });
+                      
+                      accuracy = position.coords.accuracy || 999999;
+                      console.log(`Accuracy: ±${Math.round(accuracy)}m`);
+                      
+                      if (accuracy <= 50) {
+                        success(`GPS locked! ±${Math.round(accuracy)}m`);
+                        break;
+                      }
+                      
+                      if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 2000));
+                    }
+                    
+                    if (accuracy > 50) {
+                      warning(`Best accuracy: ±${Math.round(accuracy)}m`);
+                    }
+                    
+                    const latitude = position!.coords.latitude;
+                    const longitude = position!.coords.longitude;
+                    
+                    console.log(`📍 Location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`);
+                    
+                    // Store coordinates and accuracy
                     setLocationCoords({ lat: latitude, lng: longitude });
+                    setLocationAccuracy(accuracy || null);
                     
                     // Use reverse geocoding via backend proxy to avoid CORS issues
                     try {
@@ -804,7 +885,9 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                         const data = await response.json();
                         const addressComponents = data.address || {};
                         
-                        // Get city name (same priority as Profile page)
+                        // Get detailed address with street name
+                        const road = addressComponents.road || addressComponents.street || '';
+                        const suburb = addressComponents.suburb || addressComponents.neighbourhood || '';
                         const cityName = addressComponents.city || 
                           addressComponents.town || 
                           addressComponents.village || 
@@ -812,15 +895,35 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                           addressComponents.state || '';
                         
                         const stateName = addressComponents.state || '';
-                        const locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+                        
+                        // Build location string with street if GPS is accurate
+                        let locationString = '';
+                        if (road && accuracy < 500) {
+                          // Show street if GPS is good
+                          locationString = suburb ? `${road}, ${suburb}, ${cityName}` : `${road}, ${cityName}`;
+                        } else {
+                          locationString = stateName ? `${cityName}, ${stateName}` : cityName;
+                        }
                         
                         setLocation(locationString || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                        success('Location detected', `Using: ${locationString || 'coordinates'}`);
+                        
+                        // Provide feedback based on accuracy
+                        const accuracyKm = accuracy ? (accuracy / 1000).toFixed(1) : 'unknown';
+                        if (accuracy && accuracy <= 50) {
+                          success('Location detected', `${locationString || 'coordinates'} (±${Math.round(accuracy)}m - Excellent GPS signal)`);
+                        } else if (accuracy && accuracy <= 500) {
+                          success('Location detected', `${locationString || 'coordinates'} (±${Math.round(accuracy)}m - Good accuracy)`);
+                        } else if (accuracy && accuracy > 500) {
+                          success('Location detected', `${locationString || 'coordinates'} (±${accuracyKm}km - Consider moving to an open area for better GPS)`);
+                        } else {
+                          success('Location detected', `Using: ${locationString || 'coordinates'}`);
+                        }
                         console.log(`📍 Manual location detected: ${locationString} (${latitude}, ${longitude})`);
                       } else {
                         // Fallback to coordinates
                         setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                        success('Location detected', `Using coordinates`);
+                        const accuracyKm = accuracy ? (accuracy / 1000).toFixed(1) : 'unknown';
+                        success('Location detected', accuracy ? `Coordinates (±${accuracyKm}km accuracy)` : 'Using coordinates');
                       }
                     } catch (geocodeError) {
                       // Fallback to coordinates if geocoding fails

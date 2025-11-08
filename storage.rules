@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// Firebase Storage Rules for comeondost project
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Public read access for APK downloads
+    match /apk/{allPaths=**} {
+      allow read: if true;  // Anyone can download
+      allow write: if false;  // Only admin/CLI can upload
+    }
+    
+    // Default: Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
