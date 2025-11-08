@@ -54,7 +54,7 @@ jobs:
 
       - name: Deploy to Azure Container Apps
         run: |
-          az containerapp up \
+          az containerapp create \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --environment staff-env \
@@ -65,4 +65,13 @@ jobs:
             --max-replicas 5 \
             --cpu 0.5 \
             --memory 1Gi \
-            --env-vars NODE_ENV=production SERVICE_NAME=auth-service
+            --env-vars NODE_ENV=production SERVICE_NAME=auth-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv || \
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --set-env-vars NODE_ENV=production SERVICE_NAME=auth-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv
