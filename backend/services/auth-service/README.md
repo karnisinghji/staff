@@ -36,3 +36,4 @@ Minimal authentication service implementing a clean hex structure.
 # Trigger deploy
 # Azure deployment
 # Test
+
