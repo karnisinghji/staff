@@ -1,0 +1,77 @@
+name: Deploy User Service to Azure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/services/user-service/**'
+      - '.github/workflows/deploy-azure-user.yml'
+
+env:
+  AZURE_SUBSCRIPTION_ID: bb83cf18-522d-4546-ba6b-39e219d3c0db
+  RESOURCE_GROUP: staff-sea-rg
+  CONTAINER_APP_NAME: user-service
+  DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}/staff-user-service
+  LOCATION: southeastasia
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/services/user-service
+          file: ./backend/services/user-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE }}:latest
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: 717d7093-9b75-43a2-a849-5fc684daa80d
+          tenant-id: 667ecb3b-8888-4637-a4bc-cde8a4d37efb
+          subscription-id: bb83cf18-522d-4546-ba6b-39e219d3c0db
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          az containerapp create \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --environment staff-env \
+            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --target-port 3000 \
+            --ingress external \
+            --min-replicas 0 \
+            --max-replicas 5 \
+            --cpu 0.5 \
+            --memory 1Gi \
+            --env-vars NODE_ENV=production SERVICE_NAME=user-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv || \
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --set-env-vars NODE_ENV=production SERVICE_NAME=user-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv
