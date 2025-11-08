@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, QueryResult, QueryResultRow } from 'pg';
 import { PgUserRepository, PgContactRepository, PgProfileRepository, PgSkillRepository, InMemoryPasswordResetRepository, PgPasswordResetTokenRepository } from '../infrastructure/db/PgRepositories';
 import { GetCompleteProfileUseCase } from '../application/use-cases/GetCompleteProfile';
 import { UpdateUserUseCase } from '../application/use-cases/UpdateUser';
@@ -47,7 +47,33 @@ export function getHexContainer(): HexContainer {
         connectionTimeoutMillis: 10000,
         statement_timeout: 30000,
     };
-    const pool = new Pool(dbConfig);
+    const poolInstance = new Pool(dbConfig);
+
+    // Wrapper with query timing
+    const pool = Object.assign(poolInstance, {
+        query: async <T extends QueryResultRow = any>(
+            text: string,
+            params?: any[]
+        ): Promise<QueryResult<T>> => {
+            const start = Date.now();
+            try {
+                const result = await poolInstance.query<T>(text, params);
+                const duration = Date.now() - start;
+
+                // Log slow queries (>100ms)
+                if (duration > 100) {
+                    console.warn(`[USER-DB SLOW] ${duration}ms: ${text.substring(0, 80)}...`);
+                }
+
+                return result;
+            } catch (error) {
+                const duration = Date.now() - start;
+                console.error(`[USER-DB ERROR] ${duration}ms: ${text.substring(0, 80)}...`, error);
+                throw error;
+            }
+        }
+    });
+
     const userRepo = new PgUserRepository(pool);
     const contactRepo = new PgContactRepository(pool);
     const profileRepo = new PgProfileRepository(pool);
