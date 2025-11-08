@@ -25,7 +25,7 @@ This is a **microservices-based contractor/worker matching platform** with:
   - notification-service (port 3005) - Real-time notifications & WebSocket
 - **Frontend**: React + TypeScript + Vite SPA (`frontend/`)
 - **Database**: PostgreSQL (Neon) with shared connection via `DATABASE_URL`
-- **Deployment**: Railway (backend services), Netlify (frontend)
+- **Deployment**: Azure Container Apps (backend services), Firebase Hosting (frontend)
 
 ## Critical Development Commands
 
@@ -105,7 +105,7 @@ Services import via: `import { logger, createHttpMetrics } from 'shared'`
 
 ## Frontend Architecture
 
-**Config**: `frontend/src/config/api.ts` switches between dev (localhost) and production (Railway URLs) based on `import.meta.env.MODE`
+**Config**: `frontend/src/config/api.ts` switches between dev (localhost) and production (Azure Container Apps URLs) based on `import.meta.env.MODE`
 
 **State Management**:
 - `AuthContext` (`features/auth/AuthContext.tsx`) - JWT token & user state in localStorage, auto-logout on expiry
@@ -168,7 +168,7 @@ VITE_API_BASE_URL=http://localhost:3000  # Not currently used; see api.ts
 VITE_ENV=development
 ```
 
-**Production**: Each Railway service has `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `PORT=10000`
+**Production**: Each Azure Container App has `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `PORT=3000`
 
 ## Database Schema
 
@@ -192,14 +192,14 @@ Seed data: `database-seed.sql`
 
 ## Deployment Notes
 
-**Railway**: Each service is deployed independently. Use `railway up --detach` from service directory or let GitHub webhook trigger deploys.
+**Azure Container Apps**: Each service is deployed via GitHub Actions workflows (`.github/workflows/deploy-azure-*.yml`). Workflows trigger on push to main and changes to service code.
 
-**Netlify**: Frontend auto-deploys from GitHub. Build config:
+**Firebase Hosting**: Frontend deploys via `firebase deploy --only hosting` from `frontend/` directory. Build config:
 - Base directory: `frontend`
 - Build command: `npm run build`
 - Publish directory: `frontend/dist`
 
-**CORS**: Production frontend (`https://karnisinghji.github.io`) must be in each service's `ALLOWED_ORIGINS`
+**CORS**: Production frontend (`https://comeondost.web.app`, `https://comeondost.firebaseapp.com`) must be in each service's `ALLOWED_ORIGINS`
 
 ## Known Patterns & Gotchas
 
@@ -234,7 +234,7 @@ Seed data: `database-seed.sql`
 
 ### WebSocket Connection Failures
 
-**Symptom**: `WebSocket connection to 'wss://notification-service-production-8738.up.railway.app/ws' failed`
+**Symptom**: `WebSocket connection to 'wss://notification-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/ws' failed`
 
 **Root Cause**: The notification service WebSocket endpoint is not fully implemented - it returns HTTP 426 (Upgrade Required) instead of upgrading the connection.
 
@@ -261,9 +261,9 @@ Seed data: `database-seed.sql`
    - Frontend sends `recipient_id` but backend expects `receiverId`
    - Frontend sends to `/api/matching/team-requests` but backend route is `/api/matching/send-team-request`
 
-3. **Database query failures** - Check Railway logs for SQL errors:
+3. **Database query failures** - Check Azure container logs for SQL errors:
    ```bash
-   railway logs -s matching-service
+   az containerapp logs show --name matching-service --resource-group staff-sea-rg --type console --tail 50
    ```
 
 4. **Authentication issues** - Verify JWT token is valid and user role matches endpoint requirements:
@@ -273,7 +273,7 @@ Seed data: `database-seed.sql`
 **Debug Steps**:
 1. Check browser Network tab for exact request payload
 2. Verify `req.user` is populated (JWT decoded correctly)
-3. Check Railway service logs for stack traces
+3. Check Azure container logs for stack traces
 4. Test locally with same payload: `cd backend/services/matching-service && npm run dev`
 
 ### Frontend API Request Patterns
@@ -315,15 +315,15 @@ const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/send-t
 
 ```bash
 # Check all services are responding
-curl https://auth-service-production-d5c8.up.railway.app/health
-curl https://user-service-production-f141.up.railway.app/health
-curl https://matching-service-production.up.railway.app/health
-curl https://communication-service-production-c165.up.railway.app/health
-curl https://notification-service-production-8738.up.railway.app/health
+curl https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/health
+curl https://user-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/health
+curl https://matching-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/health
+curl https://communication-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/health
+curl https://notification-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/health
 
 # Check database connectivity (requires valid JWT)
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://user-service-production-f141.up.railway.app/api/users/me
+  https://user-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/users/me
 ```
 
 ## Documentation References
@@ -333,4 +333,4 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 - `backend/docs/HEALTH-METRICS.md` - Health endpoint contract
 - `backend/services/user-service/docs/architecture/` - Hexagonal architecture ADRs
 - `DATABASE_SETUP.md` - Neon PostgreSQL setup
-- `RAILWAY_DEPLOYMENT_GUIDE.md` - Deployment instructions
+- `AZURE_DEPLOYMENT_SUCCESS.md` - Azure deployment guide

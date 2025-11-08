@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Setup Helper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .url-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .url-text {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        .big-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .big-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .steps {
+            counter-reset: step;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 40px;
+            position: relative;
+        }
+        .step:before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .credentials {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .credentials strong {
+            color: #856404;
+        }
+        .note {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google OAuth Setup Helper</h1>
+        <p class="subtitle">Quick setup for ComeOnDost platform authentication</p>
+
+        <div class="credentials">
+            <strong>📧 Login with:</strong> khushabhu@gmail.com<br>
+            <strong>🔑 Client ID:</strong> 346188939499-68nadmhoo0v5d51g3l8dop77nkdm4vuu
+        </div>
+
+        <a href="https://console.cloud.google.com/apis/credentials/oauthclient/346188939499-68nadmhoo0v5d51g3l8dop77nkdm4vuu" 
+           target="_blank" 
+           class="big-button">
+            🚀 Open Google Cloud Console (OAuth Client)
+        </a>
+
+        <div class="section">
+            <h2>✅ Authorized Redirect URIs</h2>
+            <p style="margin-bottom: 15px;">Copy and paste each URL into "Authorized redirect URIs" section:</p>
+            
+            <div class="url-item">
+                <span class="url-text">http://localhost:3001/api/auth/google/callback</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'http://localhost:3001/api/auth/google/callback')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth/google/callback</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth/google/callback')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://comeondost.web.app/auth/callback</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://comeondost.web.app/auth/callback')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://comeondost.firebaseapp.com/auth/callback</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://comeondost.firebaseapp.com/auth/callback')">Copy</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Authorized JavaScript Origins</h2>
+            <p style="margin-bottom: 15px;">Copy and paste each origin into "Authorized JavaScript origins" section:</p>
+            
+            <div class="url-item">
+                <span class="url-text">http://localhost:5173</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'http://localhost:5173')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://comeondost.web.app</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://comeondost.web.app')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://comeondost.firebaseapp.com</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://comeondost.firebaseapp.com')">Copy</button>
+            </div>
+            
+            <div class="url-item">
+                <span class="url-text">https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io</span>
+                <button class="copy-btn" onclick="copyToClipboard(this, 'https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io')">Copy</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Step-by-Step Instructions</h2>
+            <div class="steps">
+                <div class="step">Click the big blue button above to open Google Cloud Console</div>
+                <div class="step">Login with khushabhu@gmail.com if not already logged in</div>
+                <div class="step">Click "Edit" button if not already in edit mode</div>
+                <div class="step">Scroll to "Authorized redirect URIs" section</div>
+                <div class="step">Click "+ ADD URI" button</div>
+                <div class="step">Use the "Copy" buttons above to copy each redirect URI and paste them</div>
+                <div class="step">Scroll to "Authorized JavaScript origins" section</div>
+                <div class="step">Click "+ ADD URI" button</div>
+                <div class="step">Use the "Copy" buttons above to copy each origin and paste them</div>
+                <div class="step">Click "SAVE" button at the bottom of the page</div>
+                <div class="step">Wait 2-3 minutes for changes to propagate globally</div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>💡 Note:</strong> After saving in Google Console, test your OAuth flow by visiting:<br>
+            <a href="https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth/google" 
+               target="_blank" 
+               style="color: #0c5460; font-weight: 600;">
+                Test Google Sign-In →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✓ Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+    </script>
+</body>
+</html>
