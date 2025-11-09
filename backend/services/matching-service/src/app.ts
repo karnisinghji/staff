@@ -24,7 +24,7 @@ export function buildApp(): express.Express {
     const app = express();
 
     // CORS must be applied BEFORE security middleware for preflight requests
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').map(o => o.trim()).filter(o => o) || [
         'http://localhost:3000',
         'http://localhost:5173',
         'https://localhost',  // Capacitor mobile app

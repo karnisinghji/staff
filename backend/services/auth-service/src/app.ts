@@ -78,7 +78,7 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
             'https://comeondost.netlify.app',
             'https://comeondost.web.app',  // Firebase Hosting
             'https://comeondost.firebaseapp.com',  // Firebase Hosting alternative
-            ...(process.env.ALLOWED_ORIGINS?.split(',').filter(o => o) || [])
+            ...(process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(o => o) || [])
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
