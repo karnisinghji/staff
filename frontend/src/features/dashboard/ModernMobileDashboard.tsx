@@ -18,7 +18,7 @@ const ModernMobileDashboard: React.FC = () => {
     newChats: 0,
     requests: 0,
     projectProgress: 75,
-    projectName: 'Finish Project X',
+    projectName: 'Commercial Building Site',
   });
   const [loading, setLoading] = useState(true);
 
@@ -27,30 +27,47 @@ const ModernMobileDashboard: React.FC = () => {
   }, [token]);
 
   const fetchDashboardData = async () => {
+    let newChats = 0;
+    let requests = 0;
+
     try {
       // Fetch team requests count
-      const requestsRes = await fetch(
-        `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+      try {
+        const requestsRes = await fetch(
+          `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (requestsRes.ok) {
+          const requestsData = await requestsRes.json();
+          requests = requestsData.requests?.length || 0;
         }
-      );
-      const requestsData = await requestsRes.json();
+      } catch (err) {
+        console.error('Failed to fetch team requests:', err);
+      }
       
-      // Fetch messages count (assuming unread messages)
-      const messagesRes = await fetch(
-        `${API_CONFIG.COMMUNICATION_SERVICE}/api/messages/conversations`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+      // Fetch messages count
+      try {
+        const messagesRes = await fetch(
+          `${API_CONFIG.COMMUNICATION_SERVICE}/api/messages/conversations`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (messagesRes.ok) {
+          const messagesData = await messagesRes.json();
+          newChats = messagesData.conversations?.filter((c: any) => c.unread_count > 0).length || 0;
         }
-      );
-      const messagesData = await messagesRes.json();
+      } catch (err) {
+        console.error('Failed to fetch messages:', err);
+      }
 
       setStats({
-        newChats: messagesData.conversations?.filter((c: any) => c.unread_count > 0).length || 5,
-        requests: requestsData.requests?.length || 3,
+        newChats,
+        requests,
         projectProgress: 75,
-        projectName: 'Finish Project X',
+        projectName: 'Commercial Building Site',
       });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -95,14 +112,14 @@ const ModernMobileDashboard: React.FC = () => {
             </svg>
           </div>
           <div>
-            <h2 className="welcome-text">Welcome, {user?.name || 'Alex'}!</h2>
+            <h2 className="welcome-text">Welcome, {user?.name || user?.displayName || user?.email?.split('@')[0] || 'User'}!</h2>
           </div>
         </div>
       </div>
 
       {/* Activity Snapshot */}
       <div className="activity-card gradient-blue">
-        <h3 className="card-title">Activity Snapshot</h3>
+        <h3 className="card-title">Today's Activity</h3>
         <div className="activity-chart">
           <svg width="80" height="40" viewBox="0 0 80 40">
             <polyline
@@ -116,37 +133,37 @@ const ModernMobileDashboard: React.FC = () => {
         <div className="activity-stats">
           <div className="stat-item">
             <div className="stat-value">{stats.newChats}</div>
-            <div className="stat-label">New Chats</div>
+            <div className="stat-label">New Messages</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{stats.requests}</div>
-            <div className="stat-label">Requests</div>
+            <div className="stat-label">Team Requests</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{stats.requests}</div>
-            <div className="stat-label">Requests</div>
+            <div className="stat-label">Active Jobs</div>
           </div>
         </div>
       </div>
 
       {/* Two Column Grid */}
       <div className="grid-two-column">
-        {/* Prep for Tech Event */}
+        {/* My Team */}
         <div className="small-card gradient-green" onClick={() => navigate('/my-team')}>
-          <div className="small-card-title">Prep for</div>
-          <div className="small-card-subtitle">Tech Event</div>
+          <div className="small-card-title">My</div>
+          <div className="small-card-subtitle">Team</div>
         </div>
 
-        {/* Five Year Plan */}
-        <div className="small-card gradient-light-blue" onClick={() => navigate('/profile')}>
-          <div className="small-card-title">Five</div>
-          <div className="small-card-subtitle">Year Plan</div>
+        {/* Find Workers */}
+        <div className="small-card gradient-light-blue" onClick={() => navigate('/search')}>
+          <div className="small-card-title">Find</div>
+          <div className="small-card-subtitle">Workers</div>
         </div>
       </div>
 
-      {/* Weekly Goals */}
+      {/* Current Project */}
       <div className="goals-card gradient-lime">
-        <h3 className="card-title">Weekly Goals</h3>
+        <h3 className="card-title">Current Project</h3>
         <div className="progress-section">
           <div className="progress-text">
             <span className="progress-percentage">{stats.projectProgress}%</span>
@@ -177,7 +194,7 @@ const ModernMobileDashboard: React.FC = () => {
           </div>
           <div className="quick-actions-text">
             <div className="quick-actions-title">Quick Actions</div>
-            <div className="quick-actions-subtitle">Find Match</div>
+            <div className="quick-actions-subtitle">Connect & Collaborate</div>
           </div>
         </div>
         <div className="quick-action-buttons">
@@ -188,19 +205,19 @@ const ModernMobileDashboard: React.FC = () => {
               <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            <span>New Team</span>
+            <span>View Team</span>
           </button>
           <button className="quick-btn" onClick={() => navigate('/messages')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span>Messages</span>
+            <span>Chat Now</span>
           </button>
         </div>
       </div>
 
-      {/* Upcoming Events */}
-      <div className="events-card gradient-light-blue-event">
+      {/* Upcoming Jobs */}
+      <div className="events-card gradient-light-blue-event" onClick={() => navigate('/search')}>
         <div className="event-icon">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -210,8 +227,8 @@ const ModernMobileDashboard: React.FC = () => {
           </svg>
         </div>
         <div className="event-content">
-          <div className="event-title">Upcoming Events</div>
-          <div className="event-description">Coffee & Code Meetup - Tomorrow</div>
+          <div className="event-title">Next Opportunity</div>
+          <div className="event-description">Browse Available Projects</div>
         </div>
       </div>
 
