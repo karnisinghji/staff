@@ -17,26 +17,47 @@ export const NavBar: React.FC = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1rem 2rem;
-          background: #f5ecd6;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-          border-bottom: 2px solid #e9d8a6;
-          font-size: 1.08rem;
+          padding: 0.75rem 2rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          font-size: 1rem;
           position: sticky;
           top: 0;
-          z-index: 100;
+          z-index: 1000;
+          backdrop-filter: blur(10px);
         }
 
         .navbar-brand {
           display: flex;
           align-items: center;
+          gap: 0.75rem;
           margin-right: 2rem;
+        }
+
+        .navbar-brand-text {
+          color: #ffffff;
+          font-size: 1.5rem;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .navbar-brand-icon {
+          background: rgba(255,255,255,0.2);
+          padding: 0.5rem;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(10px);
         }
 
         .navbar-menu {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
+          gap: 2rem;
           flex: 1;
         }
 
@@ -51,55 +72,73 @@ export const NavBar: React.FC = () => {
         .navbar-links {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
+          gap: 0.5rem;
         }
 
         .navbar-actions {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.75rem;
         }
 
         .navbar a {
-          color: #1976d2;
+          color: rgba(255,255,255,0.9);
           text-decoration: none;
-          font-weight: 600;
+          font-weight: 500;
           padding: 0.5rem 1rem;
-          border-radius: 8px;
-          transition: all 0.2s ease;
+          border-radius: 10px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           white-space: nowrap;
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .navbar a:hover {
-          background: #f5f7fa;
-          color: #115293;
-          transform: translateY(-1px);
+          background: rgba(255,255,255,0.15);
+          color: #ffffff;
+          transform: translateY(-2px);
+        }
+
+        .navbar a.active {
+          background: rgba(255,255,255,0.25);
+          color: #ffffff;
+          font-weight: 600;
         }
 
         .navbar button {
-          background: #d32f2f;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 0.5rem 1rem;
+          background: rgba(255,255,255,0.2);
+          color: #ffffff;
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 10px;
+          padding: 0.5rem 1.25rem;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           white-space: nowrap;
+          backdrop-filter: blur(10px);
         }
 
         .navbar button:hover {
-          background: #b71c1c;
-          transform: translateY(-1px);
+          background: rgba(255,255,255,0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .mobile-menu-toggle {
           display: none;
-          background: none;
-          border: none;
+          background: rgba(255,255,255,0.2);
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 10px;
           cursor: pointer;
           padding: 0.5rem;
-          color: #1976d2;
+          color: #ffffff;
+          backdrop-filter: blur(10px);
+        }
+
+        .mobile-menu-toggle:hover {
+          background: rgba(255,255,255,0.3);
         }
 
         .mobile-menu {
@@ -108,12 +147,13 @@ export const NavBar: React.FC = () => {
           top: 100%;
           left: 0;
           right: 0;
-          background: #f5ecd6;
-          border-bottom: 2px solid #e9d8a6;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-top: 1px solid rgba(255,255,255,0.2);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.2);
           flex-direction: column;
           padding: 1rem;
           gap: 0.5rem;
+          backdrop-filter: blur(10px);
         }
 
         .mobile-menu.open {
@@ -125,6 +165,13 @@ export const NavBar: React.FC = () => {
           text-align: center;
           padding: 0.75rem;
           margin: 0.25rem 0;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: #ffffff;
+        }
+
+        .mobile-menu a:hover, .mobile-menu button:hover {
+          background: rgba(255,255,255,0.2);
         }
 
         /* Tablet styles */
@@ -143,15 +190,17 @@ export const NavBar: React.FC = () => {
           }
         }
 
-        /* Mobile styles */
+        /* Mobile styles - simplified top bar when bottom nav is present */
         @media (max-width: 768px) {
           .navbar {
             padding: 0.75rem 1rem;
             position: relative;
+            justify-content: space-between;
           }
 
           .navbar-brand {
-            margin-right: 1rem;
+            margin-right: auto;
+            flex: 1;
           }
 
           .navbar-menu {
@@ -159,6 +208,13 @@ export const NavBar: React.FC = () => {
           }
 
           .mobile-menu-toggle {
+            display: block;
+            margin-left: auto;
+          }
+
+          /* Show Home and settings in mobile menu */
+          .mobile-menu a,
+          .mobile-menu button {
             display: block;
           }
         }
@@ -178,67 +234,73 @@ export const NavBar: React.FC = () => {
       
       <nav className="navbar">
         {/* Brand/Logo */}
-        <div className="navbar-brand">
-          <Link to="/" aria-label="Home">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1976d2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5z"/>
-              <path d="M9 22V12h6v10"/>
-            </svg>
-          </Link>
-        </div>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <div className="navbar-brand">
+            <div className="navbar-brand-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5z"/>
+                <path d="M9 22V12h6v10"/>
+              </svg>
+            </div>
+            <span className="navbar-brand-text">ComeOnDost</span>
+          </div>
+        </Link>
 
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="mobile-menu-toggle" 
-          onClick={toggleMobileMenu}
-          aria-label="Toggle mobile menu"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
+        {/* Mobile Actions - Show notification bell and menu toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {token && <NotificationBell />}
+          <button 
+            className="mobile-menu-toggle" 
+            onClick={toggleMobileMenu}
+            aria-label="Toggle mobile menu"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
 
         {/* Desktop Menu */}
         {token ? (
           <div className="navbar-menu authenticated">
             <div className="navbar-links">
-              <Link to="/dashboard">Dashboard</Link>
-              <Link to="/search">Search</Link>
-              <Link to="/saved">My Team</Link>
-              <Link to="/status">Status</Link>
-              <Link to="/profile">Profile</Link>
+              <Link to="/">🏠 Home</Link>
+              <Link to="/dashboard">📊 Dashboard</Link>
+              <Link to="/search">🔍 Search</Link>
+              <Link to="/saved">👥 My Team</Link>
+              <Link to="/messages">💬 Messages</Link>
+              <Link to="/profile">👤 Profile</Link>
             </div>
             <div className="navbar-actions">
               <NotificationBell />
-              <button onClick={logout}>Logout</button>
+              <button onClick={logout}>🚪 Logout</button>
             </div>
           </div>
         ) : (
           <div className="navbar-menu unauthenticated">
             <div className="navbar-links">
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
+              <Link to="/">🏠 Home</Link>
+              <Link to="/login">🔐 Login</Link>
+              <Link to="/register">📝 Register</Link>
             </div>
           </div>
         )}
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Simplified (main navigation is in bottom nav) */}
         <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
           {token ? (
             <>
-              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
-              <Link to="/search" onClick={() => setIsMobileMenuOpen(false)}>Search</Link>
-              <Link to="/saved" onClick={() => setIsMobileMenuOpen(false)}>My Team</Link>
-              <Link to="/status" onClick={() => setIsMobileMenuOpen(false)}>Status</Link>
-              <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
-              <button onClick={() => { logout(); setIsMobileMenuOpen(false); }}>Logout</button>
+              <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>🏠 Home</Link>
+              <Link to="/status" onClick={() => setIsMobileMenuOpen(false)}>📈 Status</Link>
+              <button onClick={() => { logout(); setIsMobileMenuOpen(false); }}>🚪 Logout</button>
             </>
           ) : (
             <>
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
-              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>Register</Link>
+              <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>🏠 Home</Link>
+              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>🔐 Login</Link>
+              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>📝 Register</Link>
             </>
           )}
         </div>

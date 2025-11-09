@@ -49,7 +49,7 @@ export const RegisterPage: React.FC = () => {
               localStorage.setItem('refreshToken', refreshToken);
               const userObj = { id: userId };
               login(accessToken, userObj);
-              navigate('/team');
+              navigate('/dashboard');
             }
           } catch (err) {
             console.error('[RegisterPage] Error parsing callback URL:', err);

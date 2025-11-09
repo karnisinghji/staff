@@ -35,7 +35,7 @@ export function buildApp(): express.Express {
     startTracing({ serviceName }).catch(err => logger.warn(`[tracing] init failed: ${err?.message}`));
 
     // CORS must be applied FIRST for preflight requests
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [];
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').map(o => o.trim()).filter(o => o) || [];
     app.use(cors({
         origin: [
             'http://localhost:5173',

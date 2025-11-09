@@ -91,7 +91,7 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     console.log('- CORS_ORIGINS:', process.env.CORS_ORIGINS);
     console.log('- CORS_ORIGIN:', process.env.CORS_ORIGIN);
 
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').filter(o => o.trim()) || [
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').map(o => o.trim()).filter(o => o) || [
         'https://karnisinghji.github.io',
         'https://comeondost.web.app',
         'https://comeondost.firebaseapp.com',

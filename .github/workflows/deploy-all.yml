@@ -1,0 +1,97 @@
+name: Deploy All Services (DISABLED - Use individual workflows)
+
+on:
+  # Temporarily disabled - individual workflows work fine
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'backend/services/**'
+  #     - 'frontend/**'
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy backend services'
+        required: false
+        default: 'true'
+      deploy_frontend:
+        description: 'Deploy frontend (Firebase)'
+        required: false
+        default: 'true'
+      deploy_mobile:
+        description: 'Build mobile APK'
+        required: false
+        default: 'true'
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.filter.outputs.backend }}
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/services/**'
+            frontend:
+              - 'frontend/**'
+
+  deploy-backend-services:
+    needs: check-changes
+    if: needs.check-changes.outputs.backend_changed == 'true' || github.event.inputs.deploy_backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, user-service, matching-service, communication-service, notification-service]
+    
+    steps:
+      - name: Trigger ${{ matrix.service }} deployment
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: deploy-${{ matrix.service }}
+
+  deploy-frontend:
+    needs: [check-changes, deploy-backend-services]
+    if: |
+      always() &&
+      (needs.check-changes.outputs.frontend_changed == 'true' || 
+       needs.check-changes.outputs.backend_changed == 'true' ||
+       github.event.inputs.deploy_frontend == 'true')
+    uses: ./.github/workflows/deploy-firebase.yml
+    secrets: inherit
+
+  build-mobile:
+    needs: [check-changes, deploy-backend-services]
+    if: |
+      always() &&
+      (needs.check-changes.outputs.frontend_changed == 'true' || 
+       needs.check-changes.outputs.backend_changed == 'true' ||
+       github.event.inputs.deploy_mobile == 'true')
+    uses: ./.github/workflows/build-android-apk.yml
+    secrets: inherit
+
+  deployment-summary:
+    needs: [deploy-backend-services, deploy-frontend, build-mobile]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backend Services" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.deploy-backend-services.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend (Firebase)" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "URL: https://comeondost.web.app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Mobile App (APK)" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ needs.build-mobile.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "Download: https://github.com/${{ github.repository }}/raw/main/contractor-platform.apk" >> $GITHUB_STEP_SUMMARY
