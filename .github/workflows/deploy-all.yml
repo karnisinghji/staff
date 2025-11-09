@@ -1,12 +1,13 @@
-name: Deploy All Services
+name: Deploy All Services (DISABLED - Use individual workflows)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'backend/services/**'
-      - 'frontend/**'
+  # Temporarily disabled - individual workflows work fine
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'backend/services/**'
+  #     - 'frontend/**'
   workflow_dispatch:
     inputs:
       deploy_backend:
