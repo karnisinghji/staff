@@ -14,7 +14,7 @@ import { GlobalAnimations } from './components/AnimationComponents';
 // Critical pages loaded immediately (no lazy loading for better UX)
 import { LoginPage } from './features/auth/LoginPage';
 import { RegisterPage } from './features/auth/RegisterPage';
-import EnhancedDashboardPage from './features/dashboard/EnhancedDashboardPage';
+import DashboardWrapper from './features/dashboard/DashboardWrapper';
 
 // Lazy load non-critical pages
 const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage'));
@@ -63,14 +63,14 @@ const PublicRoute = ({ children }: { children: React.ReactElement }) => {
 };
 
 const HomeRoute = () => {
-  const { token, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   
   if (isLoading) {
     return <LoadingFallback />;
   }
   
-  // If logged in, go to dashboard; otherwise show home page
-  return token ? <Navigate to="/dashboard" /> : <HomePage />;
+  // Show home page for everyone (both logged in and logged out users)
+  return <HomePage />;
 };
 
 
@@ -266,7 +266,7 @@ const App: React.FC = () => (
             <Route path="/auth/callback" element={<OAuthCallback />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <EnhancedDashboardPage />
+                <DashboardWrapper />
               </ProtectedRoute>
             } />
             <Route path="/search" element={
