@@ -46,9 +46,8 @@ export const RegisterPage: React.FC = () => {
             const userId = urlObj.searchParams.get('user_id');
             
             if (accessToken && refreshToken && userId) {
-              localStorage.setItem('refreshToken', refreshToken);
               const userObj = { id: userId };
-              login(accessToken, userObj);
+              login(accessToken, userObj, refreshToken);
               navigate('/dashboard');
             }
           } catch (err) {

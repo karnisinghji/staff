@@ -30,14 +30,11 @@ export const OAuthCallback: React.FC = () => {
       }
 
       try {
-        // Store tokens
-        localStorage.setItem('refreshToken', refreshToken);
-        
         // Create user object with userId
         const userObj = { id: userId };
         
-        // Use AuthContext login (token, user)
-        login(accessToken, userObj);
+        // Use AuthContext login (token, user, refreshToken)
+        login(accessToken, userObj, refreshToken);
         
         // On mobile, close the browser and return to app
         if (Capacitor.isNativePlatform()) {
