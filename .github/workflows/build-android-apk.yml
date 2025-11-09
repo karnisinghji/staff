@@ -1,0 +1,102 @@
+name: Build and Deploy Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'backend/services/**'
+      - '.github/workflows/build-android-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Sync Capacitor
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Grant execute permission for gradlew
+        working-directory: frontend/android
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Copy APK to root
+        run: |
+          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk contractor-platform.apk
+          ls -lh contractor-platform.apk
+
+      - name: Commit and push APK
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add contractor-platform.apk
+          git diff --staged --quiet || git commit -m "chore: Update Android APK [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: contractor-platform.apk
+          retention-days: 90
+
+      - name: Get APK size
+        run: |
+          SIZE=$(du -h contractor-platform.apk | cut -f1)
+          echo "APK_SIZE=$SIZE" >> $GITHUB_ENV
+
+      - name: Create Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: contractor-platform.apk
+          body: |
+            ## Android APK Release
+            
+            **Size:** ${{ env.APK_SIZE }}
+            
+            ### Installation Instructions:
+            1. Download the APK file
+            2. Enable "Install from Unknown Sources" in your Android settings
+            3. Open the APK and install
+            
+            ### Changes in this release:
+            See commit history for detailed changes.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
