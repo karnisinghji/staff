@@ -10,6 +10,9 @@ on:
       - '.github/workflows/build-android-apk.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write  # Allow pushing commits
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
