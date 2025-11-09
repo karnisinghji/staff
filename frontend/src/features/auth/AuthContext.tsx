@@ -3,6 +3,7 @@ import { Preferences } from '@capacitor/preferences';
 import { MobileNotificationService } from '../../services/mobileNotifications';
 // import { pushNotificationService } from '../../services/pushNotificationService'; // Temporarily disabled - Firebase not configured
 
+
 interface AuthState {
   token: string | null;
   user: any | null;
