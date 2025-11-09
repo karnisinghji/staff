@@ -33,8 +33,24 @@ export function buildApp(): express.Express {
         'https://comeondost.firebaseapp.com'
     ];
 
+    // Debug logging for CORS configuration
+    console.log('========================================');
+    console.log('MATCHING-SERVICE CORS CONFIGURATION');
+    console.log('========================================');
+    console.log('ALLOWED_ORIGINS env var:', process.env.ALLOWED_ORIGINS);
+    console.log('Parsed allowed origins array:', JSON.stringify(allowedOrigins, null, 2));
+    console.log('Array includes "https://localhost"?:', allowedOrigins.includes('https://localhost'));
+    console.log('========================================');
+
     app.use(cors({
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+            console.log(`CORS check: request origin="${origin}", allowed=${allowedOrigins.includes(origin || '')}`);
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(null, false);
+            }
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
