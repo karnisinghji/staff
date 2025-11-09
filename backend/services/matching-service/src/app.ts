@@ -54,12 +54,14 @@ export function buildApp(): express.Express {
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
             if (req.method === 'OPTIONS') {
                 console.log(`[CORS MANUAL] OPTIONS preflight, sending 200`);
-                return res.status(200).end();
+                res.status(200).end();
+                return;
             }
         } else {
             console.log(`[CORS MANUAL] ✗ Origin not allowed or missing`);
         }
         next();
+        return;
     });
 
     // More permissive rate limiting for development
