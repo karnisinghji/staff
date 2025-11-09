@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, useCallback, useEffect, type ReactNode } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { MobileNotificationService } from '../../services/mobileNotifications';
-import { pushNotificationService } from '../../services/pushNotificationService';
+// import { pushNotificationService } from '../../services/pushNotificationService'; // Temporarily disabled - Firebase not configured
 
 interface AuthState {
   token: string | null;
@@ -49,10 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await MobileNotificationService.initialize(localToken);
           
           // Initialize push notifications
-          if (localUser) {
-            const parsedUser = JSON.parse(localUser);
-            await pushNotificationService.initialize(parsedUser.id, localToken);
-          }
+          // Temporarily disabled - Firebase not configured
+          // if (localUser) {
+          //   const parsedUser = JSON.parse(localUser);
+          //   await pushNotificationService.initialize(parsedUser.id, localToken);
+          // }
         } else {
           console.warn('[AuthContext] NO TOKEN FOUND - User will need to login');
         }
@@ -97,11 +98,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     // Initialize push notifications (non-blocking)
-    try {
-      await pushNotificationService.initialize(newUser.id, newToken);
-    } catch (error) {
-      console.warn('[AuthContext] Push notifications init failed (non-critical):', error);
-    }
+    // Temporarily disabled - Firebase not configured
+    // try {
+    //   await pushNotificationService.initialize(newUser.id, newToken);
+    // } catch (error) {
+    //   console.warn('[AuthContext] Push notifications init failed (non-critical):', error);
+    // }
   }, []);
 
   const logout = useCallback(async () => {
@@ -116,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     MobileNotificationService.stopPolling();
     
     // Unregister push notifications
-    await pushNotificationService.unregister();
+    // await pushNotificationService.unregister(); // Temporarily disabled - Firebase not configured
   }, []);
 
   // Auto-logout on token expiry
