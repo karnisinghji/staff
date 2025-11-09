@@ -14,8 +14,6 @@ on:
 jobs:
   deploy-firebase:
     runs-on: ubuntu-latest
-    # Only run if Firebase secret is configured
-    if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST != '' }}
     
     steps:
       - name: Checkout code
