@@ -1,13 +1,14 @@
 name: Deploy Frontend to Firebase
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'frontend/**'
-      - 'backend/services/**'
-      - '.github/workflows/deploy-firebase.yml'
+  # Disabled - only run manually via workflow_dispatch
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'frontend/**'
+  #     - 'backend/services/**'
+  #     - '.github/workflows/deploy-firebase.yml'
   workflow_dispatch:
 
 jobs:
