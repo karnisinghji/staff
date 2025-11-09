@@ -295,6 +295,7 @@ export const NavBar: React.FC = () => {
               <Link to="/saved">👥 My Team</Link>
               <Link to="/messages">💬 Messages</Link>
               <Link to="/profile">👤 Profile</Link>
+              <Link to="/status">📈 Status</Link>
             </div>
             <div className="navbar-actions">
               <NotificationBell />
