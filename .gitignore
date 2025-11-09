@@ -1,3 +1,7 @@
+# Ignore large archives and build artifacts
+backend.zip
+frontend.zip
+*.zip
 # Dependencies
 node_modules/
 
