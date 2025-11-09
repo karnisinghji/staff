@@ -18,13 +18,13 @@ export const NavBar: React.FC = () => {
           justify-content: space-between;
           align-items: center;
           padding: 0.75rem 2rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          background: #ffffff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border-bottom: 1px solid #e0e0e0;
           font-size: 1rem;
           position: sticky;
           top: 0;
           z-index: 1000;
-          backdrop-filter: blur(10px);
         }
 
         .navbar-brand {
@@ -35,7 +35,7 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar-brand-text {
-          color: #ffffff;
+          color: #1976d2;
           font-size: 1.5rem;
           font-weight: 700;
           letter-spacing: -0.5px;
@@ -45,13 +45,12 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar-brand-icon {
-          background: rgba(255,255,255,0.2);
+          background: #1976d2;
           padding: 0.5rem;
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          backdrop-filter: blur(10px);
         }
 
         .navbar-menu {
@@ -82,12 +81,12 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar a {
-          color: rgba(255,255,255,0.9);
+          color: #333;
           text-decoration: none;
           font-weight: 500;
           padding: 0.5rem 1rem;
-          border-radius: 10px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 8px;
+          transition: all 0.2s ease;
           white-space: nowrap;
           position: relative;
           display: flex;
@@ -96,49 +95,47 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar a:hover {
-          background: rgba(255,255,255,0.15);
-          color: #ffffff;
+          background: #f5f7fa;
+          color: #1976d2;
           transform: translateY(-2px);
         }
 
         .navbar a.active {
-          background: rgba(255,255,255,0.25);
-          color: #ffffff;
+          background: #e3f2fd;
+          color: #1976d2;
           font-weight: 600;
         }
 
         .navbar button {
-          background: rgba(255,255,255,0.2);
+          background: #1976d2;
           color: #ffffff;
-          border: 1px solid rgba(255,255,255,0.3);
-          border-radius: 10px;
+          border: none;
+          border-radius: 8px;
           padding: 0.5rem 1.25rem;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.2s ease;
           white-space: nowrap;
-          backdrop-filter: blur(10px);
         }
 
         .navbar button:hover {
-          background: rgba(255,255,255,0.3);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          background: #1565c0;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
         }
 
         .mobile-menu-toggle {
           display: none;
-          background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.3);
-          border-radius: 10px;
+          background: #f5f7fa;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
           cursor: pointer;
           padding: 0.5rem;
-          color: #ffffff;
-          backdrop-filter: blur(10px);
+          color: #333;
         }
 
         .mobile-menu-toggle:hover {
-          background: rgba(255,255,255,0.3);
+          background: #e0e0e0;
         }
 
         .mobile-menu {
@@ -190,12 +187,38 @@ export const NavBar: React.FC = () => {
           }
         }
 
-        /* Mobile styles - simplified top bar when bottom nav is present */
+        /* Mobile styles - modern gradient when bottom nav is present */
         @media (max-width: 768px) {
           .navbar {
             padding: 0.75rem 1rem;
             position: relative;
             justify-content: space-between;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border-bottom: none;
+          }
+
+          .navbar-brand-text {
+            color: #ffffff;
+          }
+
+          .navbar-brand-icon {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+          }
+
+          .navbar-brand-icon svg {
+            stroke: #ffffff;
+          }
+
+          .mobile-menu-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #ffffff;
+          }
+
+          .mobile-menu-toggle:hover {
+            background: rgba(255,255,255,0.3);
           }
 
           .navbar-brand {
