@@ -42,13 +42,25 @@ export function buildApp(): express.Express {
     console.log('Array includes "https://localhost"?:', allowedOrigins.includes('https://localhost'));
     console.log('========================================');
 
-    app.use(cors({
-        origin: allowedOrigins,
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        optionsSuccessStatus: 200
-    }));
+    // Manual CORS handler to debug issues
+    app.use((req, res, next) => {
+        const origin = req.headers.origin;
+        console.log(`[CORS MANUAL] Request: ${req.method} ${req.path}, Origin: ${origin}`);
+        if (origin && allowedOrigins.includes(origin)) {
+            console.log(`[CORS MANUAL] ✓ Origin allowed, setting headers`);
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+            res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+            if (req.method === 'OPTIONS') {
+                console.log(`[CORS MANUAL] OPTIONS preflight, sending 200`);
+                return res.status(200).end();
+            }
+        } else {
+            console.log(`[CORS MANUAL] ✗ Origin not allowed or missing`);
+        }
+        next();
+    });
 
     // More permissive rate limiting for development
     const isDevelopment = process.env.NODE_ENV === 'development';
