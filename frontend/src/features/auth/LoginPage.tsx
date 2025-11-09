@@ -16,7 +16,7 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (token) {
-      navigate('/team');
+      navigate('/dashboard');
     }
   }, [token, navigate]);
 

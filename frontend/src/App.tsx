@@ -7,6 +7,7 @@ import { NotificationProvider } from './features/notifications/NotificationConte
 import { MessageProvider } from './features/messaging/MessageContext';
 import { NotificationList } from './features/notifications/NotificationList';
 import { NavBar } from './features/common/NavBar';
+import { BottomNavBar } from './components/BottomNavBar';
 import { ToastContainer } from './components/ToastContainer';
 import { GlobalAnimations } from './components/AnimationComponents';
 
@@ -160,11 +161,11 @@ const AppUrlListener: React.FC = () => {
             const userObj = { id: userId };
             login(accessToken, userObj);
             
-            // Navigate to team page
+            // Navigate to dashboard
             if (typeof navigate === 'function') {
-              navigate('/team');
+              navigate('/dashboard');
             } else {
-              window.location.href = '/team';
+              window.location.href = '/dashboard';
             }
             
             return; // Exit early for OAuth callback
@@ -250,6 +251,7 @@ const App: React.FC = () => (
           <NavBar />
           <NotificationList />
           <ToastContainer />
+          <BottomNavBar />
           <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/login" element={

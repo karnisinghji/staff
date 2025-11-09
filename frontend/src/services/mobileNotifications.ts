@@ -55,8 +55,15 @@ export class MobileNotificationService {
         this.isInitialized = false;
     }
 
-    private static async checkForNewMessages(token: string) {
+    private static async checkForNewMessages(_token: string) {
         try {
+            // NOTE: This endpoint doesn't exist yet on communication-service
+            // The MessageContext already handles message polling via /messages endpoint
+            // TODO: Implement /api/messages/recent endpoint or integrate with MessageContext
+            console.log('Mobile notification polling disabled - using MessageContext for message updates');
+            return;
+
+            /* DISABLED UNTIL ENDPOINT IS IMPLEMENTED
             // Fetch recent messages
             const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/api/messages/recent?since=${this.lastMessageTimestamp}`, {
                 headers: {
@@ -78,6 +85,7 @@ export class MobileNotificationService {
                 // Update last timestamp
                 this.lastMessageTimestamp = Date.now();
             }
+            */
         } catch (error) {
             console.error('Error checking for new messages:', error);
         }

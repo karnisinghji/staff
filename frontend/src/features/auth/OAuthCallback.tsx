@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
 
 export const OAuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -56,13 +55,13 @@ export const OAuthCallback: React.FC = () => {
             console.error('[OAuthCallback] Error importing Browser:', err);
           });
           
-          // Navigate to team page in the app
+          // Navigate to dashboard in the app
           setTimeout(() => {
-            navigate('/team');
+            navigate('/dashboard');
           }, 300);
         } else {
           // On web, just navigate normally
-          navigate('/team');
+          navigate('/dashboard');
         }
       } catch (err) {
         console.error('OAuth callback error:', err);

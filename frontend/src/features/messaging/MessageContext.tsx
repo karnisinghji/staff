@@ -42,64 +42,17 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       
-      // Fetch team requests AND actual chat messages
-      console.log('📨 Fetching messages from:', API_CONFIG.MATCHING_SERVICE, '&', API_CONFIG.COMMUNICATION_SERVICE);
-      const [receivedRes, sentRes, chatMessagesRes] = await Promise.all([
-        axios.get(
-          `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
-        axios.get(
-          `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/sent`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
-        axios.get(
-          `${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        ).catch(err => {
-          console.warn('Failed to fetch chat messages:', err);
-          return { data: { success: false, data: [] } };
-        })
-      ]);
+      // Fetch only actual chat messages (team-requests endpoint no longer used)
+      console.log('📨 Fetching messages from:', API_CONFIG.COMMUNICATION_SERVICE);
+      const chatMessagesRes = await axios.get(
+        `${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).catch(err => {
+        console.warn('Failed to fetch chat messages:', err);
+        return { data: { success: false, data: [] } };
+      });
       
-      console.log('✅ Received team requests:', receivedRes.data);
-      console.log('✅ Sent team requests:', sentRes.data);
       console.log('✅ Chat messages:', chatMessagesRes.data);
-      
-      // Transform team requests to Message format - ONLY ACCEPTED REQUESTS
-      const receivedMessages: Message[] = receivedRes.data.success 
-        ? (receivedRes.data.data?.requests || [])
-            .filter((req: any) => req.status === 'accepted')  // Only accepted requests
-            .map((req: any) => ({
-            id: String(req.id),
-            fromUserId: req.sender_id,
-            toUserId: user.id,
-            body: req.message || '',
-            createdAt: req.created_at,
-            senderName: req.sender_name,
-            senderCompany: req.sender_company,
-            status: req.status,
-            matchContext: req.match_context,
-            type: 'team-request'
-          }))
-        : [];
-      
-      const sentMessages: Message[] = sentRes.data.success 
-        ? (sentRes.data.data?.requests || [])
-            .filter((req: any) => req.status === 'accepted')  // Only accepted requests
-            .map((req: any) => ({
-            id: String(req.id),
-            fromUserId: user.id,
-            toUserId: req.receiver_id,
-            body: req.message || '',
-            createdAt: req.created_at,
-            senderName: req.receiver_name,
-            senderCompany: req.receiver_company,
-            status: req.status,
-            matchContext: req.match_context,
-            type: 'team-request'
-          }))
-        : [];
       
       // Transform chat messages and fetch user names
       const chatMessagesRaw = chatMessagesRes.data.success ? (chatMessagesRes.data.data || []) : [];
