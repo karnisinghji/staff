@@ -72,6 +72,9 @@ jobs:
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
-            --set-env-vars NODE_ENV=production SERVICE_NAME=communication-service \
+            --set-env-vars \
+              NODE_ENV=production \
+              SERVICE_NAME=communication-service \
+              ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com,https://localhost,capacitor://localhost \
             --query properties.configuration.ingress.fqdn \
             --output tsv

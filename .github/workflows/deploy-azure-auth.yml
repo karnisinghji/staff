@@ -74,7 +74,7 @@ jobs:
               PORT=3000 \
               NODE_ENV=production \
               SERVICE_NAME=auth-service \
-              ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com \
+              ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com,https://localhost,capacitor://localhost \
               FRONTEND_URL=https://comeondost.web.app \
               GOOGLE_CALLBACK_URL=https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth/google/callback \
               DATABASE_URL=secretref:database-url \
