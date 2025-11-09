@@ -154,12 +154,9 @@ const AppUrlListener: React.FC = () => {
               console.log('[AppUrlListener] Browser already closed or not available');
             }
             
-            // Store refresh token
-            localStorage.setItem('refreshToken', refreshToken);
-            
-            // Login user
+            // Login user with refresh token
             const userObj = { id: userId };
-            login(accessToken, userObj);
+            login(accessToken, userObj, refreshToken);
             
             // Navigate to dashboard
             if (typeof navigate === 'function') {

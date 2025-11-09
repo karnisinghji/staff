@@ -9,7 +9,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (token: string, user: any) => void;
+  login: (token: string, user: any, refreshToken?: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadStoredAuth();
   }, []);
 
-  const login = useCallback(async (newToken: string, newUser: any) => {
+  const login = useCallback(async (newToken: string, newUser: any, refreshToken?: string) => {
     console.log('[AuthContext] Login called');
     setToken(newToken);
     setUser(newUser);
@@ -83,6 +83,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await Preferences.set({ key: 'user', value: JSON.stringify(newUser) });
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
+      
+      // Save refresh token if provided
+      if (refreshToken) {
+        await Preferences.set({ key: 'refreshToken', value: refreshToken });
+        localStorage.setItem('refreshToken', refreshToken);
+        console.log('[AuthContext] Refresh token saved');
+      }
+      
       console.log('[AuthContext] Token and user saved to both Preferences and localStorage');
     } catch (error) {
       console.error('[AuthContext] Error saving auth:', error);
@@ -109,8 +117,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     await Preferences.remove({ key: 'token' });
     await Preferences.remove({ key: 'user' });
+    await Preferences.remove({ key: 'refreshToken' });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     
     // Stop mobile notifications
     MobileNotificationService.stopPolling();
@@ -119,26 +129,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await pushNotificationService.unregister();
   }, []);
 
-  // Auto-logout on token expiry
+  // Auto-refresh token before expiry
   useEffect(() => {
     if (!token) return;
+    
+    const refreshAccessToken = async () => {
+      try {
+        const { value: storedRefreshToken } = await Preferences.get({ key: 'refreshToken' });
+        const refreshToken = storedRefreshToken || localStorage.getItem('refreshToken');
+        
+        if (!refreshToken) {
+          console.warn('[AuthContext] No refresh token available, logging out');
+          logout();
+          return;
+        }
+        
+        console.log('[AuthContext] Refreshing access token...');
+        const response = await fetch('https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[AuthContext] Token refreshed successfully');
+          
+          // Update token (login function will save it)
+          await login(data.accessToken, user, data.refreshToken || refreshToken);
+        } else {
+          console.error('[AuthContext] Token refresh failed, logging out');
+          logout();
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error refreshing token:', error);
+        logout();
+      }
+    };
+    
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       if (payload.exp) {
         const expiry = payload.exp * 1000;
         const now = Date.now();
+        
+        // If token already expired, try to refresh immediately
         if (expiry < now) {
-          logout();
-        } else {
-          const timeout = setTimeout(() => logout(), expiry - now);
+          console.log('[AuthContext] Token expired, attempting refresh');
+          refreshAccessToken();
+          return;
+        }
+        
+        // Schedule refresh 5 minutes before expiry
+        const refreshTime = expiry - now - (5 * 60 * 1000); // 5 minutes before expiry
+        
+        if (refreshTime > 0) {
+          console.log(`[AuthContext] Token will auto-refresh in ${Math.round(refreshTime / 1000 / 60)} minutes`);
+          const timeout = setTimeout(() => {
+            console.log('[AuthContext] Auto-refreshing token');
+            refreshAccessToken();
+          }, refreshTime);
           return () => clearTimeout(timeout);
+        } else {
+          // Token expires in less than 5 minutes, refresh now
+          console.log('[AuthContext] Token expires soon, refreshing now');
+          refreshAccessToken();
         }
       }
     } catch (e) {
-      // Invalid token, force logout
-      logout();
+      console.error('[AuthContext] Invalid token format:', e);
+      // Invalid token, try to refresh or logout
+      refreshAccessToken();
     }
-  }, [token, logout]);
+  }, [token, user, login, logout]);
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout, isLoading }}>
