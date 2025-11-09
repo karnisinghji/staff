@@ -76,43 +76,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(async (newToken: string, newUser: any, refreshToken?: string) => {
     console.log('[AuthContext] Login called');
+    
+    // Immediately set state for instant UI update
     setToken(newToken);
     setUser(newUser);
     
-    try {
-      // Save to both Preferences AND localStorage for redundancy
-      await Preferences.set({ key: 'token', value: newToken });
-      await Preferences.set({ key: 'user', value: JSON.stringify(newUser) });
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      
-      // Save refresh token if provided
-      if (refreshToken) {
-        await Preferences.set({ key: 'refreshToken', value: refreshToken });
-        localStorage.setItem('refreshToken', refreshToken);
-        console.log('[AuthContext] Refresh token saved');
-      }
-      
-      console.log('[AuthContext] Token and user saved to both Preferences and localStorage');
-    } catch (error) {
-      console.error('[AuthContext] Error saving auth:', error);
-      throw error; // Re-throw to prevent login if storage fails
+    // Save to localStorage synchronously (fast)
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
     }
     
-    // Initialize mobile notifications (non-blocking)
-    try {
-      await MobileNotificationService.initialize(newToken);
-    } catch (error) {
+    // Save to Preferences in background (parallel, non-blocking)
+    Promise.all([
+      Preferences.set({ key: 'token', value: newToken }),
+      Preferences.set({ key: 'user', value: JSON.stringify(newUser) }),
+      refreshToken ? Preferences.set({ key: 'refreshToken', value: refreshToken }) : Promise.resolve()
+    ]).then(() => {
+      console.log('[AuthContext] Token and user saved to Preferences');
+    }).catch(error => {
+      console.warn('[AuthContext] Preferences save failed (non-critical):', error);
+    });
+    
+    // Initialize mobile notifications in background (non-blocking)
+    MobileNotificationService.initialize(newToken).catch(error => {
       console.warn('[AuthContext] Mobile notifications init failed (non-critical):', error);
-    }
+    });
     
-    // Initialize push notifications (non-blocking)
-    // Temporarily disabled - Firebase not configured
-    // try {
-    //   await pushNotificationService.initialize(newUser.id, newToken);
-    // } catch (error) {
-    //   console.warn('[AuthContext] Push notifications init failed (non-critical):', error);
-    // }
+    console.log('[AuthContext] Login complete');
   }, []);
 
   const logout = useCallback(async () => {

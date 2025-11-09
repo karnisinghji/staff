@@ -47,8 +47,10 @@ export const LoginPage: React.FC = () => {
       const data = await res.json();
       if (res.ok && data.accessToken) {
         try {
-          login(data.accessToken, data.user);
-          setShowSuccessBar(true);
+          // Pass refresh token if available
+          await login(data.accessToken, data.user, data.refreshToken);
+          // Navigate immediately without showing success bar
+          navigate('/dashboard', { replace: true });
         } catch (loginErr) {
           setError('There was a problem saving your login. Please try again.');
           setLoading(false);
