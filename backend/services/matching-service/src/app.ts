@@ -43,14 +43,7 @@ export function buildApp(): express.Express {
     console.log('========================================');
 
     app.use(cors({
-        origin: (origin, callback) => {
-            console.log(`CORS check: request origin="${origin}", allowed=${allowedOrigins.includes(origin || '')}`);
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(null, false);
-            }
-        },
+        origin: allowedOrigins,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
