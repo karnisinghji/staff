@@ -99,11 +99,11 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
         };
       });
       
-      // Combine and sort by date
-      const allMessages = [...receivedMessages, ...sentMessages, ...chatMessages]
+      // Sort chat messages by date (team requests no longer used)
+      const allMessages = chatMessages
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
-      console.log(`📬 Total messages: ${allMessages.length} (${receivedMessages.length} team requests received, ${sentMessages.length} team requests sent, ${chatMessages.length} chat messages)`);
+      console.log(`📬 Total messages: ${allMessages.length} (${chatMessages.length} chat messages)`);
       setMessages(allMessages);
       setPollingInterval(30000); // Reset to normal interval on success
     } catch (err: any) {
