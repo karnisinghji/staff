@@ -841,6 +841,8 @@ const EnhancedProfilePage: React.FC = () => {
           font-weight: 700;
           margin: 0.5rem 0;
           color: #2d3748;
+          text-align: center;
+          width: 100%;
         }
         
         .profile-role {
@@ -852,6 +854,7 @@ const EnhancedProfilePage: React.FC = () => {
           font-size: 0.9em;
           font-weight: 600;
           text-transform: capitalize;
+          margin: 0.5rem auto;
         }
         
         .completeness-card {

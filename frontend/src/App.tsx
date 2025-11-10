@@ -23,7 +23,7 @@ const OAuthCallback = lazy(() => import('./features/auth/OAuthCallback').then(m 
 const EnhancedMatchSearchPage = lazy(() => import('./features/matching/EnhancedMatchSearchPage'));
 const MyTeamPage = lazy(() => import('./features/matching/SavedMatchesPage').then(m => ({ default: m.MyTeamPage })));
 const ModernMessagingPage = lazy(() => import('./features/messaging/ModernMessagingPage'));
-const HomePage = lazy(() => import('./features/home/HomePage').then(m => ({ default: m.HomePage })));
+const HomePageWrapper = lazy(() => import('./features/home/HomePageWrapper'));
 const EnhancedProfilePage = lazy(() => import('./features/profile/EnhancedProfilePage'));
 const StatusPage = lazy(() => import('./features/status/StatusPage'));
 
@@ -70,7 +70,7 @@ const HomeRoute = () => {
   }
   
   // Show home page for everyone (both logged in and logged out users)
-  return <HomePage />;
+  return <HomePageWrapper />;
 };
 
 

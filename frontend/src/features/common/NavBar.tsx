@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { NotificationBell } from './NotificationBell.tsx';
+import logoImage from '../../assets/comeondost-logo.png';
 
 export const NavBar: React.FC = () => {
   const { token, logout } = useAuth();
@@ -211,23 +212,40 @@ export const NavBar: React.FC = () => {
             stroke: #ffffff;
           }
 
-          .mobile-menu-toggle {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: #ffffff;
-          }
+        .mobile-actions {
+          display: none;
+          align-items: center;
+          gap: 0.5rem;
+        }
 
-          .mobile-menu-toggle:hover {
-            background: rgba(255,255,255,0.3);
-          }
+        .mobile-menu-toggle {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: white;
+          padding: 0.5rem;
+          display: none;
+          transition: opacity 0.2s;
+        }
 
-          .navbar-brand {
+        .mobile-menu-toggle:hover {
+          opacity: 0.8;
+        }          .navbar-brand {
             margin-right: auto;
             flex: 1;
           }
 
           .navbar-menu {
             display: none;
+          }
+
+          .mobile-actions {
+            display: flex;
+          }
+
+          /* Hide desktop notification bell on mobile, show mobile one */
+          .navbar-actions .notification-bell {
+            display: none !important;
           }
 
           .mobile-menu-toggle {
@@ -260,17 +278,14 @@ export const NavBar: React.FC = () => {
         <Link to="/" style={{ textDecoration: 'none' }}>
           <div className="navbar-brand">
             <div className="navbar-brand-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5z"/>
-                <path d="M9 22V12h6v10"/>
-              </svg>
+              <img src={logoImage} alt="ComeOnDost Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
             </div>
             <span className="navbar-brand-text">ComeOnDost</span>
           </div>
         </Link>
 
-        {/* Mobile Actions - Show notification bell and menu toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {/* Mobile Actions - Show only menu toggle */}
+        <div className="mobile-actions">
           {token && <NotificationBell />}
           <button 
             className="mobile-menu-toggle" 
