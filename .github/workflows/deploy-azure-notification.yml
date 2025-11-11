@@ -52,6 +52,16 @@ jobs:
           tenant-id: 667ecb3b-8888-4637-a4bc-cde8a4d37efb
           subscription-id: bb83cf18-522d-4546-ba6b-39e219d3c0db
 
+      - name: Setup Azure Secrets
+        run: |
+          # Create secrets from GitHub secrets
+          az containerapp secret set \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --secrets \
+              "database-url=${{ secrets.DATABASE_URL }}" \
+              "firebase-service-account=${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}"
+      
       - name: Deploy to Azure Container Apps
         run: |
           az containerapp create \
