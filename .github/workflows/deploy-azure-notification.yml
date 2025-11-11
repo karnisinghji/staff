@@ -55,7 +55,17 @@ jobs:
       - name: Setup Azure Secrets
         run: |
           # Create secrets from GitHub secrets (must be space-separated on same line)
-          az containerapp secret set --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --secrets "database-url=${{ secrets.DATABASE_URL }}" "firebase-service-account=${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}"
+            # Ensure jq is available (for JSON minify)
+            if ! command -v jq >/dev/null 2>&1; then
+              sudo apt-get update -y && sudo apt-get install -y jq
+            fi
+
+            # Minify Firebase JSON to a single line to satisfy Azure CLI parsing
+            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}' | jq -c . > firebase.json
+            FB_JSON=$(cat firebase.json)
+
+            # Create secrets from GitHub secrets (space-separated on same line)
+            az containerapp secret set --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --secrets database-url='${{ secrets.DATABASE_URL }}' firebase-service-account="$FB_JSON"
       
       - name: Deploy to Azure Container Apps
         run: |
