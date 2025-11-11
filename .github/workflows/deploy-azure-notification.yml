@@ -52,6 +52,31 @@ jobs:
           tenant-id: 667ecb3b-8888-4637-a4bc-cde8a4d37efb
           subscription-id: bb83cf18-522d-4546-ba6b-39e219d3c0db
 
+      - name: Deploy/Update App (image only)
+        run: |
+          # Ensure app exists and image is updated (no secret refs yet)
+          az containerapp create \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --environment staff-env \
+            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --target-port 3000 \
+            --ingress external \
+            --min-replicas 0 \
+            --max-replicas 5 \
+            --cpu 0.5 \
+            --memory 1Gi \
+            --env-vars NODE_ENV=production SERVICE_NAME=notification-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv || \
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --set-env-vars NODE_ENV=production SERVICE_NAME=notification-service \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv
+
       - name: Setup Azure Secrets
         run: |
           set -euo pipefail
@@ -72,27 +97,12 @@ jobs:
 
           # Verify secrets exist
           az containerapp secret list --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
-      
-      - name: Deploy to Azure Container Apps
+
+      - name: Apply secret refs to env
         run: |
-          az containerapp create \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --environment staff-env \
-            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
-            --target-port 3000 \
-            --ingress external \
-            --min-replicas 0 \
-            --max-replicas 5 \
-            --cpu 0.5 \
-            --memory 1Gi \
-            --env-vars NODE_ENV=production SERVICE_NAME=notification-service \
-            --query properties.configuration.ingress.fqdn \
-            --output tsv || \
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
             --set-env-vars \
               NODE_ENV=production \
               SERVICE_NAME=notification-service \

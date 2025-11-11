@@ -2,29 +2,43 @@ import * as admin from 'firebase-admin';
 let fcmInitialized = false;
 
 export function initializeFCM(): boolean {
-    if (fcmInitialized) {
-        return true;
+    if (fcmInitialized) return true;
+
+    const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const rawB64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+
+    if (!rawJson && !rawB64) {
+        console.warn('[FCM] No FIREBASE_SERVICE_ACCOUNT_JSON(_B64) env vars found - push notifications disabled');
+        return false;
+    }
+
+    let parsed: any = null;
+    try {
+        if (rawJson) {
+            console.log(`[FCM] Found JSON env (length=${rawJson.length}) attempting parse...`);
+            parsed = JSON.parse(rawJson);
+        } else if (rawB64) {
+            console.log(`[FCM] Found Base64 env (length=${rawB64.length}) attempting decode & parse...`);
+            const decoded = Buffer.from(rawB64, 'base64').toString('utf-8');
+            parsed = JSON.parse(decoded);
+        }
+    } catch (e: any) {
+        console.error('[FCM] Failed parsing Firebase service account JSON:', e?.message);
+        return false;
+    }
+
+    if (!parsed) {
+        console.error('[FCM] Service account content empty after parsing');
+        return false;
     }
 
     try {
-        const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-
-        if (!serviceAccountJson) {
-            console.warn('[FCM] FIREBASE_SERVICE_ACCOUNT_JSON not set - push notifications disabled');
-            return false;
-        }
-
-        const serviceAccount = JSON.parse(serviceAccountJson);
-
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-
+        admin.initializeApp({ credential: admin.credential.cert(parsed) });
         fcmInitialized = true;
         console.log('[FCM] Firebase Admin SDK initialized successfully');
         return true;
-    } catch (error) {
-        console.error('[FCM] Failed to initialize Firebase Admin SDK:', error);
+    } catch (e: any) {
+        console.error('[FCM] Failed to initialize Firebase Admin SDK:', e?.message);
         return false;
     }
 }
