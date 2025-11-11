@@ -250,6 +250,7 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
         imageUrl: z.string().url().optional()
     });
 
+    console.log('[DEBUG] Registering /api/notifications/send-push route...');
     app.post('/api/notifications/send-push', validate({ schema: sendPushSchema }), async (req, res) => {
         try {
             await ensureDeviceTokensTable();
@@ -313,6 +314,12 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
             upgrade: 'WebSocket',
             note: 'WebSocket server not yet implemented'
         });
+    });
+
+    // Debug: Log all registered routes
+    console.log('[DEBUG] All registered routes:');
+    app._router.stack.filter((r: any) => r.route).forEach((r: any) => {
+        console.log(`  ${Object.keys(r.route.methods)[0].toUpperCase()} ${r.route.path}`);
     });
 
     // 404
