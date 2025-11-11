@@ -47,6 +47,7 @@ export interface BuildAppOptions {
     metricsPath?: string;            // Path to expose /metrics (default: /metrics)
     disableMetrics?: boolean;        // Disable metrics entirely (tests / special cases)
     logger?: LoggerLike;             // Inject custom logger
+    fcmEnabled?: boolean;            // Whether FCM push notifications are enabled
 }
 
 let shared: any = null;
@@ -74,10 +75,11 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     const serviceName = options.serviceName || 'notification-service';
     const metricsPath = options.metricsPath || '/metrics';
     const version = options.version || '0.0.0';
+    const fcmEnabled = options.fcmEnabled !== undefined ? options.fcmEnabled : false;
     const logger: LoggerLike = options.logger || console;
 
     const app = express();
-    const hex = buildNotificationModule(version);
+    const hex = buildNotificationModule(version, fcmEnabled);
 
     app.locals.serviceName = serviceName;
     app.locals.version = version;

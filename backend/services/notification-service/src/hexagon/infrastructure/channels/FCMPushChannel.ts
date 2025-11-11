@@ -4,8 +4,17 @@ import { sendPushNotification } from '../../../infrastructure/fcm';
 import { pool } from '../../../infrastructure/db';
 
 export class FCMPushChannel implements NotificationChannelPort {
+    private fcmEnabled: boolean;
+
+    constructor(fcmEnabled: boolean = true) {
+        this.fcmEnabled = fcmEnabled;
+        console.log(`[FCMPushChannel] Initialized with FCM enabled: ${this.fcmEnabled}`);
+    }
+
     supports(channel: string): boolean {
-        return channel === 'push' || channel === 'fcm';
+        const supported = (channel === 'push' || channel === 'fcm') && this.fcmEnabled;
+        console.log(`[FCMPushChannel] supports('${channel}'): ${supported} (FCM enabled: ${this.fcmEnabled})`);
+        return supported;
     }
 
     async send(notification: Notification): Promise<void> {

@@ -9,7 +9,7 @@ const PORT = parseInt(process.env.PORT || '3005', 10);
 // Initialize FCM for push notifications
 const fcmReady = initializeFCM();
 
-const app = buildApp(process.env.npm_package_version || '1.0.0');
+const app = buildApp({ version: process.env.npm_package_version || '1.0.0', fcmEnabled: fcmReady } as any);
 const logger = createLogger({ serviceName: 'notification-service' });
 
 app.use(requestContextMiddleware);

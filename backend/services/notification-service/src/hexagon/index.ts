@@ -11,11 +11,12 @@ export interface NotificationModule {
     }
 }
 
-export function buildNotificationModule(version = '1.0.0'): NotificationModule {
+export function buildNotificationModule(version = '1.0.0', fcmEnabled = false): NotificationModule {
     const channels: NotificationChannelPort[] = [
         new ConsoleEmailChannel(),
-        new FCMPushChannel()
+        new FCMPushChannel(fcmEnabled)
     ];
+    console.log(`[NotificationModule] Built with ${channels.length} channels, FCM enabled: ${fcmEnabled}`);
     return {
         useCases: {
             getHealth: new GetHealthUseCase(version),
