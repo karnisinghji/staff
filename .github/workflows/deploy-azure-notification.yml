@@ -76,5 +76,7 @@ jobs:
               NODE_ENV=production \
               SERVICE_NAME=notification-service \
               ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com,https://localhost,capacitor://localhost \
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              FIREBASE_SERVICE_ACCOUNT_JSON="${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}" \
             --query properties.configuration.ingress.fqdn \
             --output tsv
