@@ -55,10 +55,7 @@ jobs:
       - name: Setup Azure Secrets
         run: |
           # Create secrets from GitHub secrets (must be space-separated on same line)
-          az containerapp secret set \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --secrets "database-url=${{ secrets.DATABASE_URL }}" "firebase-service-account=${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}"
+          az containerapp secret set --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --secrets "database-url=${{ secrets.DATABASE_URL }}" "firebase-service-account=${{ secrets.FIREBASE_SERVICE_ACCOUNT_COMEONDOST }}"
       
       - name: Deploy to Azure Container Apps
         run: |
