@@ -36,7 +36,7 @@ export class SendMessageUseCase {
             // Try to get sender name from command, then fallback to fetching from user service
             let senderName = cmd.senderName || 'Someone';
             let senderProfilePic = undefined;
-            
+
             // Only fetch from user service if senderName wasn't provided
             if (!cmd.senderName) {
                 try {
@@ -44,18 +44,18 @@ export class SendMessageUseCase {
                     const headers: any = {
                         'Content-Type': 'application/json'
                     };
-                    
+
                     // Add service-to-service authentication if available
                     const internalToken = process.env.INTERNAL_SERVICE_TOKEN || process.env.JWT_SECRET;
                     if (internalToken) {
                         // Create a simple service token or use existing token
                         headers['X-Service-Token'] = internalToken;
                     }
-                    
+
                     const userResponse = await fetch(`${userServiceUrl}/api/users/${cmd.fromUserId}`, {
                         headers
                     });
-                    
+
                     if (userResponse.ok) {
                         const userData: any = await userResponse.json();
                         console.log(`[SendMessage] User service response:`, JSON.stringify(userData).substring(0, 200));
