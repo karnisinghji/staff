@@ -17,7 +17,7 @@ export interface SecurityOptions {
 export function buildRateLimiter(opts?: Partial<RateLimitOptions>) {
     return rateLimit({
         windowMs: 15 * 60 * 1000,
-        limit: 100,
+        limit: 5000, // Increased from 100 to 500 for development
         standardHeaders: true,
         legacyHeaders: false,
         message: { success: false, message: 'Too many requests, please try again later.' },

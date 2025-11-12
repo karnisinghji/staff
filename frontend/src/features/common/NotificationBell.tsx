@@ -219,8 +219,30 @@ export const NotificationBell: React.FC = () => {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           min-width: 320px;
           max-width: 400px;
+          width: max-content;
           z-index: 1000;
           margin-top: 0.5rem;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+          .notification-dropdown {
+            position: fixed;
+            top: auto;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            min-width: unset;
+            max-width: unset;
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            max-height: 70vh;
+            margin-top: 0;
+          }
+          
+          .notification-list {
+            max-height: calc(70vh - 60px);
+          }
         }
         .notification-header {
           padding: 1rem;
