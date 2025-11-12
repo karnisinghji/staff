@@ -25,7 +25,7 @@ export class SendMessageUseCase {
         try {
             const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL ||
                 'https://notification-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io';
-            
+
             const userServiceUrl = process.env.USER_SERVICE_URL ||
                 'https://user-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io';
 
