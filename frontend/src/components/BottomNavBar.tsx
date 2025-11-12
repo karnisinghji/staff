@@ -213,24 +213,6 @@ export const BottomNavBar: React.FC = () => {
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
-          {/* Debug: Always show a test badge to verify rendering */}
-          <span style={{
-            position: 'absolute',
-            top: '-5px',
-            right: '5px',
-            background: '#ef4444',
-            color: 'white',
-            fontSize: '11px',
-            fontWeight: '600',
-            padding: '2px 6px',
-            borderRadius: '10px',
-            minWidth: '18px',
-            textAlign: 'center',
-            zIndex: 10,
-            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.5)'
-          }}>
-            {unreadCount || '0'}
-          </span>
         </Link>
 
         <Link 

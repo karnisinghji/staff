@@ -106,21 +106,7 @@ export class PushNotificationService {
             PushNotifications.addListener('registration', (token: Token) => {
                 console.log('[PushDebug] FCM_TOKEN:', token.value);
                 this.fcmToken = token.value;
-                // Also show as a local notification so it's visible on emulator
-                import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
-                    try {
-                        await LocalNotifications.requestPermissions();
-                        await LocalNotifications.schedule({
-                            notifications: [{
-                                id: Math.floor(Math.random() * 100000),
-                                title: 'FCM Token (prefix)',
-                                body: token.value.slice(0, 24) + '...'
-                            }]
-                        });
-                    } catch (e) {
-                        console.warn('[PushDebug] Failed to show local notification for token');
-                    }
-                });
+                // Token logged to console - no UI notification needed
             });
             PushNotifications.addListener('registrationError', (error: any) => {
                 console.warn('[PushDebug] registrationError:', error);
