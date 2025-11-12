@@ -15,7 +15,7 @@ export const SaveMatchButton: React.FC<SaveMatchButtonProps> = ({ matchId }) => 
     setError('');
     try {
       const res = await fetch(
-  `${API_CONFIG.MATCHING_SERVICE}/api/matching/save-match`,
+  `${API_CONFIG.MATCHING_SERVICE}/save-match`,
         {
           method: 'POST',
           headers: {

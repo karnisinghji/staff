@@ -71,7 +71,7 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
           }
           try {
             const userRes = await axios.get(
-              `${API_CONFIG.USER_SERVICE}/api/users/${userIdStr}`,
+              `${API_CONFIG.USER_SERVICE}/${userIdStr}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (userRes.data.success) {

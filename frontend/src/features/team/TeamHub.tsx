@@ -41,7 +41,7 @@ const TeamHub: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`,
+        `${API_CONFIG.MATCHING_SERVICE}/my-team`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

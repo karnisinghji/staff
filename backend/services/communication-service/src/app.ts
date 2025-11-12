@@ -7,6 +7,63 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { buildCommunicationModule } from './hexagon';
 
+// Manual CORS handler for mobile debugging
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS)?.split(',').map(o => o.trim()).filter(o => o) || [
+    'https://karnisinghji.github.io',
+    'https://comeondost.web.app',
+    'https://comeondost.firebaseapp.com',
+    'https://comeondost.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://localhost',  // Capacitor mobile app
+    'capacitor://localhost'  // Alternative Capacitor scheme
+];
+// Debug logging for CORS configuration
+console.log('========================================');
+console.log('COMMUNICATION-SERVICE CORS CONFIGURATION');
+console.log('========================================');
+console.log('ALLOWED_ORIGINS env var:', process.env.ALLOWED_ORIGINS);
+console.log('Parsed allowed origins array:', JSON.stringify(allowedOrigins, null, 2));
+console.log('Array includes "https://localhost"?:', allowedOrigins.includes('https://localhost'));
+console.log('========================================');
+
+// Manual CORS handler to debug issues
+function manualCors(req, res, next) {
+    const origin = req.headers.origin;
+    console.log(`[CORS MANUAL] Request: ${req.method} ${req.path}, Origin: ${origin}`);
+
+    // Check if origin is allowed (exact match or localhost/capacitor variations)
+    const isAllowed = origin && (
+        allowedOrigins.includes(origin) ||
+        origin.includes('localhost') ||
+        origin.includes('capacitor') ||
+        origin === 'https://localhost' ||
+        origin === 'capacitor://localhost' ||
+        origin.startsWith('file://')
+    );
+
+    if (isAllowed) {
+        console.log(`[CORS MANUAL] ✓ Origin allowed, setting headers`);
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+        if (req.method === 'OPTIONS') {
+            console.log(`[CORS MANUAL] OPTIONS preflight, sending 200`);
+            res.status(200).end();
+            return;
+        }
+    } else {
+        console.log(`[CORS MANUAL] ✗ Origin not allowed or missing: ${origin}`);
+    }
+    next();
+    return;
+}
+
+// Apply manual CORS handler before everything else
+const app = express();
+app.use(manualCors);
+
 // Helper to get version from package.json
 function getServiceVersion(): string {
     try {

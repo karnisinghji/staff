@@ -267,7 +267,7 @@ const EnhancedProfilePage: React.FC = () => {
   useEffect(() => {
     const loadSkills = async () => {
       try {
-  const res = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/skills`, {
+  const res = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         // Handle backend response format { success: true, data: skills }
@@ -337,7 +337,7 @@ const EnhancedProfilePage: React.FC = () => {
 
   const fetchProfile = useCallback(async () => {
     if (!token) return null;
-    const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+    const res = await axios.get(`${API_CONFIG.USER_SERVICE}/profile`, {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -391,7 +391,7 @@ const EnhancedProfilePage: React.FC = () => {
     setSkillsLoading(true);
     setSkillsError('');
     try {
-      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/skills`);
       const list: string[] = res.data?.data || [];
       const options = [{ value: '', label: 'Select skill type' }, ...list.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))];
       setSkillTypeOptions(options);
@@ -435,7 +435,7 @@ const EnhancedProfilePage: React.FC = () => {
       formData.append('avatar', file);
       
       // TODO: Replace with actual upload endpoint
-      // const response = await axios.post(`${API_CONFIG.USER_SERVICE}/api/users/upload-avatar`, formData, {
+      // const response = await axios.post(`${API_CONFIG.USER_SERVICE}/upload-avatar`, formData, {
       //   headers: {
       //     Authorization: `Bearer ${token}`,
       //     'Content-Type': 'multipart/form-data'
@@ -509,19 +509,19 @@ const EnhancedProfilePage: React.FC = () => {
     mutationFn: async (payload: { userPayload: any; workerPayload?: any; contractorPayload?: any }) => {
       const { userPayload, workerPayload, contractorPayload } = payload;
       if (Object.keys(userPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/profile`, userPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/profile`, userPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'worker' && workerPayload && Object.keys(workerPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/worker-profile`, workerPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/worker-profile`, workerPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'contractor' && contractorPayload && Object.keys(contractorPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/contractor-profile`, contractorPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/contractor-profile`, contractorPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
@@ -841,6 +841,8 @@ const EnhancedProfilePage: React.FC = () => {
           font-weight: 700;
           margin: 0.5rem 0;
           color: #2d3748;
+          text-align: center;
+          width: 100%;
         }
         
         .profile-role {
@@ -852,6 +854,7 @@ const EnhancedProfilePage: React.FC = () => {
           font-size: 0.9em;
           font-weight: 600;
           text-transform: capitalize;
+          margin: 0.5rem auto;
         }
         
         .completeness-card {

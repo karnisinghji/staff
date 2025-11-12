@@ -44,7 +44,7 @@ const StatusPage: React.FC = () => {
     queryKey: ['profile'],
     queryFn: async () => {
       if (!token) return null;
-      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/profile`, {
         withCredentials: true,
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -57,7 +57,7 @@ const StatusPage: React.FC = () => {
   const mutation = useMutation({
     mutationFn: async (available: boolean) => {
       await axios.put(
-        `${API_CONFIG.USER_SERVICE}/api/users/worker-profile`,
+        `${API_CONFIG.USER_SERVICE}/worker-profile`,
         { isAvailable: available },
         {
           withCredentials: true,
@@ -100,7 +100,7 @@ const StatusPage: React.FC = () => {
       
       try {
         const res = await axios.get(
-          `${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements/can-submit`,
+          `${API_CONFIG.MATCHING_SERVICE}/contractor-requirements/can-submit`,
           {
             withCredentials: true,
             headers: { Authorization: `Bearer ${token}` }
@@ -248,7 +248,7 @@ const StatusPage: React.FC = () => {
     setSuccessMsg('');
     setErrorMsg('');
     try {
-      await axios.post(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements`, {
+      await axios.post(`${API_CONFIG.MATCHING_SERVICE}/contractor-requirements`, {
         requiredWorkers: Number(requiredWorkers)
       }, {
         withCredentials: true,

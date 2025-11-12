@@ -90,7 +90,7 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
             // Create new abort controller for this request
             abortControllerRef.current = new AbortController();
 
-            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/update-location-live`, {
+            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/update-location-live`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -326,7 +326,7 @@ export const useGPSTracking = (options: GPSTrackingOptions = {}) => {
         try {
             const token = localStorage.getItem('token');
             if (token) {
-                await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/stop-location-tracking`, {
+                await fetch(`${API_CONFIG.MATCHING_SERVICE}/stop-location-tracking`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`

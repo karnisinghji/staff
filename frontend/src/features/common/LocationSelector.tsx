@@ -39,7 +39,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   const reverseGeocode = async (lat: number, lng: number): Promise<LocationData['address']> => {
     try {
       const response = await fetch(
-        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lng}`
+        `${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${lat}&lon=${lng}`
       );
       
       if (!response.ok) {

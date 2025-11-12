@@ -40,7 +40,7 @@ export const NotificationBell: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export const NotificationBell: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -108,7 +108,7 @@ export const NotificationBell: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -57,7 +57,7 @@ const ModernMessagingPage: React.FC = () => {
     
     const fetchTeam = async () => {
       try {
-        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -226,7 +226,7 @@ const ModernMessagingPage: React.FC = () => {
     
     setLoadingTeam(true);
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

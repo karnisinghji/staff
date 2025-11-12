@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { buildNotificationModule } from './hexagon';
+import { pool, ensureDeviceTokensTable } from './infrastructure/db';
+import { initializeFCM } from './infrastructure/fcm';
 
 // Helper to get version from package.json
 function getServiceVersion(): string {
@@ -45,6 +47,7 @@ export interface BuildAppOptions {
     metricsPath?: string;            // Path to expose /metrics (default: /metrics)
     disableMetrics?: boolean;        // Disable metrics entirely (tests / special cases)
     logger?: LoggerLike;             // Inject custom logger
+    fcmEnabled?: boolean;            // Whether FCM push notifications are enabled
 }
 
 let shared: any = null;
@@ -72,10 +75,12 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     const serviceName = options.serviceName || 'notification-service';
     const metricsPath = options.metricsPath || '/metrics';
     const version = options.version || '0.0.0';
+    const fcmEnabled = options.fcmEnabled !== undefined ? options.fcmEnabled : false;
     const logger: LoggerLike = options.logger || console;
 
     const app = express();
-    const hex = buildNotificationModule(version);
+    console.log(`[buildApp] Building notification module with version=${version}, fcmEnabled=${fcmEnabled}`);
+    const hex = buildNotificationModule(version, fcmEnabled);
 
     app.locals.serviceName = serviceName;
     app.locals.version = version;
@@ -208,26 +213,26 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     app.post('/api/notifications/register-device', validate({ schema: registerDeviceSchema }), async (req, res) => {
         try {
             const { userId, fcmToken, platform, deviceInfo } = req.body;
+            await ensureDeviceTokensTable();
 
-            // TODO: Store FCM token in database
-            // For now, just log it
-            logger.info(`[FCM] Device registered - User: ${userId}, Platform: ${platform}, Token: ${fcmToken.substring(0, 20)}...`);
+            const upsertSQL = `
+              INSERT INTO device_tokens (user_id, fcm_token, platform, device_info, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, NOW(), NOW())
+              ON CONFLICT (user_id, platform)
+              DO UPDATE SET fcm_token = EXCLUDED.fcm_token, device_info = EXCLUDED.device_info, updated_at = NOW()
+              RETURNING user_id, platform, updated_at;
+            `;
+            const result = await pool.query(upsertSQL, [userId, fcmToken, platform, deviceInfo || null]);
 
-            // You would typically store this in a database like:
-            // await db.query(`
-            //   INSERT INTO device_tokens (user_id, fcm_token, platform, device_info, created_at, updated_at)
-            //   VALUES ($1, $2, $3, $4, NOW(), NOW())
-            //   ON CONFLICT (user_id, platform)
-            //   DO UPDATE SET fcm_token = $2, device_info = $4, updated_at = NOW()
-            // `, [userId, fcmToken, platform, deviceInfo]);
+            logger.info(`[FCM] Device registered (persisted) user=${userId} platform=${platform} tokenPrefix=${fcmToken.slice(0, 12)}`);
 
             res.status(200).json({
                 success: true,
                 message: 'Device registered successfully',
                 data: {
-                    userId,
-                    platform,
-                    registeredAt: new Date().toISOString()
+                    userId: result.rows[0].user_id,
+                    platform: result.rows[0].platform,
+                    updatedAt: result.rows[0].updated_at
                 }
             });
         } catch (e: any) {
@@ -236,6 +241,70 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
                 success: false,
                 message: e.message || 'Failed to register device'
             });
+        }
+    });
+
+    // Send push notification to user (looks up device tokens and sends via FCM)
+    const sendPushSchema = z.object({
+        userId: z.string().uuid(),
+        title: z.string().min(1),
+        body: z.string().min(1),
+        data: z.record(z.string()).optional(),
+        imageUrl: z.string().url().optional()
+    });
+
+    console.log('[DEBUG] Registering /api/notifications/send-push route...');
+    app.post('/api/notifications/send-push', validate({ schema: sendPushSchema }), async (req, res) => {
+        try {
+            await ensureDeviceTokensTable();
+            const { userId, title, body, data, imageUrl } = req.body;
+
+            // Send via hexagon use case (supports channel: 'push')
+            const result = await hex.useCases.sendNotification.execute({
+                userId,
+                channel: 'push',
+                template: 'custom',
+                data: { title, body, imageUrl, customData: data }
+            });
+
+            if (result.status === 'failed') {
+                return res.status(422).json({
+                    success: false,
+                    message: result.error || 'Failed to send push notification'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Push notification sent',
+                data: {
+                    notificationId: result.id,
+                    userId: result.userId,
+                    sentAt: result.sentAt
+                }
+            });
+        } catch (e: any) {
+            logger.error('[Push] Send error:', e);
+            res.status(500).json({
+                success: false,
+                message: e.message || 'Failed to send push notification'
+            });
+        }
+    });
+
+    // Debug endpoint for development: list devices for a user
+    app.get('/api/notifications/devices/:userId', async (req, res) => {
+        if (process.env.NODE_ENV === 'production') {
+            return res.status(403).json({ success: false, message: 'Forbidden in production' });
+        }
+        try {
+            await ensureDeviceTokensTable();
+            const { userId } = req.params as { userId: string };
+            const q = `SELECT user_id, platform, LEFT(fcm_token,16) AS token_prefix, device_info, updated_at FROM device_tokens WHERE user_id = $1 ORDER BY platform`;
+            const rows = await pool.query(q, [userId]);
+            res.json({ success: true, data: rows.rows });
+        } catch (e: any) {
+            res.status(500).json({ success: false, message: e.message || 'Failed to fetch devices' });
         }
     });
 
@@ -248,6 +317,12 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
             upgrade: 'WebSocket',
             note: 'WebSocket server not yet implemented'
         });
+    });
+
+    // Debug: Log all registered routes
+    console.log('[DEBUG] All registered routes:');
+    app._router.stack.filter((r: any) => r.route).forEach((r: any) => {
+        console.log(`  ${Object.keys(r.route.methods)[0].toUpperCase()} ${r.route.path}`);
     });
 
     // 404

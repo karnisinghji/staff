@@ -26,7 +26,7 @@ export const BlockedUsersPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/blocked-users`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/blocked-users`, {
         credentials: 'include',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -52,7 +52,7 @@ export const BlockedUsersPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/unblock-user`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/unblock-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

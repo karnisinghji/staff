@@ -146,7 +146,7 @@ const ProfilePage: React.FC = () => {
 
   const fetchProfile = useCallback(async () => {
     if (!token) return null;
-    const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+    const res = await axios.get(`${API_CONFIG.USER_SERVICE}/profile`, {
       withCredentials: true,
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -169,7 +169,7 @@ const ProfilePage: React.FC = () => {
   const { data: skillsData, isLoading: skillsQueryLoading } = useQuery({
     queryKey: ['skills'],
     queryFn: async () => {
-      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/api/users/skills`);
+      const res = await axios.get(`${API_CONFIG.USER_SERVICE}/skills`);
       return res.data?.data || [];
     },
     enabled: !!token,
@@ -250,19 +250,19 @@ const ProfilePage: React.FC = () => {
     mutationFn: async (payload: { userPayload: any; workerPayload?: any; contractorPayload?: any }) => {
       const { userPayload, workerPayload, contractorPayload } = payload;
       if (Object.keys(userPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/profile`, userPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/profile`, userPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'worker' && workerPayload && Object.keys(workerPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/worker-profile`, workerPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/worker-profile`, workerPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
       if (profile.role === 'contractor' && contractorPayload && Object.keys(contractorPayload).length > 0) {
-        await axios.put(`${API_CONFIG.USER_SERVICE}/api/users/contractor-profile`, contractorPayload, {
+        await axios.put(`${API_CONFIG.USER_SERVICE}/contractor-profile`, contractorPayload, {
           withCredentials: true,
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });

@@ -176,7 +176,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
     try {
         // Use backend proxy instead of direct Nominatim call
         const response = await fetch(
-            `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lon}`
+            `${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${lat}&lon=${lon}`
         );
 
         if (response.ok) {

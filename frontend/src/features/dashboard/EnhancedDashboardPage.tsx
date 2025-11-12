@@ -281,7 +281,7 @@ const EnhancedDashboardPage: React.FC = () => {
     queryKey: ['teamRequests', token],
     queryFn: async () => {
       if (!token) return [];
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/received`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ const EnhancedDashboardPage: React.FC = () => {
     queryKey: ['teamMembers', token],
     queryFn: async () => {
       if (!token) return [];
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -354,7 +354,7 @@ const EnhancedDashboardPage: React.FC = () => {
   // Mutation for handling team request actions
   const requestActionMutation = useMutation({
     mutationFn: async ({ requestId, status }: { requestId: number; status: 'accepted' | 'rejected' }) => {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/${requestId}`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

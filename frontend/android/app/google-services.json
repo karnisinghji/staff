@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "227056040895",
+    "project_id": "comeondost",
+    "storage_bucket": "comeondost.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227056040895:android:b50b1a58b85cb18acf3f0a",
+        "android_client_info": {
+          "package_name": "com.comeondost.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHLFMKJUG2IKza7D_XBdpVwWVztmGOS1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

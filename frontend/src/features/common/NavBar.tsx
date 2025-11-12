@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { NotificationBell } from './NotificationBell.tsx';
+import logoImage from '../../assets/comeondost-logo.png';
 
 export const NavBar: React.FC = () => {
   const { token, logout } = useAuth();
@@ -18,13 +19,13 @@ export const NavBar: React.FC = () => {
           justify-content: space-between;
           align-items: center;
           padding: 0.75rem 2rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          background: #ffffff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          border-bottom: 1px solid #e0e0e0;
           font-size: 1rem;
           position: sticky;
           top: 0;
           z-index: 1000;
-          backdrop-filter: blur(10px);
         }
 
         .navbar-brand {
@@ -35,7 +36,7 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar-brand-text {
-          color: #ffffff;
+          color: #1976d2;
           font-size: 1.5rem;
           font-weight: 700;
           letter-spacing: -0.5px;
@@ -45,13 +46,12 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar-brand-icon {
-          background: rgba(255,255,255,0.2);
+          background: #1976d2;
           padding: 0.5rem;
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          backdrop-filter: blur(10px);
         }
 
         .navbar-menu {
@@ -82,12 +82,12 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar a {
-          color: rgba(255,255,255,0.9);
+          color: #333;
           text-decoration: none;
           font-weight: 500;
           padding: 0.5rem 1rem;
-          border-radius: 10px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 8px;
+          transition: all 0.2s ease;
           white-space: nowrap;
           position: relative;
           display: flex;
@@ -96,49 +96,47 @@ export const NavBar: React.FC = () => {
         }
 
         .navbar a:hover {
-          background: rgba(255,255,255,0.15);
-          color: #ffffff;
+          background: #f5f7fa;
+          color: #1976d2;
           transform: translateY(-2px);
         }
 
         .navbar a.active {
-          background: rgba(255,255,255,0.25);
-          color: #ffffff;
+          background: #e3f2fd;
+          color: #1976d2;
           font-weight: 600;
         }
 
         .navbar button {
-          background: rgba(255,255,255,0.2);
+          background: #1976d2;
           color: #ffffff;
-          border: 1px solid rgba(255,255,255,0.3);
-          border-radius: 10px;
+          border: none;
+          border-radius: 8px;
           padding: 0.5rem 1.25rem;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.2s ease;
           white-space: nowrap;
-          backdrop-filter: blur(10px);
         }
 
         .navbar button:hover {
-          background: rgba(255,255,255,0.3);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          background: #1565c0;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
         }
 
         .mobile-menu-toggle {
           display: none;
-          background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.3);
-          border-radius: 10px;
+          background: #f5f7fa;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
           cursor: pointer;
           padding: 0.5rem;
-          color: #ffffff;
-          backdrop-filter: blur(10px);
+          color: #333;
         }
 
         .mobile-menu-toggle:hover {
-          background: rgba(255,255,255,0.3);
+          background: #e0e0e0;
         }
 
         .mobile-menu {
@@ -190,21 +188,64 @@ export const NavBar: React.FC = () => {
           }
         }
 
-        /* Mobile styles - simplified top bar when bottom nav is present */
+        /* Mobile styles - modern gradient when bottom nav is present */
         @media (max-width: 768px) {
           .navbar {
             padding: 0.75rem 1rem;
             position: relative;
             justify-content: space-between;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border-bottom: none;
           }
 
-          .navbar-brand {
+          .navbar-brand-text {
+            color: #ffffff;
+          }
+
+          .navbar-brand-icon {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+          }
+
+          .navbar-brand-icon svg {
+            stroke: #ffffff;
+          }
+
+        .mobile-actions {
+          display: none;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .mobile-menu-toggle {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: white;
+          padding: 0.5rem;
+          display: none;
+          transition: opacity 0.2s;
+        }
+
+        .mobile-menu-toggle:hover {
+          opacity: 0.8;
+        }          .navbar-brand {
             margin-right: auto;
             flex: 1;
           }
 
           .navbar-menu {
             display: none;
+          }
+
+          .mobile-actions {
+            display: flex;
+          }
+
+          /* Hide desktop notification bell on mobile, show mobile one */
+          .navbar-actions .notification-bell {
+            display: none !important;
           }
 
           .mobile-menu-toggle {
@@ -237,17 +278,14 @@ export const NavBar: React.FC = () => {
         <Link to="/" style={{ textDecoration: 'none' }}>
           <div className="navbar-brand">
             <div className="navbar-brand-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5z"/>
-                <path d="M9 22V12h6v10"/>
-              </svg>
+              <img src={logoImage} alt="ComeOnDost Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
             </div>
             <span className="navbar-brand-text">ComeOnDost</span>
           </div>
         </Link>
 
-        {/* Mobile Actions - Show notification bell and menu toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {/* Mobile Actions - Show only menu toggle */}
+        <div className="mobile-actions">
           {token && <NotificationBell />}
           <button 
             className="mobile-menu-toggle" 
@@ -272,6 +310,7 @@ export const NavBar: React.FC = () => {
               <Link to="/saved">👥 My Team</Link>
               <Link to="/messages">💬 Messages</Link>
               <Link to="/profile">👤 Profile</Link>
+              <Link to="/status">📈 Status</Link>
             </div>
             <div className="navbar-actions">
               <NotificationBell />

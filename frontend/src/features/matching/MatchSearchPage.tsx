@@ -59,7 +59,7 @@ export const MatchSearchPage: React.FC = () => {
           async pos => {
             const { latitude, longitude } = pos.coords;
             try {
-              const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+              const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${latitude}&lon=${longitude}`);
               const data = await response.json();
               const name = data.address?.city || data.address?.town || data.address?.village || data.address?.state || data.address?.country || data.display_name || `${latitude},${longitude}`;
               setLocation(name);
@@ -814,7 +814,7 @@ export const MatchSearchPage: React.FC = () => {
                           async pos => {
                             const { latitude, longitude } = pos.coords;
                             try {
-                              const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+                              const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${latitude}&lon=${longitude}`);
                               const data = await response.json();
                               const name = data.address?.city || data.address?.town || data.address?.village || data.address?.state || data.address?.country || data.display_name || `${latitude},${longitude}`;
                               setLocation(name);
@@ -868,7 +868,7 @@ export const MatchSearchPage: React.FC = () => {
                         async pos => {
                           const { latitude, longitude } = pos.coords;
                           try {
-                            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+                            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${latitude}&lon=${longitude}`);
                             const data = await response.json();
                             const name = data.address?.city || data.address?.town || data.address?.village || data.address?.state || data.address?.country || data.display_name || `${latitude},${longitude}`;
                             setLocation(name);

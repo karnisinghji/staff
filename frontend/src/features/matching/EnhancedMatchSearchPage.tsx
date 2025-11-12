@@ -374,7 +374,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
     const fetchSkills = async () => {
       try {
         setSkillsLoading(true);
-  const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/skills`, {
+  const response = await fetch(`${API_CONFIG.USER_SERVICE}/skills`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -467,7 +467,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         // Use reverse geocoding via backend proxy to avoid CORS issues
         try {
           const response = await fetch(
-            `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`
+            `${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${latitude}&lon=${longitude}`
           );
           
           if (response.ok) {
@@ -545,7 +545,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
       }
       
       const isContractor = userRole === 'contractor';
-      const endpoint = isContractor ? 'api/matching/find-workers' : 'api/matching/find-contractors';
+      const endpoint = isContractor ? '/find-workers' : '/find-contractors';
       
       console.log('User role:', userRole, '| Contractor?', isContractor, '| Endpoint:', endpoint);
       
@@ -563,7 +563,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
       
       console.log('🔍 Searching with:', searchBody);
 
-  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/${endpoint}`, {
+  const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -626,7 +626,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
         : `Request sent to ${match.name || 'contractor'}`;
       
       // Fixed: Use correct endpoint and field names per backend validation schema
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/send-team-request`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/send-team-request`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -878,7 +878,7 @@ export const EnhancedMatchSearchPage: React.FC = () => {
                     // Use reverse geocoding via backend proxy to avoid CORS issues
                     try {
                       const response = await fetch(
-                        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${latitude}&lon=${longitude}`
+                        `${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${latitude}&lon=${longitude}`
                       );
                       
                       if (response.ok) {

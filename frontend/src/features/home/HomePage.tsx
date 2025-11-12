@@ -51,8 +51,8 @@ export const HomePage: React.FC = () => (
           Get the full mobile experience with our native Android app
         </p>
         <a 
-          href="https://github.com/karnisinghji/staff/releases/latest/download/contractor-platform.apk"
-          download="contractor-platform.apk"
+          href="https://raw.githubusercontent.com/karnisinghji/staff/main/contractor-platform.apk"
+          download="comeondost-app.apk"
           target="_blank"
           rel="noopener noreferrer"
           style={{ 
@@ -79,7 +79,7 @@ export const HomePage: React.FC = () => (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
             </svg>
-            Download APK (9.5 MB)
+            Download APK (13 MB)
           </button>
         </a>
         <div style={{ 
@@ -92,7 +92,7 @@ export const HomePage: React.FC = () => (
         }}>
           <strong>📥 How to Install:</strong><br/>
           1. Click "Download APK" button above<br/>
-          2. File will download directly (9.5 MB)<br/>
+          2. File will download directly (13 MB)<br/>
           3. Open the downloaded APK file (check Downloads folder)<br/>
           4. Enable "Install from Unknown Sources" if prompted:<br/>
           &nbsp;&nbsp;&nbsp;→ Settings → Security → Unknown Sources → ON<br/>
