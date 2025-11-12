@@ -47,9 +47,20 @@ export function buildApp(): express.Express {
     app.use((req, res, next) => {
         const origin = req.headers.origin;
         console.log(`[CORS MANUAL] Request: ${req.method} ${req.path}, Origin: ${origin}`);
-        if (origin && allowedOrigins.includes(origin)) {
+        
+        // Check if origin is allowed (exact match or localhost/capacitor variations)
+        const isAllowed = origin && (
+            allowedOrigins.includes(origin) || 
+            origin.includes('localhost') || 
+            origin.includes('capacitor') ||
+            origin === 'https://localhost' ||
+            origin === 'capacitor://localhost' ||
+            origin.startsWith('file://')
+        );
+        
+        if (isAllowed) {
             console.log(`[CORS MANUAL] ✓ Origin allowed, setting headers`);
-            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Origin', origin || '*');
             res.setHeader('Access-Control-Allow-Credentials', 'true');
             res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
@@ -59,7 +70,7 @@ export function buildApp(): express.Express {
                 return;
             }
         } else {
-            console.log(`[CORS MANUAL] ✗ Origin not allowed or missing`);
+            console.log(`[CORS MANUAL] ✗ Origin not allowed or missing: ${origin}`);
         }
         next();
         return;
