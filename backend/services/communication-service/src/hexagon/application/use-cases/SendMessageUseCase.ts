@@ -38,39 +38,42 @@ export class SendMessageUseCase {
             let senderName = cmd.senderName || 'Someone';
             let senderProfilePic = undefined;
 
-            // Only fetch from user service if senderName wasn't provided
-            if (!cmd.senderName) {
-                try {
-                    // Use internal service token or make unauthenticated call with service header
-                    const headers: any = {
-                        'Content-Type': 'application/json'
-                    };
+            // Always try to fetch profile picture from user service (even if name was provided)
+            try {
+                // Use internal service token or make unauthenticated call with service header
+                const headers: any = {
+                    'Content-Type': 'application/json'
+                };
 
-                    // Add service-to-service authentication if available
-                    const internalToken = process.env.INTERNAL_SERVICE_TOKEN || process.env.JWT_SECRET;
-                    if (internalToken) {
-                        // Create a simple service token or use existing token
-                        headers['X-Service-Token'] = internalToken;
-                    }
-
-                    const userResponse = await fetch(`${userServiceUrl}/api/users/${cmd.fromUserId}`, {
-                        headers
-                    });
-
-                    if (userResponse.ok) {
-                        const userData: any = await userResponse.json();
-                        console.log(`[SendMessage] User service response:`, JSON.stringify(userData).substring(0, 200));
-                        senderName = userData.data?.name || userData.data?.email?.split('@')[0] || 'Someone';
-                        senderProfilePic = userData.data?.profilePictureUrl;
-                        console.log(`[SendMessage] Fetched sender name: ${senderName}`);
-                    } else {
-                        console.warn(`[SendMessage] User service returned ${userResponse.status}`);
-                    }
-                } catch (err) {
-                    console.warn(`[SendMessage] Could not fetch sender info:`, err);
+                // Add service-to-service authentication if available
+                const internalToken = process.env.INTERNAL_SERVICE_TOKEN || process.env.JWT_SECRET;
+                if (internalToken) {
+                    // Create a simple service token or use existing token
+                    headers['X-Service-Token'] = internalToken;
                 }
-            } else {
-                console.log(`[SendMessage] Using sender name from command: ${senderName}`);
+
+                const userResponse = await fetch(`${userServiceUrl}/api/users/${cmd.fromUserId}`, {
+                    headers
+                });
+
+                if (userResponse.ok) {
+                    const userData: any = await userResponse.json();
+                    console.log(`[SendMessage] User service response:`, JSON.stringify(userData).substring(0, 200));
+
+                    // Use fetched name only if not provided in command
+                    if (!cmd.senderName) {
+                        senderName = userData.data?.name || userData.data?.email?.split('@')[0] || 'Someone';
+                        console.log(`[SendMessage] Fetched sender name: ${senderName}`);
+                    }
+
+                    // Always fetch profile picture
+                    senderProfilePic = userData.data?.profilePictureUrl;
+                    console.log(`[SendMessage] Profile picture URL: ${senderProfilePic || 'NOT SET'}`);
+                } else {
+                    console.warn(`[SendMessage] User service returned ${userResponse.status}`);
+                }
+            } catch (err) {
+                console.warn(`[SendMessage] Could not fetch sender info:`, err);
             }
 
             const notificationPayload = {

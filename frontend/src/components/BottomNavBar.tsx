@@ -10,10 +10,14 @@ export const BottomNavBar: React.FC = () => {
 
   // Fetch unread message count
   useEffect(() => {
-    if (!token || !user?.id) return;
+    if (!token || !user?.id) {
+      console.log('[BottomNavBar] No token or user.id, skipping unread count fetch');
+      return;
+    }
 
     const fetchUnreadCount = async () => {
       try {
+        console.log('[BottomNavBar] Fetching unread count for user:', user.id);
         const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -21,18 +25,23 @@ export const BottomNavBar: React.FC = () => {
           }
         });
 
+        console.log('[BottomNavBar] Response status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('[BottomNavBar] Messages data:', data);
           if (data.success && data.data) {
             // Count unread messages where current user is recipient and readAt is null
             const unread = data.data.filter((msg: any) => 
               msg.toUserId === user.id && !msg.readAt
             );
+            console.log('[BottomNavBar] Unread count:', unread.length);
             setUnreadCount(unread.length);
           }
+        } else {
+          console.error('[BottomNavBar] API error:', response.status, await response.text());
         }
       } catch (error) {
-        console.error('Error fetching unread count:', error);
+        console.error('[BottomNavBar] Error fetching unread count:', error);
       }
     };
 
