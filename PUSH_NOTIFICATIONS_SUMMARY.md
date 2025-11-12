@@ -1,5 +1,26 @@
 # Push Notifications - Implementation Summary
 
+## 🔄 **CURRENT STATUS** (2025-11-11 11:37 UTC)
+
+**Issue Identified**: Azure secrets not being created during deployment
+**Fix Applied**: Updated workflow to create secrets from GitHub secrets (commit `64326781`)
+**Status**: Deployment in progress - GitHub Actions running
+**ETA**: 5-10 minutes for full deployment
+
+**What happened:**
+- ✅ All code implemented correctly
+- ❌ Azure Container App secrets were missing (`database-url`, `firebase-service-account`)
+- ✅ Added secret setup step to GitHub Actions workflow
+- ⏳ Redeployment triggered automatically
+
+**Next Steps:**
+1. Wait for GitHub Actions deployment to complete
+2. Check logs: `az containerapp logs show --name notification-service --resource-group staff-sea-rg --type console --tail 50 | grep FCM`
+3. Expected: `[FCM] Firebase Admin SDK initialized successfully`
+4. Test push notifications with real device
+
+---
+
 ## ✅ What's Been Done
 
 ### 1. Backend Implementation (Notification Service)

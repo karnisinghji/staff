@@ -6,6 +6,7 @@ export class PushNotificationService {
     private static instance: PushNotificationService;
     private fcmToken: string | null = null;
     private isInitialized = false;
+    private debugInitAttempted = false;
 
     private constructor() { }
 
@@ -87,6 +88,46 @@ export class PushNotificationService {
         );
 
         this.isInitialized = true;
+    }
+
+    /**
+     * Debug helper: register for push and log token without backend calls.
+     * Safe to run in production; does not send token anywhere.
+     */
+    async debugRegisterAndLog(): Promise<void> {
+        if (this.debugInitAttempted) return;
+        this.debugInitAttempted = true;
+        try {
+            if (!Capacitor.isNativePlatform()) {
+                console.log('[PushDebug] Not a native platform');
+                return;
+            }
+            await PushNotifications.register();
+            PushNotifications.addListener('registration', (token: Token) => {
+                console.log('[PushDebug] FCM_TOKEN:', token.value);
+                this.fcmToken = token.value;
+                // Also show as a local notification so it's visible on emulator
+                import('@capacitor/local-notifications').then(async ({ LocalNotifications }) => {
+                    try {
+                        await LocalNotifications.requestPermissions();
+                        await LocalNotifications.schedule({
+                            notifications: [{
+                                id: Math.floor(Math.random() * 100000),
+                                title: 'FCM Token (prefix)',
+                                body: token.value.slice(0, 24) + '...'
+                            }]
+                        });
+                    } catch (e) {
+                        console.warn('[PushDebug] Failed to show local notification for token');
+                    }
+                });
+            });
+            PushNotifications.addListener('registrationError', (error: any) => {
+                console.warn('[PushDebug] registrationError:', error);
+            });
+        } catch (e) {
+            console.warn('[PushDebug] Failed to debug-register for push:', e);
+        }
     }
 
     /**

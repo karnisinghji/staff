@@ -10,6 +10,7 @@ import { NavBar } from './features/common/NavBar';
 import { BottomNavBar } from './components/BottomNavBar';
 import { ToastContainer } from './components/ToastContainer';
 import { GlobalAnimations } from './components/AnimationComponents';
+import { pushNotificationService } from './services/pushNotificationService';
 
 // Critical pages loaded immediately (no lazy loading for better UX)
 import { LoginPage } from './features/auth/LoginPage';
@@ -26,6 +27,7 @@ const ModernMessagingPage = lazy(() => import('./features/messaging/ModernMessag
 const HomePageWrapper = lazy(() => import('./features/home/HomePageWrapper'));
 const EnhancedProfilePage = lazy(() => import('./features/profile/EnhancedProfilePage'));
 const StatusPage = lazy(() => import('./features/status/StatusPage'));
+const DebugTokenPage = lazy(() => import('./features/debug/DebugTokenPage'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -232,6 +234,25 @@ const AppUrlListener: React.FC = () => {
   return null;
 };
 
+// Debug helper: initialize push notifications without login when hash contains #debug-push
+const DebugPushInit: React.FC = () => {
+  useEffect(() => {
+    try {
+      if (Capacitor.isNativePlatform() && window.location.hash.includes('debug-push')) {
+        console.log('[DebugPushInit] Auto-initializing push notifications for debug');
+        // Use a stable test UUID; backend register-device endpoint does not require auth
+        const testUserId = '550e8400-e29b-41d4-a716-446655440011';
+        const dummyAuth = 'DEBUG';
+        // Fire and forget
+        pushNotificationService.initialize(testUserId, dummyAuth).catch((e) => console.error('[DebugPushInit] init error', e));
+      }
+    } catch (e) {
+      console.error('[DebugPushInit] error', e);
+    }
+  }, []);
+  return null;
+};
+
 // We will inject a small runtime helper for navigation. In the Router below
 // we'll attach a real navigate function to window.reactRouterNavigate so
 // the AppUrlListener can use it (avoids needing navigate at top-level).
@@ -241,16 +262,22 @@ const App: React.FC = () => (
     <NotificationProvider>
       <MessageProvider>
         <Router>
+          {/* On native platforms, attempt a one-time debug push register to log FCM token */}
+          {Capacitor.isNativePlatform() && (
+            <TokenBootstrapper />
+          )}
           <GlobalAnimations />
           {/* Injector: expose react-router navigate to AppUrlListener via window.reactRouterNavigate */}
           <RouterNavigatorInjector />
           <AppUrlListener />
+          <DebugPushInit />
           <NavBar />
           <NotificationList />
           <ToastContainer />
           <BottomNavBar />
           <Suspense fallback={<LoadingFallback />}>
           <Routes>
+            <Route path="/debug/token" element={<DebugTokenPage />} />
             <Route path="/login" element={
               <PublicRoute>
                 <LoginPage />
@@ -306,3 +333,18 @@ const App: React.FC = () => (
 );
 
 export default App;
+
+// Component that runs once to request push token and log it (no backend calls)
+const TokenBootstrapper: React.FC = () => {
+  useEffect(() => {
+    pushNotificationService.debugRegisterAndLog().catch(() => {});
+    // Navigate to debug token page once on start to make token visible on device
+    const to = setTimeout(() => {
+      if (!window.location.hash.includes('/debug/token')) {
+        window.location.hash = '#/debug/token';
+      }
+    }, 800);
+    return () => clearTimeout(to);
+  }, []);
+  return null;
+};

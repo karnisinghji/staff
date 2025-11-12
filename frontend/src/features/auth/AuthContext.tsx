@@ -1,7 +1,7 @@
-import { createContext, useState, useContext, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useState, useContext, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { MobileNotificationService } from '../../services/mobileNotifications';
-// import { pushNotificationService } from '../../services/pushNotificationService'; // Temporarily disabled - Firebase not configured
+import { pushNotificationService } from '../../services/pushNotificationService';
 
 
 interface AuthState {
@@ -21,6 +21,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const notificationsInitRef = useRef(false); // prevent duplicate push notification init
+
+  const ensurePushNotifications = useCallback(async (authToken: string | null, currentUser: any | null) => {
+    if (!authToken || !currentUser?.id) return;
+    if (notificationsInitRef.current) return;
+    try {
+      await pushNotificationService.initialize(currentUser.id, authToken);
+      notificationsInitRef.current = true;
+      console.log('[AuthContext] Push notifications initialized');
+    } catch (err) {
+      console.warn('[AuthContext] Push notifications init failed (non-critical):', err);
+    }
+  }, []);
 
   // Load stored auth data on mount
   useEffect(() => {
@@ -48,13 +61,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('[AuthContext] Token set successfully');
           // Initialize mobile notifications if token exists
           await MobileNotificationService.initialize(localToken);
-          
-          // Initialize push notifications
-          // Temporarily disabled - Firebase not configured
-          // if (localUser) {
-          //   const parsedUser = JSON.parse(localUser);
-          //   await pushNotificationService.initialize(parsedUser.id, localToken);
-          // }
+          // If user already loaded, attempt push notification init
+          if (localUser) {
+            try {
+              const parsedUser = JSON.parse(localUser);
+              await ensurePushNotifications(localToken, parsedUser);
+            } catch (e) {
+              console.warn('[AuthContext] Failed parsing user for push init:', e);
+            }
+          }
         } else {
           console.warn('[AuthContext] NO TOKEN FOUND - User will need to login');
         }
@@ -63,6 +78,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('[AuthContext] Setting user in state...');
           setUser(JSON.parse(localUser));
           console.log('[AuthContext] User set successfully');
+          // If token already set, ensure push notifications now
+          if (localToken) {
+            await ensurePushNotifications(localToken, JSON.parse(localUser));
+          }
         }
       } catch (error) {
         console.error('[AuthContext] Error loading stored auth:', error);
@@ -99,10 +118,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.warn('[AuthContext] Preferences save failed (non-critical):', error);
     });
     
-    // Initialize mobile notifications in background (non-blocking)
+    // Initialize mobile & push notifications in background (non-blocking)
     MobileNotificationService.initialize(newToken).catch(error => {
       console.warn('[AuthContext] Mobile notifications init failed (non-critical):', error);
     });
+    ensurePushNotifications(newToken, newUser);
     
     console.log('[AuthContext] Login complete');
   }, []);
@@ -120,8 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Stop mobile notifications
     MobileNotificationService.stopPolling();
     
-    // Unregister push notifications
-    // await pushNotificationService.unregister(); // Temporarily disabled - Firebase not configured
+  // Unregister push notifications
+  await pushNotificationService.unregister().catch(e => console.warn('[AuthContext] Push notifications unregister failed:', e));
   }, []);
 
   // Auto-refresh token before expiry
