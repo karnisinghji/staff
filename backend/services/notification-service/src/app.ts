@@ -79,6 +79,7 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     const logger: LoggerLike = options.logger || console;
 
     const app = express();
+    console.log(`[buildApp] Building notification module with version=${version}, fcmEnabled=${fcmEnabled}`);
     const hex = buildNotificationModule(version, fcmEnabled);
 
     app.locals.serviceName = serviceName;
