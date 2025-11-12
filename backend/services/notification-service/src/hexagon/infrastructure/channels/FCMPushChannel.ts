@@ -14,6 +14,7 @@ export class FCMPushChannel implements NotificationChannelPort {
     supports(channel: string): boolean {
         const supported = (channel === 'push' || channel === 'fcm') && this.fcmEnabled;
         console.log(`[FCMPushChannel] supports('${channel}'): ${supported} (FCM enabled: ${this.fcmEnabled})`);
+        // Ensure push channel is properly supported when FCM is initialized
         return supported;
     }
 
