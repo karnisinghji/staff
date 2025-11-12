@@ -52,22 +52,37 @@ jobs:
           tenant-id: 667ecb3b-8888-4637-a4bc-cde8a4d37efb
           subscription-id: bb83cf18-522d-4546-ba6b-39e219d3c0db
 
-      - name: Deploy to Azure Container Apps
+      - name: Ensure Container App exists
         run: |
-          az containerapp create \
+          # Check if app exists
+          if ! az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
+            echo "Creating new container app..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --environment staff-env \
+              --image ${{ env.DOCKER_IMAGE }}:latest \
+              --target-port 3004 \
+              --ingress external \
+              --min-replicas 0 \
+              --max-replicas 5 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --env-vars NODE_ENV=production SERVICE_NAME=communication-service PORT=3004
+          else
+            echo "Container app already exists"
+          fi
+
+      - name: Create or update secrets
+        run: |
+          # Create/update database-url secret
+          az containerapp secret set \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --environment staff-env \
-            --image ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
-            --target-port 3000 \
-            --ingress external \
-            --min-replicas 0 \
-            --max-replicas 5 \
-            --cpu 0.5 \
-            --memory 1Gi \
-            --env-vars NODE_ENV=production SERVICE_NAME=communication-service \
-            --query properties.configuration.ingress.fqdn \
-            --output tsv || \
+            --secrets database-url="${{ secrets.DATABASE_URL }}"
+
+      - name: Update Container App with new image and secret references
+        run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
@@ -75,6 +90,9 @@ jobs:
             --set-env-vars \
               NODE_ENV=production \
               SERVICE_NAME=communication-service \
+              PORT=3004 \
+              JWT_SECRET=secretref:jwt-secret \
               ALLOWED_ORIGINS=https://comeondost.web.app,https://comeondost.firebaseapp.com,https://localhost,capacitor://localhost \
+            --replace-env-vars DATABASE_URL=secretref:database-url \
             --query properties.configuration.ingress.fqdn \
             --output tsv
