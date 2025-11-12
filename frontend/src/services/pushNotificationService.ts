@@ -125,6 +125,9 @@ export class PushNotificationService {
         authToken: string
     ): Promise<void> {
         try {
+            console.log('[Push Notifications] Sending token to backend for user:', userId);
+            console.log('[Push Notifications] Token (first 20 chars):', fcmToken.substring(0, 20));
+
             const response = await fetch(
                 `${API_CONFIG.NOTIFICATION_SERVICE}/api/notifications/register-device`,
                 {
@@ -146,12 +149,13 @@ export class PushNotificationService {
             );
 
             if (response.ok) {
-                console.log('[Push Notifications] Token registered with backend');
+                console.log('[Push Notifications] ✅ Token registered with backend successfully');
             } else {
-                console.error('[Push Notifications] Failed to register token with backend');
+                const errorText = await response.text();
+                console.error('[Push Notifications] ❌ Failed to register token:', response.status, errorText);
             }
         } catch (error) {
-            console.error('[Push Notifications] Error sending token to backend:', error);
+            console.error('[Push Notifications] ❌ Error sending token to backend:', error);
         }
     }
 
