@@ -3,6 +3,7 @@ const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
 
 // Base API URLs for production and development
+// NOTE: Most services use /api/service-name prefix in their routes, except communication service
 export const API_CONFIG = {
     AUTH_SERVICE: isProduction
         ? 'https://auth-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/auth'
@@ -17,8 +18,8 @@ export const API_CONFIG = {
         : 'http://localhost:3003/api/matching',
 
     COMMUNICATION_SERVICE: isProduction
-        ? 'https://communication-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io/api/communication'
-        : 'http://localhost:3004/api/communication',
+        ? 'https://communication-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io'
+        : 'http://localhost:3004',
 
     NOTIFICATION_SERVICE: isProduction
         ? 'https://notification-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io'

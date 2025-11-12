@@ -37,7 +37,7 @@ export const ContractorRequirementsList: React.FC<Props> = ({ showContactButton 
     if (!token) return;
     setLoading(true);
     setError('');
-    fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contractor-requirements`, {
+    fetch(`${API_CONFIG.MATCHING_SERVICE}/contractor-requirements`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -64,7 +64,7 @@ export const ContractorRequirementsList: React.FC<Props> = ({ showContactButton 
     
     setSendingMessage(true);
     try {
-      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/contact-contractor`, {
+      const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/contact-contractor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

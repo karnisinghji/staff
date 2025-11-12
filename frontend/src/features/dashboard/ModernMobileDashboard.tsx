@@ -34,7 +34,7 @@ const ModernMobileDashboard: React.FC = () => {
       // Fetch team requests count
       try {
         const requestsRes = await fetch(
-          `${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/received`,
+          `${API_CONFIG.MATCHING_SERVICE}/team-requests/received`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -50,14 +50,22 @@ const ModernMobileDashboard: React.FC = () => {
       // Fetch messages count
       try {
         const messagesRes = await fetch(
-          `${API_CONFIG.COMMUNICATION_SERVICE}/api/messages/conversations`,
+          `${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
         if (messagesRes.ok) {
           const messagesData = await messagesRes.json();
-          newChats = messagesData.conversations?.filter((c: any) => c.unread_count > 0).length || 0;
+          // Count unique conversations with unread messages
+          const messages = messagesData.data || [];
+          const unreadConversations = new Set();
+          messages.forEach((msg: any) => {
+            if (!msg.readAt && msg.toUserId === user.id) {
+              unreadConversations.add(msg.fromUserId);
+            }
+          });
+          newChats = unreadConversations.size;
         }
       } catch (err) {
         console.error('Failed to fetch messages:', err);

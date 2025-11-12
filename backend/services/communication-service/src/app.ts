@@ -31,17 +31,17 @@ console.log('========================================');
 function manualCors(req, res, next) {
     const origin = req.headers.origin;
     console.log(`[CORS MANUAL] Request: ${req.method} ${req.path}, Origin: ${origin}`);
-    
+
     // Check if origin is allowed (exact match or localhost/capacitor variations)
     const isAllowed = origin && (
-        allowedOrigins.includes(origin) || 
-        origin.includes('localhost') || 
+        allowedOrigins.includes(origin) ||
+        origin.includes('localhost') ||
         origin.includes('capacitor') ||
         origin === 'https://localhost' ||
         origin === 'capacitor://localhost' ||
         origin.startsWith('file://')
     );
-    
+
     if (isAllowed) {
         console.log(`[CORS MANUAL] ✓ Origin allowed, setting headers`);
         res.setHeader('Access-Control-Allow-Origin', origin || '*');

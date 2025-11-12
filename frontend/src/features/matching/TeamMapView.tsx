@@ -107,7 +107,7 @@ export const TeamMapView: React.FC = () => {
           
           // Save location to database immediately
           try {
-            const saveResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/update-location-live`, {
+            const saveResponse = await fetch(`${API_CONFIG.MATCHING_SERVICE}/update-location-live`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export const TeamMapView: React.FC = () => {
 
       try {
         setLoading(true);
-        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`, {
+        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/my-team`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ export const TeamMapView: React.FC = () => {
         // Only fetch user profile if we haven't loaded location yet
         if (!hasLiveGPS && !currentUserLocation) {
           try {
-            const userResponse = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/profile`, {
+            const userResponse = await fetch(`${API_CONFIG.USER_SERVICE}/profile`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

@@ -142,7 +142,7 @@ export class MobileNotificationService {
 
     static async checkForTeamRequests(token: string) {
         try {
-            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/team-requests/pending`, {
+            const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/team-requests/pending`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',

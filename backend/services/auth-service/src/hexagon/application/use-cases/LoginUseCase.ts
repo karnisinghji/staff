@@ -26,13 +26,13 @@ export class LoginUseCase {
         const ok = await this.hasher.compare(input.password, cred.passwordHash);
         if (!ok) throw new Error('INVALID_CREDENTIALS');
 
-        const accessToken = this.signer.signAccessToken({ sub: cred.id, roles: cred.roles }, '15m');
+        const accessToken = this.signer.signAccessToken({ sub: cred.id, roles: cred.roles }, '24h');
         const refreshToken = this.signer.signRefreshToken({ sub: cred.id }, '7d');
         // Include both roles array and single role for frontend compatibility
         return {
             accessToken,
             refreshToken,
-            expiresInSeconds: 15 * 60,
+            expiresInSeconds: 24 * 60 * 60,
             user: {
                 id: cred.id,
                 email: cred.email,

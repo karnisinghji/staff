@@ -39,8 +39,8 @@ export const LocationHistoryViewer: React.FC<LocationHistoryViewerProps> = ({
 
     try {
       const endpoint = userId 
-        ? `${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history/${userId}?hours=${timeRange}`
-        : `${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history?hours=${timeRange}&limit=100`;
+        ? `${API_CONFIG.MATCHING_SERVICE}/location/history/${userId}?hours=${timeRange}`
+        : `${API_CONFIG.MATCHING_SERVICE}/location/history?hours=${timeRange}&limit=100`;
 
       const response = await fetch(endpoint, {
         headers: {
@@ -95,7 +95,7 @@ export const LocationHistoryViewer: React.FC<LocationHistoryViewerProps> = ({
     try {
       // Use backend proxy to avoid CORS and rate limiting
       const response = await fetch(
-        `${API_CONFIG.MATCHING_SERVICE}/api/matching/reverse-geocode?lat=${lat}&lon=${lng}`,
+        `${API_CONFIG.MATCHING_SERVICE}/reverse-geocode?lat=${lat}&lon=${lng}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`

@@ -11,7 +11,7 @@ import { API_CONFIG } from '../../config/api';
 import { useGPSTracking } from '../../hooks/useGPSTracking';
 
 // Use production API URL
-const API_URL = `${API_CONFIG.MATCHING_SERVICE}/api/matching/my-team`;
+const API_URL = `${API_CONFIG.MATCHING_SERVICE}/my-team`;
 
 type TabType = 'members' | 'messages' | 'map';
 
@@ -248,7 +248,7 @@ export const MyTeamPage: React.FC = () => {
       if (!token) return;
       
       try {
-        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/api/matching/location/history?limit=1`, {
+        const response = await fetch(`${API_CONFIG.MATCHING_SERVICE}/location/history?limit=1`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
