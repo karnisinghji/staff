@@ -28,7 +28,7 @@ console.log('Array includes "https://localhost"?:', allowedOrigins.includes('htt
 console.log('========================================');
 
 // Manual CORS handler to debug issues
-function manualCors(req, res, next) {
+function manualCors(req: express.Request, res: express.Response, next: express.NextFunction) {
     const origin = req.headers.origin;
     console.log(`[CORS MANUAL] Request: ${req.method} ${req.path}, Origin: ${origin}`);
 
