@@ -8,9 +8,6 @@ export const BottomNavBar: React.FC = () => {
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Don't show bottom nav if not authenticated
-  if (!token) return null;
-
   // Fetch unread message count
   useEffect(() => {
     if (!token || !user?.id) return;
@@ -49,6 +46,9 @@ export const BottomNavBar: React.FC = () => {
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
+
+  // Don't show bottom nav if not authenticated
+  if (!token) return null;
 
   return (
     <>
