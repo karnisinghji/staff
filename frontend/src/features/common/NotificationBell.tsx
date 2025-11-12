@@ -77,7 +77,7 @@ export const NotificationBell: React.FC = () => {
     if (!token || !user?.id) return;
 
     try {
-      const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages`, {
+      const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages?userId=${user.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
