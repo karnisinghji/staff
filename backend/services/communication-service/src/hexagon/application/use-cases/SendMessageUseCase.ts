@@ -32,6 +32,7 @@ export class SendMessageUseCase {
 
             console.log(`[SendMessage] Attempting to send push notification to user ${cmd.toUserId}`);
             console.log(`[SendMessage] Notification service URL: ${notificationServiceUrl}`);
+            console.log(`[SendMessage] Sender name from command: ${cmd.senderName || 'NOT PROVIDED'}`);
 
             // Try to get sender name from command, then fallback to fetching from user service
             let senderName = cmd.senderName || 'Someone';
