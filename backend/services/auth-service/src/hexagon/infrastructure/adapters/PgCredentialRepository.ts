@@ -28,7 +28,8 @@ export class PgCredentialRepository implements CredentialRepositoryPort {
             roles: [row.roles], // Convert single role to array format
             createdAt: row.created_at,
             oauthProvider: row.oauth_provider || undefined,
-            oauthId: row.oauth_id || undefined
+            oauthId: row.oauth_id || undefined,
+            name: row.name || undefined
         };
     }
 

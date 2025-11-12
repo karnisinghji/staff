@@ -154,13 +154,17 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       setError(null);
       
       // Use communication-service for actual chat messages
+      const senderName = user.name || user.email?.split('@')[0] || 'Someone';
+      console.log(`[MessageContext] Sending message with sender name: ${senderName}`);
+      console.log(`[MessageContext] User object:`, { id: user.id, name: user.name, email: user.email });
+      
       const response = await axios.post(
         `${API_CONFIG.COMMUNICATION_SERVICE}/messages`,
         {
           fromUserId: user.id,
           toUserId: toUserId,
           body: body,
-          senderName: user.name || user.email?.split('@')[0] || 'Someone' // Include sender name for notifications
+          senderName: senderName // Include sender name for notifications
         },
         {
           headers: { Authorization: `Bearer ${token}` }
