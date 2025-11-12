@@ -1,13 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { API_CONFIG } from '../config/api';
 
 export const BottomNavBar: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Don't show bottom nav if not authenticated
   if (!token) return null;
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!token || !user?.id) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            // Count unread messages where current user is recipient and readAt is null
+            const unread = data.data.filter((msg: any) => 
+              msg.toUserId === user.id && !msg.readAt
+            );
+            setUnreadCount(unread.length);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Poll every 30 seconds for new messages
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [token, user?.id]);
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -84,6 +121,28 @@ export const BottomNavBar: React.FC = () => {
           border-radius: 50%;
         }
 
+        /* Badge for unread count */
+        .bottom-nav-badge {
+          position: absolute;
+          top: 0;
+          right: 8px;
+          background: #ef4444;
+          color: white;
+          font-size: 0.65rem;
+          font-weight: 600;
+          padding: 0.1rem 0.35rem;
+          border-radius: 10px;
+          min-width: 18px;
+          text-align: center;
+          line-height: 1.2;
+          box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        }
+
+        .bottom-nav-badge.large {
+          font-size: 0.6rem;
+          padding: 0.1rem 0.3rem;
+        }
+
         /* Add padding to page content so it doesn't hide behind bottom nav */
         body {
           padding-bottom: 70px;
@@ -149,6 +208,11 @@ export const BottomNavBar: React.FC = () => {
         >
           <span className="bottom-nav-icon">💬</span>
           <span className="bottom-nav-label">Messages</span>
+          {unreadCount > 0 && (
+            <span className={`bottom-nav-badge ${unreadCount > 99 ? 'large' : ''}`}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </Link>
 
         <Link 

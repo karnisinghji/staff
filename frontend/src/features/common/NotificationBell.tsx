@@ -16,10 +16,11 @@ interface TeamRequest {
 }
 
 export const NotificationBell: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [requests, setRequests] = useState<TeamRequest[]>([]);
   const [count, setCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -71,12 +72,44 @@ export const NotificationBell: React.FC = () => {
     }
   }, [token]);
 
-  // Poll for new requests every 30 seconds
+  // Fetch unread messages count
+  const fetchUnreadMessagesCount = useCallback(async () => {
+    if (!token || !user?.id) return;
+
+    try {
+      const response = await fetch(`${API_CONFIG.COMMUNICATION_SERVICE}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Count unread messages where current user is recipient and readAt is null
+          const unread = data.data.filter((msg: any) => 
+            msg.toUserId === user.id && !msg.readAt
+          );
+          setUnreadMessagesCount(unread.length);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+      setUnreadMessagesCount(0);
+    }
+  }, [token, user?.id]);
+
+  // Poll for new requests and messages every 30 seconds
   useEffect(() => {
     fetchRequestsCount();
-    const interval = setInterval(fetchRequestsCount, 30000);
+    fetchUnreadMessagesCount();
+    const interval = setInterval(() => {
+      fetchRequestsCount();
+      fetchUnreadMessagesCount();
+    }, 30000);
     return () => clearInterval(interval);
-  }, [fetchRequestsCount]);
+  }, [fetchRequestsCount, fetchUnreadMessagesCount]);
 
   const handleAcceptRequest = useCallback(async (requestId: number) => {
     if (!token) return;
@@ -308,9 +341,9 @@ export const NotificationBell: React.FC = () => {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          {count > 0 && (
+          {(count + unreadMessagesCount) > 0 && (
             <span className="notification-badge">
-              {count > 9 ? '9+' : count}
+              {(count + unreadMessagesCount) > 9 ? '9+' : (count + unreadMessagesCount)}
             </span>
           )}
         </div>
@@ -318,7 +351,7 @@ export const NotificationBell: React.FC = () => {
         {isOpen && (
           <div className="notification-dropdown">
             <div className="notification-header">
-              Team Requests ({count})
+              Notifications ({count} requests, {unreadMessagesCount} messages)
             </div>
             
             <div className="notification-list">
