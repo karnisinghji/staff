@@ -194,7 +194,8 @@ export function buildApp(version: string): express.Express {
     const sendMessageSchema = z.object({
         fromUserId: z.string().min(1),
         toUserId: z.string().min(1),
-        body: z.string().min(1).max(5000)
+        body: z.string().min(1).max(5000),
+        senderName: z.string().optional() // Optional sender name for notifications
     });
     app.post('/messages', validate({ schema: sendMessageSchema }), async (req, res) => {
         try {

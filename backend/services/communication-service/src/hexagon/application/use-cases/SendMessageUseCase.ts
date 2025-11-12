@@ -6,6 +6,7 @@ export interface SendMessageCommand {
     fromUserId: string;
     toUserId: string;
     body: string;
+    senderName?: string; // Optional sender name from frontend/auth context
 }
 
 export class SendMessageUseCase {
@@ -32,19 +33,43 @@ export class SendMessageUseCase {
             console.log(`[SendMessage] Attempting to send push notification to user ${cmd.toUserId}`);
             console.log(`[SendMessage] Notification service URL: ${notificationServiceUrl}`);
 
-            // Fetch sender's name and profile picture for rich notification
-            let senderName = 'Someone';
+            // Try to get sender name from command, then fallback to fetching from user service
+            let senderName = cmd.senderName || 'Someone';
             let senderProfilePic = undefined;
-            try {
-                const userResponse = await fetch(`${userServiceUrl}/api/users/${cmd.fromUserId}`);
-                if (userResponse.ok) {
-                    const userData: any = await userResponse.json();
-                    senderName = userData.data?.name || userData.data?.email?.split('@')[0] || 'Someone';
-                    senderProfilePic = userData.data?.profilePictureUrl;
-                    console.log(`[SendMessage] Fetched sender name: ${senderName}`);
+            
+            // Only fetch from user service if senderName wasn't provided
+            if (!cmd.senderName) {
+                try {
+                    // Use internal service token or make unauthenticated call with service header
+                    const headers: any = {
+                        'Content-Type': 'application/json'
+                    };
+                    
+                    // Add service-to-service authentication if available
+                    const internalToken = process.env.INTERNAL_SERVICE_TOKEN || process.env.JWT_SECRET;
+                    if (internalToken) {
+                        // Create a simple service token or use existing token
+                        headers['X-Service-Token'] = internalToken;
+                    }
+                    
+                    const userResponse = await fetch(`${userServiceUrl}/api/users/${cmd.fromUserId}`, {
+                        headers
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData: any = await userResponse.json();
+                        console.log(`[SendMessage] User service response:`, JSON.stringify(userData).substring(0, 200));
+                        senderName = userData.data?.name || userData.data?.email?.split('@')[0] || 'Someone';
+                        senderProfilePic = userData.data?.profilePictureUrl;
+                        console.log(`[SendMessage] Fetched sender name: ${senderName}`);
+                    } else {
+                        console.warn(`[SendMessage] User service returned ${userResponse.status}`);
+                    }
+                } catch (err) {
+                    console.warn(`[SendMessage] Could not fetch sender info:`, err);
                 }
-            } catch (err) {
-                console.warn(`[SendMessage] Could not fetch sender info, using defaults`);
+            } else {
+                console.log(`[SendMessage] Using sender name from command: ${senderName}`);
             }
 
             const notificationPayload = {

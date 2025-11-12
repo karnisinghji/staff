@@ -159,7 +159,8 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
         {
           fromUserId: user.id,
           toUserId: toUserId,
-          body: body
+          body: body,
+          senderName: user.name || user.email?.split('@')[0] || 'Someone' // Include sender name for notifications
         },
         {
           headers: { Authorization: `Bearer ${token}` }
