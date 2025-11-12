@@ -71,16 +71,30 @@ export async function sendPushNotification(
                 priority: 'high',
                 notification: {
                     sound: 'default',
-                    channelId: 'default',
-                    priority: 'high' as any
+                    channelId: 'messages', // Use 'messages' channel for message notifications
+                    priority: 'high' as any,
+                    defaultSound: true,
+                    defaultVibrateTimings: true,
+                    defaultLightSettings: true,
+                    // Set notification color (your app's primary color)
+                    color: '#1E40AF', // Blue color
                 }
             },
             apns: {
                 payload: {
                     aps: {
                         sound: 'default',
-                        badge: 1
+                        badge: 1,
+                        alert: {
+                            title: payload.title,
+                            body: payload.body
+                        },
+                        'mutable-content': 1, // Allow notification modifications
+                        category: 'MESSAGE' // For custom actions
                     }
+                },
+                fcmOptions: {
+                    ...(payload.imageUrl && { imageUrl: payload.imageUrl })
                 }
             }
         };
@@ -119,16 +133,29 @@ export async function sendPushToMultipleDevices(
                 priority: 'high',
                 notification: {
                     sound: 'default',
-                    channelId: 'default',
-                    priority: 'high' as any
+                    channelId: 'messages',
+                    priority: 'high' as any,
+                    defaultSound: true,
+                    defaultVibrateTimings: true,
+                    defaultLightSettings: true,
+                    color: '#1E40AF',
                 }
             },
             apns: {
                 payload: {
                     aps: {
                         sound: 'default',
-                        badge: 1
+                        badge: 1,
+                        alert: {
+                            title: payload.title,
+                            body: payload.body
+                        },
+                        'mutable-content': 1,
+                        category: 'MESSAGE'
                     }
+                },
+                fcmOptions: {
+                    ...(payload.imageUrl && { imageUrl: payload.imageUrl })
                 }
             }
         };
