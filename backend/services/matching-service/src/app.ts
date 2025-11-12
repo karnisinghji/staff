@@ -7,6 +7,7 @@ import adminRoutes from './routes/adminRoutes';
 import { logger } from './utils/logger';
 
 // Attempt shared metrics; fallback to local lightweight registry
+// CORS fix: Ensuring mobile app origins are properly handled
 let sharedFactory: any = null;
 let exposeMetricsEndpoint: any = null;
 let sharedMiddleware: any = null;
