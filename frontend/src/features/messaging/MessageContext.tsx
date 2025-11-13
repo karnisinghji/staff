@@ -155,9 +155,9 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
       
       // Use communication-service for actual chat messages
       const senderName = user.name || user.email?.split('@')[0] || 'Someone';
-      console.log(`[MessageContext] Sending message with sender name: ${senderName}`);
-      console.log(`[MessageContext] User object:`, { id: user.id, name: user.name, email: user.email });
-      console.log(`[MessageContext] Full user object:`, JSON.stringify(user));
+      console.log('%c[MessageContext]%c Sending message with sender name:', 'color: #FF5722; font-weight: bold', 'color: inherit', senderName);
+      console.log('%c[MessageContext]%c User object:', 'color: #FF5722; font-weight: bold', 'color: inherit', { id: user.id, name: user.name, email: user.email });
+      console.log('%c[MessageContext]%c Full user object:', 'color: #FF5722; font-weight: bold', 'color: inherit', JSON.stringify(user));
       
       const response = await axios.post(
         `${API_CONFIG.COMMUNICATION_SERVICE}/messages`,

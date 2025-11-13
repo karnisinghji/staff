@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await pushNotificationService.initialize(currentUser.id, authToken);
       notificationsInitRef.current = true;
-      console.log('[AuthContext] Push notifications initialized');
+      console.log('%c[AuthContext]%c Push notifications initialized', 'color: #4CAF50; font-weight: bold', 'color: inherit');
     } catch (err) {
       console.warn('[AuthContext] Push notifications init failed (non-critical):', err);
     }

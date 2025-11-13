@@ -23,53 +23,78 @@ export class PushNotificationService {
      */
     async initialize(userId: string, authToken: string): Promise<void> {
         if (!Capacitor.isNativePlatform()) {
-            console.log('[Push Notifications] Not available on web platform');
+            console.log('%c[Push Notifications]%c Not available on web platform', 'color: #FF9800; font-weight: bold', 'color: inherit');
             return;
         }
 
         if (this.isInitialized) {
-            console.log('[Push Notifications] Already initialized');
+            console.log('%c[Push Notifications]%c Already initialized', 'color: #FF9800; font-weight: bold', 'color: inherit');
             return;
         }
 
+        console.log('%c[Push Notifications]%c Starting initialization for user:', 'color: #4CAF50; font-weight: bold', 'color: inherit', userId);
+
         try {
+            // First check current permission status
+            const currentPermission = await PushNotifications.checkPermissions();
+            console.log('%c[Push Notifications]%c Current permission status:', 'color: #2196F3; font-weight: bold', 'color: inherit', currentPermission);
+
             // Request permission
+            console.log('%c[Push Notifications]%c Requesting permissions...', 'color: #FF9800; font-weight: bold', 'color: inherit');
             const permission = await PushNotifications.requestPermissions();
+            console.log('%c[Push Notifications]%c Permission result:', 'color: #2196F3; font-weight: bold', 'color: inherit', permission);
 
             if (permission.receive === 'granted') {
-                console.log('[Push Notifications] Permission granted');
+                console.log('%c[Push Notifications]%c Permission granted', 'color: #4CAF50; font-weight: bold', 'color: inherit');
                 await this.registerNotifications(userId, authToken);
             } else {
-                console.warn('[Push Notifications] Permission denied');
+                console.warn('%c[Push Notifications]%c Permission denied:', 'color: #F44336; font-weight: bold', 'color: inherit', permission);
+                console.warn('%c[Push Notifications]%c To enable: Go to Settings → Apps → ComeOnDost → Notifications', 'color: #F44336; font-weight: bold', 'color: inherit');
             }
         } catch (error) {
-            console.error('[Push Notifications] Initialization error:', error);
+            console.error('%c[Push Notifications]%c Initialization error:', 'color: #F44336; font-weight: bold', 'color: inherit', error);
         }
     }
 
     private async registerNotifications(userId: string, authToken: string): Promise<void> {
+        console.log('%c[Push Notifications]%c Registering for push notifications...', 'color: #4CAF50; font-weight: bold', 'color: inherit');
+
         // Register with Apple / Google to receive push via APNS/FCM
         await PushNotifications.register();
+        console.log('%c[Push Notifications]%c Registration call completed, waiting for token...', 'color: #4CAF50; font-weight: bold', 'color: inherit');
 
         // On success, we should be able to receive notifications
         PushNotifications.addListener('registration', async (token: Token) => {
-            console.log('[Push Notifications] FCM Token:', token.value);
+            console.log('%c[Push Notifications]%c ✅ FCM Token received:', 'color: #2196F3; font-weight: bold', 'color: inherit', token.value);
             this.fcmToken = token.value;
 
             // Send token to backend
-            await this.sendTokenToBackend(userId, token.value, authToken);
+            console.log('%c[Push Notifications]%c Sending token to backend...', 'color: #FF9800; font-weight: bold', 'color: inherit');
+            try {
+                await this.sendTokenToBackend(userId, token.value, authToken);
+                console.log('%c[Push Notifications]%c ✅ Token successfully registered with backend', 'color: #4CAF50; font-weight: bold', 'color: inherit');
+
+                // Show success toast for debugging
+                if (Capacitor.isNativePlatform()) {
+                    // Only show in dev mode or for debugging
+                    console.log('%c[Push Notifications]%c 📱 Device is ready to receive notifications!', 'color: #4CAF50; font-weight: bold', 'color: inherit');
+                }
+            } catch (error) {
+                console.error('%c[Push Notifications]%c ❌ Failed to send token to backend:', 'color: #F44336; font-weight: bold', 'color: inherit', error);
+            }
         });
 
         // Some issue with registration
         PushNotifications.addListener('registrationError', (error: any) => {
-            console.error('[Push Notifications] Registration error:', error);
+            console.error('%c[Push Notifications]%c ❌ Registration error:', 'color: #F44336; font-weight: bold', 'color: inherit', error);
+            console.error('%c[Push Notifications]%c Check:', 'color: #F44336; font-weight: bold', 'color: inherit', '1) google-services.json exists, 2) Permissions granted, 3) Network connection');
         });
 
         // Show notification when app is in foreground
         PushNotifications.addListener(
             'pushNotificationReceived',
             (notification: PushNotificationSchema) => {
-                console.log('[Push Notifications] Received:', notification);
+                console.log('%c[Push Notifications]%c Received:', 'color: #FF9800; font-weight: bold', 'color: inherit', notification);
 
                 // Show custom in-app notification or update UI
                 this.handleForegroundNotification(notification);
@@ -80,7 +105,7 @@ export class PushNotificationService {
         PushNotifications.addListener(
             'pushNotificationActionPerformed',
             (notification: ActionPerformed) => {
-                console.log('[Push Notifications] Action performed:', notification);
+                console.log('%c[Push Notifications]%c Action performed:', 'color: #9C27B0; font-weight: bold', 'color: inherit', notification);
 
                 // Navigate to relevant screen based on notification data
                 this.handleNotificationAction(notification);

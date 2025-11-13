@@ -30,21 +30,72 @@ export const OAuthCallback: React.FC = () => {
       }
 
       try {
-        // Create user object with userId
-        const userObj = { id: userId };
+        // Fetch full user profile from user service
+        let userObj = { id: userId };
+        
+        try {
+          const API_CONFIG = {
+            USER_SERVICE: import.meta.env.MODE === 'production' 
+              ? 'https://user-service.delightfulflower-04821c4b.southeastasia.azurecontainerapps.io'
+              : 'http://localhost:3002'
+          };
+          
+          console.log('%c[OAuthCallback]%c Fetching user profile from:', 'color: #4CAF50; font-weight: bold', 'color: inherit', `${API_CONFIG.USER_SERVICE}/api/users/${userId}`);
+          
+          const response = await fetch(`${API_CONFIG.USER_SERVICE}/api/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('%c[OAuthCallback]%c User service response status:', 'color: #4CAF50; font-weight: bold', 'color: inherit', response.status);
+          
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('%c[OAuthCallback]%c User data response:', 'color: #4CAF50; font-weight: bold', 'color: inherit', userData);
+            
+            if (userData.success && userData.data && userData.data.user) {
+              userObj = {
+                id: userData.data.user.id,
+                email: userData.data.user.email || (userData.data.contacts?.find((c: any) => c.type === 'email')?.value),
+                name: userData.data.user.name,
+                role: userData.data.user.role || 'worker',
+                roles: [userData.data.user.role || 'worker']
+              };
+              console.log('%c[OAuthCallback]%c Fetched user profile:', 'color: #2196F3; font-weight: bold', 'color: inherit', userObj);
+            } else {
+              console.warn('[OAuthCallback] User data response not successful, using minimal user object');
+              // Ensure basic user object fields
+              userObj = { id: userId, name: 'User', role: 'worker', roles: ['worker'] };
+            }
+          } else {
+            console.warn('[OAuthCallback] Failed to fetch user profile (status: ' + response.status + '), using minimal user object');
+            // Ensure basic user object fields
+            userObj = { id: userId, name: 'User', role: 'worker', roles: ['worker'] };
+          }
+        } catch (err) {
+          console.error('[OAuthCallback] Error fetching user profile:', err);
+          // Ensure basic user object fields even on error
+          userObj = { id: userId, name: 'User', role: 'worker', roles: ['worker'] };
+        }
+        
+        console.log('%c[OAuthCallback]%c Final user object before login:', 'color: #FF9800; font-weight: bold', 'color: inherit', userObj);
+        console.log('%c[OAuthCallback]%c Access token:', 'color: #9C27B0; font-weight: bold', 'color: inherit', accessToken?.substring(0, 50) + '...');
         
         // Use AuthContext login (token, user, refreshToken)
         login(accessToken, userObj, refreshToken);
+        console.log('%c[OAuthCallback]%c Login called', 'color: #4CAF50; font-weight: bold', 'color: inherit');
         
         // On mobile, close the browser and return to app
         if (Capacitor.isNativePlatform()) {
-          console.log('[OAuthCallback] Mobile platform detected - closing browser and returning to app');
+          console.log('%c[OAuthCallback]%c Mobile platform detected - closing browser and returning to app', 'color: #00BCD4; font-weight: bold', 'color: inherit');
           
           // Import Browser plugin dynamically
           import('@capacitor/browser').then(({ Browser }) => {
             // Close the Chrome Custom Tab
             Browser.close().then(() => {
-              console.log('[OAuthCallback] Browser closed successfully');
+              console.log('%c[OAuthCallback]%c Browser closed successfully', 'color: #4CAF50; font-weight: bold', 'color: inherit');
             }).catch(err => {
               console.error('[OAuthCallback] Error closing browser:', err);
             });
