@@ -90,12 +90,12 @@ export function buildApp(opts: BuildAppOptions = {}): express.Express {
     app.use(express.json());
     app.use(cookieParser()); // Enable cookie parsing for OAuth platform detection
     // Apply shared security defaults (helmet + rate limiter) enabling trust proxy for rate limiting when behind proxy
-    applyStandardSecurity(app, { 
-        rateLimit: { 
-            windowMs: 15 * 60 * 1000, 
-            limit: 5000 
-        }, 
-        trustProxy: true 
+    applyStandardSecurity(app, {
+        rateLimit: {
+            windowMs: 15 * 60 * 1000,
+            limit: 5000
+        },
+        trustProxy: true
     });
 
     // Metrics setup shared or fallback
