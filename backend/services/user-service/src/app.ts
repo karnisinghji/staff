@@ -54,7 +54,13 @@ export function buildApp(): express.Express {
     }));
 
     // Security middleware (shared) + custom headers
-    applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
+    applyStandardSecurity(app, { 
+        rateLimit: { 
+            windowMs: 15 * 60 * 1000, 
+            limit: 5000 
+        }, 
+        trustProxy: true 
+    });
     // Custom security headers (retained)
     app.use((req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');

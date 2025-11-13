@@ -102,8 +102,14 @@ export function buildApp(version: string): express.Express {
     const app = express();
     const hex = buildCommunicationModule(version);
 
-    // Shared security (helmet + basic rate limit)
-    applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
+    // Shared security (helmet + rate limit: 5000 requests per 15 minutes)
+    applyStandardSecurity(app, { 
+        rateLimit: { 
+            windowMs: 15 * 60 * 1000, 
+            limit: 5000 
+        }, 
+        trustProxy: true 
+    });
 
     // CORS debugging logs
     console.log('----------------------------------------');

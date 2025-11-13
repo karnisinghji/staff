@@ -85,7 +85,13 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
     app.locals.serviceName = serviceName;
     app.locals.version = version;
 
-    applyStandardSecurity(app, { rateLimit: true, trustProxy: true });
+    applyStandardSecurity(app, { 
+        rateLimit: { 
+            windowMs: 15 * 60 * 1000, 
+            limit: 5000 
+        }, 
+        trustProxy: true 
+    });
 
     // CORS debugging logs
     console.log('----------------------------------------');
