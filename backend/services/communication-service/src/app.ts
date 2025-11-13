@@ -242,7 +242,34 @@ export function buildApp(version: string): express.Express {
         }
     });
 
-    // Soft delete message
+    // Bulk mark messages as read (from specific sender to current user)
+    const markAllReadQuery = z.object({
+        userId: z.string().min(1),      // Current user who is reading
+        fromUserId: z.string().min(1)   // Sender whose messages to mark as read
+    });
+    app.put('/messages/read', validate({ schema: markAllReadQuery, target: 'query' }), async (req, res) => {
+        try {
+            const { userId, fromUserId } = req.query as any;
+
+            // Mark all unread messages from fromUserId to userId as read
+            if (!hex.pool) {
+                return res.status(503).json({ success: false, message: 'Database not available' });
+            }
+
+            const result = await hex.pool.query(
+                `UPDATE messages 
+                 SET is_read = true, read_at = NOW() 
+                 WHERE to_user_id = $1 AND from_user_id = $2 AND is_read = false`,
+                [userId, fromUserId]
+            );
+
+            console.log(`[Communication] Marked ${result.rowCount || 0} messages as read for user ${userId} from ${fromUserId}`);
+            res.json({ success: true, markedCount: result.rowCount || 0 });
+        } catch (e: any) {
+            console.error('[Communication] Failed to bulk mark as read:', e);
+            res.status(500).json({ success: false, message: e.message || 'Failed to mark messages as read' });
+        }
+    });    // Soft delete message
     const deleteMessageParams = z.object({ id: z.string().min(1) });
     app.delete('/messages/:id', validate({ schema: deleteMessageParams, target: 'params' }), async (req, res) => {
         try {

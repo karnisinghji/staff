@@ -152,6 +152,41 @@ const ModernMessagingPage: React.FC = () => {
     setChatMessages(filtered);
   }, [selectedConversation, messages, user?.id]);
 
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!selectedConversation || !user?.id || !token) return;
+
+    const markMessagesAsRead = async () => {
+      try {
+        const response = await fetch(
+          `${API_CONFIG.COMMUNICATION_SERVICE}/messages/read?userId=${user.id}&fromUserId=${selectedConversation}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.ok) {
+          console.log(`[MessagingPage] Marked messages from ${selectedConversation} as read`);
+          
+          // Update unread count in conversations list
+          setConversations(prev => prev.map(conv => 
+            conv.userId === selectedConversation 
+              ? { ...conv, unreadCount: 0 }
+              : conv
+          ));
+        }
+      } catch (error) {
+        console.error('[MessagingPage] Failed to mark messages as read:', error);
+      }
+    };
+
+    markMessagesAsRead();
+  }, [selectedConversation, user?.id, token]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

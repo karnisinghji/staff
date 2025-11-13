@@ -13,6 +13,8 @@ export interface CommunicationModule {
         listMessages: ListMessagesUseCase;
         markMessageRead: MarkMessageReadUseCase;
     };
+    messageRepo: PgMessageRepository | InMemoryMessageRepository;
+    pool: Pool | null;
 }
 
 // Create database pool from environment
@@ -47,6 +49,8 @@ export function buildCommunicationModule(version = '1.0.0'): CommunicationModule
             sendMessage: new SendMessageUseCase(messageRepo),
             listMessages: new ListMessagesUseCase(messageRepo),
             markMessageRead: new MarkMessageReadUseCase(messageRepo)
-        }
+        },
+        messageRepo,
+        pool
     };
 }
