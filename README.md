@@ -12,7 +12,7 @@ Get the full mobile experience with our native Android app!
 
 <div align="center">
   
-### [📥 Download APK (14 MB)](https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/app-debug.apk)
+### [📥 Download APK (14 MB)](https://github.com/karnisinghji/staff/releases/download/v1.0.0/comeondost-v1.0.apk)
 
 </div>
 
@@ -238,7 +238,7 @@ This project is licensed under the MIT License.
 
 For issues and questions:
 - 📧 Email: support@comeondost.com
-- 🐛 Issues: [GitHub Issues](https://github.com/YOUR_USERNAME/YOUR_REPO/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/karnisinghji/staff/issues)
 - 📚 Docs: [Documentation](docs/README.md)
 
 ## 🔄 Latest Updates
