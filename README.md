@@ -12,14 +12,14 @@ Get the full mobile experience with our native Android app!
 
 <div align="center">
   
-### [📥 Download APK (14 MB)](https://github.com/karnisinghji/staff/releases/download/v1.0.0/comeondost-v1.0.apk)
+### [📥 Download APK (12 MB)](https://raw.githubusercontent.com/karnisinghji/staff/main/contractor-platform.apk)
 
 </div>
 
 ### 📥 How to Install:
 
 1. **Click "Download APK" button above**
-2. File will download directly (14 MB)
+2. File will download directly (12 MB)
 3. Open the downloaded APK file (check Downloads folder)
 4. **Enable "Install from Unknown Sources"** if prompted:
    - Go to: **Settings → Security → Unknown Sources → ON**

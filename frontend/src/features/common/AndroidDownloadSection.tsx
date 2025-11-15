@@ -25,10 +25,10 @@ const AndroidDownloadSection: React.FC = () => {
               download
             >
               <Download className="w-6 h-6" />
-              Download APK (14 MB)
+              Download APK (12 MB)
             </a>
             <p className="text-sm text-gray-500 mt-4">
-              Version 1.0.0 • Updated November 2025
+              Version 1.0.1 • Updated November 15, 2025 (FCM Fix)
             </p>
           </div>
 

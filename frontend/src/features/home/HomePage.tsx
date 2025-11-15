@@ -79,7 +79,7 @@ export const HomePage: React.FC = () => (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
             </svg>
-            Download APK (13 MB)
+            Download APK (12 MB)
           </button>
         </a>
         <div style={{ 
@@ -92,7 +92,7 @@ export const HomePage: React.FC = () => (
         }}>
           <strong>📥 How to Install:</strong><br/>
           1. Click "Download APK" button above<br/>
-          2. File will download directly (13 MB)<br/>
+          2. File will download directly (12 MB)<br/>
           3. Open the downloaded APK file (check Downloads folder)<br/>
           4. Enable "Install from Unknown Sources" if prompted:<br/>
           &nbsp;&nbsp;&nbsp;→ Settings → Security → Unknown Sources → ON<br/>
