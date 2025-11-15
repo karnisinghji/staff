@@ -7,6 +7,7 @@ on:
     paths:
       - 'backend/services/notification-service/**'
       - '.github/workflows/deploy-azure-notification.yml'
+  workflow_dispatch:
 
 env:
   AZURE_SUBSCRIPTION_ID: bb83cf18-522d-4546-ba6b-39e219d3c0db
