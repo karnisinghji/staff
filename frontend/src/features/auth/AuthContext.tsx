@@ -27,9 +27,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authToken || !currentUser?.id) return;
     if (notificationsInitRef.current) return;
     try {
-      await pushNotificationService.initialize(currentUser.id, authToken);
+      // Check if FCM token is already registered on backend
+      console.log('%c[AuthContext]%c Checking if FCM token is registered...', 'color: #2196F3; font-weight: bold', 'color: inherit');
+      const tokenExists = await pushNotificationService.checkTokenRegistration(currentUser.id, authToken);
+      
+      if (!tokenExists) {
+        console.log('%c[AuthContext]%c FCM token not registered, initializing...', 'color: #FF9800; font-weight: bold', 'color: inherit');
+        await pushNotificationService.initialize(currentUser.id, authToken);
+        console.log('%c[AuthContext]%c Push notifications initialized successfully', 'color: #4CAF50; font-weight: bold', 'color: inherit');
+      } else {
+        console.log('%c[AuthContext]%c FCM token already registered, skipping initialization', 'color: #4CAF50; font-weight: bold', 'color: inherit');
+      }
+      
       notificationsInitRef.current = true;
-      console.log('%c[AuthContext]%c Push notifications initialized', 'color: #4CAF50; font-weight: bold', 'color: inherit');
     } catch (err) {
       console.warn('[AuthContext] Push notifications init failed (non-critical):', err);
     }

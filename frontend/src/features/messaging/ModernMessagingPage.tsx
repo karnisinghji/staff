@@ -178,6 +178,9 @@ const ModernMessagingPage: React.FC = () => {
               ? { ...conv, unreadCount: 0 }
               : conv
           ));
+          
+          // Trigger event to update badges in other components
+          window.dispatchEvent(new CustomEvent('messagesRead'));
         }
       } catch (error) {
         console.error('[MessagingPage] Failed to mark messages as read:', error);

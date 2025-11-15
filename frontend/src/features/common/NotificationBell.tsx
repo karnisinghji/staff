@@ -108,7 +108,18 @@ export const NotificationBell: React.FC = () => {
       fetchRequestsCount();
       fetchUnreadMessagesCount();
     }, 30000);
-    return () => clearInterval(interval);
+    
+    // Listen for messages read event
+    const handleMessagesRead = () => {
+      console.log('[NotificationBell] Messages read event received, refetching count');
+      fetchUnreadMessagesCount();
+    };
+    window.addEventListener('messagesRead', handleMessagesRead);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
   }, [fetchRequestsCount, fetchUnreadMessagesCount]);
 
   const handleAcceptRequest = useCallback(async (requestId: number) => {

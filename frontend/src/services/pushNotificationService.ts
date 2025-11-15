@@ -228,6 +228,39 @@ export class PushNotificationService {
     }
 
     /**
+     * Check if FCM token is registered on backend
+     */
+    async checkTokenRegistration(userId: string, authToken: string): Promise<boolean> {
+        if (!Capacitor.isNativePlatform()) {
+            return false;
+        }
+
+        try {
+            const response = await fetch(
+                `${API_CONFIG.NOTIFICATION_SERVICE}/api/notifications/token/${userId}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('%c[Push Notifications]%c Backend token check:', 'color: #2196F3; font-weight: bold', 'color: inherit', data.token ? 'EXISTS' : 'MISSING');
+                return !!data.token;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('%c[Push Notifications]%c Failed to check token registration:', 'color: #F44336; font-weight: bold', 'color: inherit', error);
+            return false;
+        }
+    }
+
+    /**
      * Unregister notifications (on logout)
      */
     async unregister(): Promise<void> {

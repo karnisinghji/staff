@@ -49,7 +49,18 @@ export const BottomNavBar: React.FC = () => {
     
     // Poll every 30 seconds for new messages
     const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    
+    // Listen for messages read event
+    const handleMessagesRead = () => {
+      console.log('[BottomNavBar] Messages read event received, refetching count');
+      fetchUnreadCount();
+    };
+    window.addEventListener('messagesRead', handleMessagesRead);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
   }, [token, user?.id]);
 
   const isActive = (path: string) => {
