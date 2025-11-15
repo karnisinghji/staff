@@ -11,6 +11,7 @@ import { BottomNavBar } from './components/BottomNavBar';
 import { ToastContainer } from './components/ToastContainer';
 import { GlobalAnimations } from './components/AnimationComponents';
 import { pushNotificationService } from './services/pushNotificationService';
+import { useAppUpdateChecker } from './hooks/useAppUpdateChecker';
 
 // Critical pages loaded immediately (no lazy loading for better UX)
 import { LoginPage } from './features/auth/LoginPage';
@@ -253,6 +254,12 @@ const DebugPushInit: React.FC = () => {
   return null;
 };
 
+// Update checker: Automatically check for new APK version on Android
+const AppUpdateChecker: React.FC = () => {
+  useAppUpdateChecker(); // Checks on mount and every 30 minutes
+  return null;
+};
+
 // We will inject a small runtime helper for navigation. In the Router below
 // we'll attach a real navigate function to window.reactRouterNavigate so
 // the AppUrlListener can use it (avoids needing navigate at top-level).
@@ -271,6 +278,7 @@ const App: React.FC = () => (
           <RouterNavigatorInjector />
           <AppUrlListener />
           <DebugPushInit />
+          <AppUpdateChecker />
           <NavBar />
           <NotificationList />
           <ToastContainer />
