@@ -1,6 +1,6 @@
 {
   "name": "notification-service",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "dependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
