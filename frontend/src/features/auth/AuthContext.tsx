@@ -21,11 +21,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const notificationsInitRef = useRef(false); // prevent duplicate push notification init
+  const notificationsInitRef = useRef<string | null>(null); // Track which user ID has been initialized
 
   const ensurePushNotifications = useCallback(async (authToken: string | null, currentUser: any | null) => {
     if (!authToken || !currentUser?.id) return;
-    if (notificationsInitRef.current) return;
+    
+    // Skip if already initialized for this specific user (not just any user)
+    if (notificationsInitRef.current === currentUser.id) {
+      console.log('%c[AuthContext]%c Push notifications already initialized for this user session', 'color: #9E9E9E; font-weight: bold', 'color: inherit');
+      return;
+    }
+    
     try {
       // Check if FCM token is already registered on backend
       console.log('%c[AuthContext]%c Checking if FCM token is registered...', 'color: #2196F3; font-weight: bold', 'color: inherit');
@@ -39,7 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('%c[AuthContext]%c FCM token already registered, skipping initialization', 'color: #4CAF50; font-weight: bold', 'color: inherit');
       }
       
-      notificationsInitRef.current = true;
+      // Mark as initialized for this specific user
+      notificationsInitRef.current = currentUser.id;
     } catch (err) {
       console.warn('[AuthContext] Push notifications init failed (non-critical):', err);
     }
@@ -150,8 +157,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Stop mobile notifications
     MobileNotificationService.stopPolling();
     
-  // Unregister push notifications
-  await pushNotificationService.unregister().catch(e => console.warn('[AuthContext] Push notifications unregister failed:', e));
+    // Unregister push notifications
+    await pushNotificationService.unregister().catch(e => console.warn('[AuthContext] Push notifications unregister failed:', e));
+    
+    // Clear the initialization ref so next login can register again
+    notificationsInitRef.current = null;
   }, []);
 
   // Auto-refresh token before expiry

@@ -250,6 +250,34 @@ export function buildApp(versionOrOptions?: string | BuildAppOptions): express.E
         }
     });
 
+    // Check if user has FCM token registered (for conditional initialization)
+    app.get('/api/notifications/token/:userId', async (req, res) => {
+        try {
+            const { userId } = req.params;
+            await ensureDeviceTokensTable();
+
+            const result = await pool.query(
+                'SELECT fcm_token, platform FROM device_tokens WHERE user_id = $1 LIMIT 1',
+                [userId]
+            );
+
+            const tokenExists = result.rows.length > 0;
+
+            res.status(200).json({
+                success: true,
+                token: tokenExists ? result.rows[0].fcm_token : null,
+                platform: tokenExists ? result.rows[0].platform : null,
+                exists: tokenExists
+            });
+        } catch (e: any) {
+            logger.error('[FCM] Token check error:', e);
+            res.status(500).json({
+                success: false,
+                message: e.message || 'Failed to check token'
+            });
+        }
+    });
+
     // Send push notification to user (looks up device tokens and sends via FCM)
     const sendPushSchema = z.object({
         userId: z.string().uuid(),
